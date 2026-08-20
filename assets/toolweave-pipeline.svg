@@ -1,190 +1,138 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1580 1130" role="img" aria-labelledby="title desc">
-  <title id="title">ToolWeave asynchronous Stage 3 training and data-generation pipeline</title>
-  <desc id="desc">Stage 1 to Stage 2 to Stage 3 curriculum. Stage 3 rollouts produce Progress Reward, which forks into a policy-optimization branch and an asynchronous RODS-style data-generation branch. Local tool credit stays on the policy branch, while validated candidates are staged in epoch n and admitted to the active pool only at epoch n plus 1.</desc>
-
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">ToolWeave three-stage curriculum and asynchronous Stage 3 loop</title>
+  <desc id="desc">Qwen3-4B passes through Stage 1, Stage 2, and Stage 3. Stage 3 Progress Reward feeds parallel policy-learning and asynchronous data-evolution lanes. Verified candidates are admitted only in the next epoch and affect future rollouts.</desc>
   <defs>
-    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0 10 5 0 10Z" fill="#0F766E" />
-    </marker>
-    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0 10 5 0 10Z" fill="#C2410C" />
-    </marker>
-    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0 10 5 0 10Z" fill="#1D4ED8" />
-    </marker>
     <style>
-      .font { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0F172A; }
-      .title { font-size: 24px; font-weight: 700; }
-      .subtitle { font-size: 13px; fill: #475569; }
-      .section { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
-      .label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; fill: #64748B; }
-      .box-title { font-size: 15px; font-weight: 700; }
-      .box-copy { font-size: 12px; fill: #334155; }
-      .tiny { font-size: 10.5px; fill: #475569; }
-      .branch-title { font-size: 14px; font-weight: 700; letter-spacing: 0.03em; }
+      .bg { fill: #ffffff; }
+      .panel { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 2; }
+      .neutral { fill: #f8fafc; stroke: #64748b; stroke-width: 2.2; }
+      .policy { fill: #eaf2ff; stroke: #2563eb; stroke-width: 2.2; }
+      .rods { fill: #e6f7f4; stroke: #0f766e; stroke-width: 2.2; }
+      .toolweave { fill: #fff3e3; stroke: #d97706; stroke-width: 2.2; }
+      .title { font-family: Inter, Arial, sans-serif; font-size: 30px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-family: Inter, Arial, sans-serif; font-size: 16px; font-weight: 500; fill: #475569; }
+      .stage { font-family: Inter, Arial, sans-serif; font-size: 19px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Inter, Arial, sans-serif; font-size: 17px; font-weight: 650; fill: #0f172a; }
+      .small { font-family: Inter, Arial, sans-serif; font-size: 14px; font-weight: 500; fill: #475569; }
+      .lane { font-family: Inter, Arial, sans-serif; font-size: 18px; font-weight: 750; letter-spacing: 1.2px; fill: #334155; }
+      .arrow { fill: none; stroke: #475569; stroke-width: 2.5; marker-end: url(#arrow); }
+      .branch { fill: none; stroke: #0f766e; stroke-width: 2.6; }
+      .dash { fill: none; stroke: #64748b; stroke-width: 2; stroke-dasharray: 7 7; marker-end: url(#arrowSoft); }
     </style>
+    <marker id="arrow" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#475569"/>
+    </marker>
+    <marker id="arrowSoft" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/>
+    </marker>
   </defs>
 
-  <rect x="12" y="12" width="1556" height="1106" rx="28" fill="#F8FAFC" stroke="#0F172A" stroke-width="3" />
+  <rect class="bg" x="0" y="0" width="1440" height="900"/>
+  <text class="title" x="720" y="48" text-anchor="middle">ToolWeave: Three-Stage Curriculum</text>
+  <text class="subtitle" x="720" y="76" text-anchor="middle">Policy learning and verified data evolution share progress statistics but run as parallel Stage 3 branches</text>
 
-  <text x="790" y="47" text-anchor="middle" class="font title">ToolWeave · staged curriculum and asynchronous verified online RL</text>
-  <text x="790" y="71" text-anchor="middle" class="font subtitle">Stage 1/2 completed · implementation-aligned Stage 3 branch · formal Stage 3 training pending</text>
+  <!-- Curriculum -->
+  <rect class="neutral" x="70" y="115" rx="18" ry="18" width="220" height="92"/>
+  <text class="stage" x="180" y="151" text-anchor="middle">Qwen3-4B</text>
+  <text class="small" x="180" y="179" text-anchor="middle">starting policy</text>
 
-  <text x="50" y="103" class="font label">STAGED CURRICULUM</text>
+  <rect class="policy" x="370" y="105" rx="18" ry="18" width="250" height="112"/>
+  <text class="stage" x="495" y="142" text-anchor="middle">Stage 1</text>
+  <text class="label" x="495" y="169" text-anchor="middle">Tool-Use Cold Start</text>
+  <text class="small" x="495" y="194" text-anchor="middle">format + execution</text>
 
-  <!-- Stage 1 -> Stage 2 -> Stage 3 curriculum -->
-  <g class="font">
-    <rect x="50" y="122" width="250" height="116" rx="18" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="175" y="158" text-anchor="middle" class="box-title">Qwen3-4B</text>
-    <text x="175" y="183" text-anchor="middle" class="box-copy">verified starting</text>
-    <text x="175" y="202" text-anchor="middle" class="box-copy">checkpoint</text>
+  <rect class="rods" x="700" y="105" rx="18" ry="18" width="250" height="112"/>
+  <text class="stage" x="825" y="142" text-anchor="middle">Stage 2</text>
+  <text class="label" x="825" y="169" text-anchor="middle">Progress RL</text>
+  <text class="small" x="825" y="194" text-anchor="middle">fixed-denominator R_P</text>
 
-    <rect x="370" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
-    <text x="495" y="158" text-anchor="middle" class="box-title">Stage 1</text>
-    <text x="495" y="183" text-anchor="middle" class="box-copy">GRPO · K = 16</text>
-    <text x="495" y="202" text-anchor="middle" class="box-copy">format + tool score [0, 2]</text>
+  <rect class="neutral" x="1030" y="105" rx="18" ry="18" width="300" height="112"/>
+  <text class="stage" x="1180" y="142" text-anchor="middle">Stage 3</text>
+  <text class="label" x="1180" y="169" text-anchor="middle">Boundary-Guided Online RL</text>
+  <text class="small" x="1180" y="194" text-anchor="middle">dual credit + data evolution</text>
 
-    <rect x="690" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
-    <text x="815" y="158" text-anchor="middle" class="box-title">Stage 2</text>
-    <text x="815" y="183" text-anchor="middle" class="box-copy">fixed-denominator R_P</text>
-    <text x="815" y="202" text-anchor="middle" class="box-copy">GRPO · loss KL = 0.01</text>
+  <path class="arrow" d="M290 161 H360"/>
+  <path class="arrow" d="M620 161 H690"/>
+  <path class="arrow" d="M950 161 H1020"/>
 
-    <rect x="1010" y="116" width="500" height="128" rx="18" fill="#E0F2FE" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="1260" y="150" text-anchor="middle" class="box-title">Stage 3 · boundary-guided online RL</text>
-    <text x="1260" y="176" text-anchor="middle" class="box-copy">public notation: A_global + 1.0 A_local</text>
-    <text x="1260" y="196" text-anchor="middle" class="box-copy">policy optimization plus asynchronous synthesis</text>
-    <text x="1260" y="216" text-anchor="middle" class="box-copy">candidate n staged · admission at epoch n + 1</text>
-  </g>
+  <!-- Shared Stage 3 signal and branch -->
+  <path class="arrow" d="M1180 217 V257 H720 V275"/>
+  <rect class="rods" x="555" y="275" rx="18" ry="18" width="330" height="76"/>
+  <text class="label" x="720" y="305" text-anchor="middle">K stateful rollouts</text>
+  <text class="small" x="720" y="330" text-anchor="middle">shared Progress Reward R_P</text>
 
-  <path d="M300 180H360" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M620 180H680" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M940 180H1000" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path class="branch" d="M720 351 V378 H390"/>
+  <path class="branch" d="M720 378 H1050"/>
+  <path class="arrow" d="M390 378 V403"/>
+  <path class="arrow" d="M1050 378 V403"/>
 
-  <path d="M50 271H1510" fill="none" stroke="#CBD5E1" stroke-width="2" />
-  <text x="50" y="300" class="font section">STAGE 3 · R_P FORK AND NON-BLOCKING BRANCHES</text>
+  <!-- Policy lane -->
+  <rect class="panel" x="55" y="405" rx="22" ry="22" width="650" height="300"/>
+  <text class="lane" x="85" y="440">POLICY LEARNING</text>
+  <text class="small" x="675" y="440" text-anchor="end">current update does not wait for synthesis</text>
 
-  <!-- Provenance legend: teal = RODS-derived/style, orange = ToolWeave-specific, blue = policy optimization -->
-  <g class="font">
-    <rect x="890" y="282" width="154" height="25" rx="12" fill="#CCFBF1" stroke="#0F766E" stroke-width="1.5" />
-    <text x="967" y="299" text-anchor="middle" class="tiny">RODS-derived / style</text>
-    <rect x="1058" y="282" width="180" height="25" rx="12" fill="#FFEDD5" stroke="#C2410C" stroke-width="1.5" />
-    <text x="1148" y="299" text-anchor="middle" class="tiny">ToolWeave-specific</text>
-    <rect x="1252" y="282" width="156" height="25" rx="12" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="1.5" />
-    <text x="1330" y="299" text-anchor="middle" class="tiny">policy optimization</text>
-  </g>
+  <rect class="rods" x="90" y="475" rx="14" ry="14" width="165" height="70"/>
+  <text class="label" x="172.5" y="503" text-anchor="middle">Global credit</text>
+  <text class="small" x="172.5" y="528" text-anchor="middle">group-normalized R_P</text>
 
-  <!-- Common rollout path -->
-  <g class="font">
-    <rect x="60" y="350" width="270" height="100" rx="16" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="195" y="382" text-anchor="middle" class="box-title">Active pool + current policy</text>
-    <text x="195" y="407" text-anchor="middle" class="box-copy">original seeds + admitted rows</text>
-    <text x="195" y="428" text-anchor="middle" class="box-copy">actor checkpoint</text>
+  <rect class="toolweave" x="90" y="590" rx="14" ry="14" width="165" height="70"/>
+  <text class="label" x="172.5" y="618" text-anchor="middle">Local credit</text>
+  <text class="small" x="172.5" y="643" text-anchor="middle">tool provenance + GT</text>
 
-    <rect x="380" y="350" width="270" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="515" y="382" text-anchor="middle" class="box-title">K = 16 rollouts</text>
-    <text x="515" y="407" text-anchor="middle" class="box-copy">stateful multi-turn BFCL VM</text>
-    <text x="515" y="428" text-anchor="middle" class="box-copy">grouped by prompt identity</text>
+  <rect class="policy" x="320" y="525" rx="14" ry="14" width="165" height="78"/>
+  <text class="label" x="402.5" y="556" text-anchor="middle">Dual advantage</text>
+  <text class="small" x="402.5" y="581" text-anchor="middle">global + local</text>
 
-    <rect x="700" y="350" width="270" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="835" y="382" text-anchor="middle" class="box-title">Progress Reward R_P</text>
-    <text x="835" y="407" text-anchor="middle" class="box-copy">successful turns / expected turns</text>
-    <text x="835" y="428" text-anchor="middle" class="box-copy">pure global signal</text>
-  </g>
+  <path class="arrow" d="M255 510 H290 V548 H310"/>
+  <path class="arrow" d="M255 625 H290 V580 H310"/>
 
-  <path d="M330 400H370" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M650 400H690" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <rect class="policy" x="530" y="525" rx="14" ry="14" width="140" height="78"/>
+  <text class="label" x="600" y="556" text-anchor="middle">PPO / GRPO</text>
+  <text class="small" x="600" y="581" text-anchor="middle">optimizer step</text>
+  <path class="arrow" d="M485 564 H520"/>
 
-  <!-- R_P fork: one input, two independent branches -->
-  <path d="M835 450V475H210V500" fill="none" stroke="#1D4ED8" stroke-width="3.5" marker-end="url(#arrow-blue)" />
-  <path d="M835 475H1155V500" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <text x="940" y="468" class="font tiny">same R_P observation; branches proceed independently</text>
+  <rect class="policy" x="520" y="625" rx="14" ry="14" width="160" height="55"/>
+  <text class="label" x="600" y="649" text-anchor="middle">Updated policy</text>
+  <text class="small" x="600" y="669" text-anchor="middle">future rollout</text>
+  <path class="arrow" d="M600 603 V615"/>
 
-  <text x="60" y="490" class="font branch-title" fill="#1D4ED8">POLICY OPTIMIZATION BRANCH</text>
-  <text x="1030" y="490" class="font branch-title" fill="#0F766E">ASYNC DATA-GENERATION BRANCH · NOT A BLOCKING PREREQUISITE</text>
+  <!-- Data lane -->
+  <rect class="panel" x="735" y="405" rx="22" ry="22" width="650" height="300"/>
+  <text class="lane" x="765" y="440">ASYNC DATA EVOLUTION</text>
+  <text class="small" x="1355" y="440" text-anchor="end">RODS-style branch</text>
 
-  <!-- Policy branch -->
-  <g class="font">
-    <rect x="70" y="510" width="280" height="100" rx="16" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="210" y="542" text-anchor="middle" class="box-title">A_global</text>
-    <text x="210" y="567" text-anchor="middle" class="box-copy">group-normalized GRPO</text>
-    <text x="210" y="588" text-anchor="middle" class="box-copy">computed from R_P only</text>
+  <rect class="rods" x="770" y="475" rx="14" ry="14" width="155" height="78"/>
+  <text class="label" x="847.5" y="506" text-anchor="middle">Boundary</text>
+  <text class="small" x="847.5" y="531" text-anchor="middle">mean R_P only</text>
 
-    <rect x="410" y="510" width="300" height="100" rx="16" fill="#FFEDD5" stroke="#C2410C" stroke-width="2.5" />
-    <text x="560" y="542" text-anchor="middle" class="box-title">Tool provenance + GT</text>
-    <text x="560" y="567" text-anchor="middle" class="box-copy">individual calls + actor spans</text>
-    <text x="560" y="588" text-anchor="middle" class="box-copy">source for local residual only</text>
+  <rect class="rods" x="955" y="475" rx="14" ry="14" width="175" height="78"/>
+  <text class="label" x="1042.5" y="506" text-anchor="middle">Async synthesis</text>
+  <text class="small" x="1042.5" y="531" text-anchor="middle">seed queue</text>
 
-    <rect x="410" y="650" width="300" height="100" rx="16" fill="#FFEDD5" stroke="#C2410C" stroke-width="2.5" />
-    <text x="560" y="682" text-anchor="middle" class="box-title">A_local</text>
-    <text x="560" y="707" text-anchor="middle" class="box-copy">call match → step mean</text>
-    <text x="560" y="728" text-anchor="middle" class="box-copy">turn-local return → ragged z</text>
+  <rect class="toolweave" x="1160" y="475" rx="14" ry="14" width="190" height="78"/>
+  <text class="label" x="1255" y="506" text-anchor="middle">Verified candidates</text>
+  <text class="small" x="1255" y="531" text-anchor="middle">VM + semantic gates</text>
 
-    <rect x="190" y="790" width="400" height="100" rx="16" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="390" y="824" text-anchor="middle" class="box-title">A_ToolWeave = A_global + 1.0 A_local</text>
-    <text x="390" y="850" text-anchor="middle" class="box-copy">local value only on actor tool-step tokens</text>
-    <text x="390" y="871" text-anchor="middle" class="tiny">no post-fusion normalization</text>
+  <path class="arrow" d="M925 514 H945"/>
+  <path class="arrow" d="M1130 514 H1150"/>
 
-    <rect x="190" y="930" width="400" height="85" rx="16" fill="#DBEAFE" stroke="#1D4ED8" stroke-width="2.5" />
-    <text x="390" y="963" text-anchor="middle" class="box-title">PPO/GRPO actor update</text>
-    <text x="390" y="988" text-anchor="middle" class="box-copy">old log-prob · reference KL · optimizer step</text>
-  </g>
+  <rect class="rods" x="955" y="600" rx="14" ry="14" width="220" height="70"/>
+  <text class="label" x="1065" y="629" text-anchor="middle">Epoch n+1 active pool</text>
+  <text class="small" x="1065" y="652" text-anchor="middle">never same-epoch replay</text>
+  <path class="arrow" d="M1255 553 V575 H1065 V590"/>
 
-  <path d="M560 610V640" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
-  <path d="M210 610V740H300V780" fill="none" stroke="#1D4ED8" stroke-width="3.5" marker-end="url(#arrow-blue)" />
-  <path d="M560 750V770H480V780" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
-  <path d="M390 890V920" fill="none" stroke="#1D4ED8" stroke-width="3.5" marker-end="url(#arrow-blue)" />
-  <text x="390" y="1035" text-anchor="middle" class="font tiny">A_local does not feed R_P, boundary classification, or seed priority</text>
+  <!-- Future cycle -->
+  <rect class="neutral" x="560" y="775" rx="18" ry="18" width="320" height="78"/>
+  <text class="label" x="720" y="806" text-anchor="middle">Future active training cycle</text>
+  <text class="small" x="720" y="831" text-anchor="middle">updated policy + eligible pool → rollouts</text>
+  <path class="dash" d="M600 680 V735 H650 V765"/>
+  <path class="dash" d="M1065 670 V735 H790 V765"/>
 
-  <!-- Data-generation branch -->
-  <g class="font">
-    <rect x="1030" y="510" width="250" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1155" y="542" text-anchor="middle" class="box-title">Boundary statistics</text>
-    <text x="1155" y="567" text-anchor="middle" class="box-copy">mean R_P · boundary class</text>
-    <text x="1155" y="588" text-anchor="middle" class="box-copy">φ = 4 r̄_P (1 − r̄_P)</text>
-
-    <rect x="1320" y="510" width="220" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1430" y="542" text-anchor="middle" class="box-title">Seed queue</text>
-    <text x="1430" y="567" text-anchor="middle" class="box-copy">cooldown + type quota</text>
-    <text x="1430" y="588" text-anchor="middle" class="box-copy">selected seeds only</text>
-
-    <rect x="1030" y="650" width="250" height="120" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1155" y="682" text-anchor="middle" class="box-title">ASYNC synthesis</text>
-    <text x="1155" y="707" text-anchor="middle" class="box-copy">planner · functions · parameters</text>
-    <text x="1155" y="728" text-anchor="middle" class="box-copy">real BFCL VM · query · rewrite</text>
-    <text x="1155" y="749" text-anchor="middle" class="tiny">RODS-derived high-level concepts</text>
-
-    <rect x="1320" y="650" width="220" height="120" rx="16" fill="#FFEDD5" stroke="#C2410C" stroke-width="2.5" />
-    <text x="1430" y="682" text-anchor="middle" class="box-title">Precision hardening</text>
-    <text x="1430" y="707" text-anchor="middle" class="box-copy">semantic guards + fresh VM</text>
-    <text x="1430" y="728" text-anchor="middle" class="box-copy">exact-content dedup</text>
-    <text x="1430" y="749" text-anchor="middle" class="tiny">ToolWeave-specific</text>
-
-    <rect x="1030" y="810" width="250" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1155" y="842" text-anchor="middle" class="box-title">Epoch n · candidate staged</text>
-    <text x="1155" y="867" text-anchor="middle" class="box-copy">validated queue; no same-epoch leak</text>
-    <text x="1155" y="888" text-anchor="middle" class="tiny">durable terminal result</text>
-
-    <rect x="1320" y="810" width="220" height="100" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1430" y="842" text-anchor="middle" class="box-title">Epoch n + 1 admission</text>
-    <text x="1430" y="867" text-anchor="middle" class="box-copy">≤ 20% injection · cap 400</text>
-    <text x="1430" y="888" text-anchor="middle" class="tiny">generated-only retirement/pruning</text>
-
-    <rect x="1170" y="955" width="300" height="70" rx="16" fill="#CCFBF1" stroke="#0F766E" stroke-width="2.5" />
-    <text x="1320" y="984" text-anchor="middle" class="box-title">Future active pool</text>
-    <text x="1320" y="1006" text-anchor="middle" class="box-copy">available to future rollouts</text>
-  </g>
-
-  <path d="M1280 560H1310" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M1430 610V630H1155V640" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M1280 710H1310" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
-  <path d="M1430 770V790H1155V800" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
-  <path d="M1280 860H1310" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-  <path d="M1430 910V940H1320V945" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
-
-  <!-- Independent feedback lanes: policy update and future active-pool admission -->
-  <path d="M590 972V1080H30V330H60" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrow-blue)" />
-  <path d="M1470 990V1080H1550V330H330" fill="none" stroke="#0F766E" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrow-teal)" />
-  <text x="300" y="1100" text-anchor="middle" class="font tiny" fill="#1D4ED8">updated policy → next rollout</text>
-  <text x="1240" y="1100" text-anchor="middle" class="font tiny" fill="#0F766E">future active pool → next rollout</text>
+  <!-- Compact legend -->
+  <circle cx="102" cy="873" r="7" fill="#eaf2ff" stroke="#2563eb" stroke-width="2"/>
+  <text class="small" x="118" y="878">policy / RL</text>
+  <circle cx="235" cy="873" r="7" fill="#e6f7f4" stroke="#0f766e" stroke-width="2"/>
+  <text class="small" x="251" y="878">RODS-style global / boundary</text>
+  <circle cx="493" cy="873" r="7" fill="#fff3e3" stroke="#d97706" stroke-width="2"/>
+  <text class="small" x="509" y="878">ToolWeave local / validation</text>
 </svg>

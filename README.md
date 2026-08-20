@@ -238,7 +238,7 @@ $$
 \mathrm{Incomplete}_i=\mathbf{1}[n_{i,0}+n_{i,1}<U_i].
 $$
 
-`Observed progress` is retained only as a Stage 1 diagnostic: it divides by terminal turns that happened to be observed. `R_P` uses all expected turns and is the Stage 2/3 training reward. Reported dataset metrics are sample-macro means, `N^{-1}\sum_i m_i`. `Tool-use rate` is the mean of `I_i^tool`; `rounds` is the mean of `T_i`. Action-parser rates are pooled valid actions divided by all actions in the indicated position bucket.
+`Observed progress` is retained only as a Stage 1 diagnostic: it divides by terminal turns that happened to be observed. `R_P` uses all expected turns and is the Stage 2/3 training reward. Reported dataset metrics are sample-macro means, `N^{-1}\sum_i m_i`. `Tool-use rate` is the mean of `I_i^tool`; `rounds` is the mean of `T_i`. For action bucket `b`, the parser rate is `valid_actions_b / total_actions_b`. The legacy Stage 1 final-answer closure is `1` exactly when the transcript’s final parsed action is a valid non-tool answer, and `0` otherwise.
 
 ## Checkpoint Validation
 
@@ -255,7 +255,7 @@ The Stage 1 directory retains validation outputs for updates 10, 15, 20, and 25.
 
 ### Stage 1 retained checkpoints
 
-| Update | Epoch | Stage 1 score ↑ | Observed progress ↑ | Format ↑ | Tool-call execution ↑ | Tool-use rate ↑ | Mean rounds |
+| Update | Epoch | Stage 1 score | Observed progress | Format | Tool-call execution | Tool-use rate | Mean rounds |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | 10 | 2 | 1.7122 | 0.3631 | 0.8646 | 0.8622 | 0.8700 | 10.95 |
 | 15 | 3 | 1.6986 | 0.3495 | 0.8519 | 0.8629 | 0.8700 | 11.79 |
@@ -275,7 +275,7 @@ Because this validation split is balanced, its per-category Stage 1 score / obse
 
 The Stage 2 reward wrapper directly emits `R_P`, terminal coverage, incomplete-trajectory status, expected turns, missing terminals, and code counts. Metrics marked `†` below are deterministic post-derivations from each row’s saved diagnostic counts using the Stage 1 formulas; they did not alter training reward.
 
-| Update | `R_P` ↑ | Terminal coverage ↑ | Incomplete rate ↓ | Missing turns ↓ | Format† ↑ | Tool execution† ↑ | Tool-use† ↑ | Rounds† |
+| Update | `R_P` | Terminal coverage | Incomplete rate | Missing turns | Format† | Tool execution† | Tool-use† | Rounds† |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 5 | 0.4463 | 0.9195 | 0.1100 | 0.25 | 0.8801 | 0.9364 | 0.9500 | 11.66 |
 | 10 | 0.4668 | 0.8903 | 0.1200 | 0.35 | 0.8364 | 0.8910 | 0.9100 | 10.40 |
@@ -308,7 +308,7 @@ Each run uses deterministic `n=1` decoding and the real multi-turn interaction e
 
 ### Stage 1 update 25 under its native reward protocol
 
-| Split | Rows | Stage 1 score ↑ | Format ↑ | Tool execution ↑ | Tool-use rate ↑ | Observed progress ↑ | Final-answer closure† ↑ | Rounds | Parser ≥2 actions ↑ |
+| Split | Rows | Stage 1 score | Format | Tool execution | Tool-use rate | Observed progress | Final-answer closure† | Rounds | Parser ≥2 actions |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Base | 100 | 1.7601 | 0.8633 | 0.9047 | 0.9200 | 0.4368 | 0.7300 | 11.61 | 0.9231 |
 | Long Context | 100 | 1.7292 | 0.8511 | 0.8798 | 0.9000 | 0.4177 | 0.5400 | 10.63 | 0.9158 |
@@ -324,7 +324,7 @@ The pooled action-parser success rates for Stage 1 update 25 are `0.9841` at act
 
 To compare actual task progress on one scale, the Stage 1 update-25 model was also re-evaluated with the exact Stage 2 fixed-denominator reward wrapper:
 
-| Model | Overall `R_P` ↑ | Base ↑ | Long Context ↑ | Missing Function ↑ | Missing Parameter ↑ |
+| Model | Overall `R_P` | Base | Long Context | Missing Function | Missing Parameter |
 |---|---:|---:|---:|---:|---:|
 | Stage 1 update 25 | 0.3728 | 0.4457 | 0.3429 | 0.3725 | 0.3302 |
 | **Stage 2 update 25** | **0.4567** | **0.6027** | **0.3952** | **0.4515** | **0.3774** |
@@ -333,7 +333,7 @@ The paired overall improvement is `+0.0839`, with a paired 95% bootstrap interva
 
 ### Stage 2 update 25 detailed eval-400 diagnostics
 
-| Split | `R_P` ↑ | Coverage ↑ | Incomplete ↓ | Format† ↑ | Tool execution† ↑ | Tool-use† ↑ | Rounds | Parser ≥2 actions ↑ |
+| Split | `R_P` | Coverage | Incomplete | Format† | Tool execution† | Tool-use† | Rounds | Parser ≥2 actions |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Base | 0.6027 | 0.9575 | 0.0500 | 0.8960 | 0.9547 | 0.9600 | 10.43 | 0.9374 |
 | Long Context | 0.3952 | 0.7730 | 0.2600 | 0.8577 | 0.9170 | 0.9300 | 8.62 | 0.8737 |
@@ -359,22 +359,25 @@ The current Stage 3 branch has been implemented and deterministic/smoke-tested l
 
 ### Global branch: Stage 2 reward remains unchanged
 
-For each prompt, `K=16` rollouts retain the fixed-denominator `R_P`. Standard GRPO first computes the group-normalized global advantage:
+For each prompt group `g`, the `K=16` rollouts retain the fixed-denominator `R_P`. The veRL GRPO implementation first computes a scalar group-relative outcome advantage and then broadcasts it over the GRPO response/loss mask:
 
 $$
-A_{\mathrm{RODS},i}=\frac{R_{P,i}-\overline{R_P}}{s(R_P)+10^{-6}}.
+a_i=\frac{R_{P,i}-\mu_g}{\sigma_g+10^{-6}},
+\qquad
+A_{\mathrm{RODS},i,t}=m^{\mathrm{GRPO}}_{i,t}\,a_i,
 $$
 
-MatchTIR-derived quantities never enter `R_P`, global GRPO normalization, or boundary classification. Disabling local credit or setting its weight to zero returns the original global advantage tensor exactly.
+where `μ_g` and `σ_g` are the group mean and sample standard deviation of the scalar outcome scores, and `m^{GRPO}` is the response/loss mask. A singleton GRPO group follows the implementation’s special case `μ_g=0`, `σ_g=1`. MatchTIR-derived quantities never enter `R_P`, global GRPO normalization, or boundary classification. Disabling local credit or setting its weight to zero returns the original global advantage tensor exactly.
 
 ### Tool-local branch: one match per BFCL user turn
 
-Within one `(prompt, rollout, BFCL user turn)` scope, every individual predicted call from every tool policy step is flattened. For predicted call `p` and GT call `g`, different function names force similarity zero. Otherwise:
+Within one `(prompt, rollout, BFCL user turn)` scope, every individual predicted call from every tool policy step is flattened. For predicted call `p` and GT call `g`, different case-insensitive function names force similarity zero. Otherwise:
 
 $$
-S(p,g)=\frac{1+J_{\mathrm{multiset}}(\mathrm{argNames}_p,\mathrm{argNames}_g)
-+\sum_{k\in\mathrm{args}_g}\mathbf{1}[p_k=g_k]}
-{2+|\mathrm{args}_g|}.
+S(p,g)=\frac{1+J_{\mathrm{multiset}}(K_p,K_g)
++\sum_{k\in K_g}\mathbf{1}[k\in K_p\;\land\;p_k=g_k]}
+{2+|K_g|},
+\qquad K_p=\mathrm{keys}(p),\;K_g=\mathrm{keys}(g).
 $$
 
 Exactly one maximum-weight Hungarian assignment is run over the entire user turn. Unmatched calls receive `0`. Calls are then mapped back to their original policy steps:
@@ -382,14 +385,20 @@ Exactly one maximum-weight Hungarian assignment is run over the entire user turn
 $$
 r_s=\frac{1}{|C_s|}\sum_{c\in C_s}r_c,
 \qquad
-G_s=r_s+0.9G_{s+1}.
+G_s=r_s+0.9G_{s+1},
+\qquad
+G_{S+1}=0.
 $$
 
 Discounting is confined to the same BFCL user turn and occurs over policy steps, never individual call indices. At each `(prompt, user turn, policy-step depth)`, returns are normalized only across rollouts that actually contain that depth:
 
 $$
-A_{\mathrm{local},s}=\frac{G_s-\mu_{\mathcal S_s}}{\sigma_{\mathcal S_s}+10^{-6}}.
+\ell_{i,u,d}=\frac{G_{i,u,d}-\mu_{u,d}}{\sigma_{u,d}+10^{-6}},
+\qquad
+A_{\mathrm{local},i,t}=m^{\mathrm{tool}}_{i,t}\,\ell_{i,u,d}.
 $$
+
+Here `u` is the BFCL user-turn index, `d` is the policy-step depth, and `μ_{u,d}`/`σ_{u,d}` are computed only across rollouts that actually contain that depth. The local `σ` is the sample standard deviation; support smaller than two and zero variance produce zero local credit.
 
 No absent rollout is padded with a fake zero. Empty-GT Missing turns, support smaller than two, and zero-variance groups receive local advantage zero. The local value is assigned only to the exact actor tool-call token span; environment/tool-observation tokens remain masked out.
 
@@ -403,13 +412,41 @@ This is a ToolWeave BFCL adaptation of MatchTIR-style local credit. It is not pa
 
 ### PPO/GRPO and KL path
 
-The actor uses the stored rollout policy log-probability as `old_log_prob` and computes:
+The actor uses the stored rollout policy log-probability as `old_log_prob`. With
 
 $$
-\rho_t=\exp\!\left(\mathrm{clip}(\log\pi_t-\log\pi_{\mathrm{old},t},-20,20)\right).
+\Delta_t=\mathrm{clip}(\log\pi_t-\log\pi_{\mathrm{old},t},-20,20),
+\qquad
+\rho_t=\exp(\Delta_t),
 $$
 
-The existing veRL sequence-mean/token-mean PPO loss, asymmetric clip range (`0.20/0.28`), dual-clip constant `10`, entropy coefficient `0.001`, and reference low-variance KL loss coefficient `0.01` are preserved. Stage 3 does not add local reward to the reference KL or optimizer state.
+the implemented asymmetric PPO objective is:
+
+$$
+\ell^{(1)}_t=-A_t\rho_t,
+\qquad
+\ell^{(2)}_t=-A_t\,\mathrm{clip}(\rho_t,1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}),
+$$
+
+$$
+\ell^{\mathrm{clip}}_t=\max(\ell^{(1)}_t,\ell^{(2)}_t),
+\qquad
+\ell^{\mathrm{dual}}_t=
+\begin{cases}
+\min(-A_t c,\ell^{\mathrm{clip}}_t), & A_t<0,\\
+\ell^{\mathrm{clip}}_t, & A_t\ge 0,
+\end{cases}
+$$
+
+and `L_PPO` is `seq-mean-token-mean` aggregation of `ℓᵈᵘᵃˡ` under the response mask. The actual configuration is `ε_low=0.20`, `ε_high=0.28`, and `c=10`.
+
+The reference low-variance KL term (`kl_loss_type=low_var_kl`) is computed per token from `q_t = log π_ref,t − log π_t`:
+
+$$
+k^{\mathrm{low\text{-}var}}_t=\mathrm{clip}\!\left(\exp(\mathrm{clip}(q_t,-20,20))-\mathrm{clip}(q_t,-20,20)-1,-10,10\right),
+$$
+
+then added as `0.01 ×` the same masked loss aggregation. Stage 3 does not add local reward to the reference KL or optimizer state.
 
 ### Boundary selection and dynamic lifecycle
 

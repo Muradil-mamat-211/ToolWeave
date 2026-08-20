@@ -41,7 +41,6 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 - [Open Resources](#open-resources)
 - [Quick Start](#quick-start)
 - [Repository Layout](#repository-layout)
-- [Roadmap](#roadmap)
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
 
@@ -665,19 +664,6 @@ ToolWeave/
 ```
 
 Training, data-generation, evaluation, and reproducibility code will be added in the next release step.
-
-## Roadmap
-
-- [x] Stage 1 training
-- [x] Stage 2 training
-- [x] Stage 3 data-generation pipeline validation
-- [x] Generator precision hardening
-- [ ] Final Stage 3 formal training
-- [ ] Stage 3 BFCL evaluation
-- [x] Stage 1/2 model release
-- [ ] ToolWeave final model release
-- [ ] Full training code release
-- [ ] Reproducibility package
 
 ## Acknowledgements
 

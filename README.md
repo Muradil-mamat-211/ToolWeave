@@ -222,17 +222,6 @@ Only candidates passing semantic, execution, coherence, and fresh-VM checks are 
 
 ToolWeave does not claim SOTA. Stage 3 final evaluation is pending, and no Stage 3 final model is presented here.
 
-### Upstream RODS reference
-
-The following numbers are reproduced from the public [RODS report](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS) for context only. They are **not ToolWeave measurements**.
-
-| Model | Overall | Base | Miss Func | Miss Param | Long Context |
-|---|---:|---:|---:|---:|---:|
-| Qwen3-4B-Instruct | 22.13 | 26.50 | 21.00 | 15.50 | 25.50 |
-| + EnvTuning | 50.50 | 64.00 | 52.00 | 35.00 | 51.00 |
-| + RODS | 56.00 | 68.00 | 59.00 | 44.00 | 53.00 |
-| ToolWeave Stage 3 | **Evaluation pending** | — | — | — | — |
-
 ### Internal Stage-wise Evaluation
 
 The following recorded workspace measurements document Stage 1/2 development; detailed artifacts are not included in this documentation-only repository release.

@@ -85,9 +85,9 @@ The starting checkpoint is recorded by the workspace as `Qwen/Qwen3-4B`; the REA
 |---|---|---|---|---|
 | `ToolWeave-Stage1-4B` | Stage 1 | Selected merged update-25 checkpoint after the Stage 1 gate | Public checkpoint available; release documentation pending | [Hugging Face repository](https://huggingface.co/muradil211/stage1) |
 | `ToolWeave-Stage2-4B` | Stage 2 | Merged update-25 checkpoint initialized from Stage 1 update 25 | Public checkpoint available; release documentation pending | [Hugging Face repository](https://huggingface.co/muradil211/stage2) |
-| `ToolWeave-Stage3-4B` | Stage 3 | Planned boundary-guided online RL model initialized from Stage 2 update 25 | Formal training not run; release pending | — |
+| `ToolWeave-Stage3-4B` | Stage 3 reference | Public `Qwen3-4B-RODS` checkpoint currently stored in the Stage 3 repository; formal ToolWeave Stage 3 training is a separate pending step | Public reference checkpoint; not a ToolWeave final model | [Hugging Face repository](https://huggingface.co/muradil211/stage3) |
 
-Stage 3 is not presented as a released final model. The public Stage 1 and Stage 2 links point to the currently available checkpoint repositories; they do not imply that the full ToolWeave training code or reproducibility package has already been released.
+Stage 3 is not presented as a released final ToolWeave model. Its link points to the public `Qwen3-4B-RODS` reference checkpoint currently stored in that repository; formal ToolWeave Stage 3 training and certification remain pending. The model links do not imply that the full ToolWeave training code or reproducibility package has already been released.
 
 ## Data
 
@@ -245,7 +245,7 @@ The Stage 1 step20/step25 rows are a direct comparison under the same gate proto
 | ToolWeave documentation and branding | Repository initialized | [this repository](https://github.com/Muradil-mamat-211/ToolWeave) |
 | Stage 1 model | Public checkpoint repository; release documentation pending | [Hugging Face](https://huggingface.co/muradil211/stage1) |
 | Stage 2 model | Public checkpoint repository; release documentation pending | [Hugging Face](https://huggingface.co/muradil211/stage2) |
-| Stage 3 model | Formal training / release pending | — |
+| Stage 3 reference checkpoint | Public RODS checkpoint; ToolWeave final release pending | [Hugging Face](https://huggingface.co/muradil211/stage3) |
 | EnvTuning data and environment | Upstream | [AWorld-RL / EnvTuning](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) |
 | RODS resources | Upstream | [AWorld-RL / RODS](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS), [paper](https://arxiv.org/abs/2606.19047) |
 
@@ -257,7 +257,7 @@ To orient yourself:
 
 1. Read the [Overview](#overview) and [ToolWeave Method](#toolweave-method).
 2. Review the upstream [EnvTuning](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) and [RODS](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS) implementations.
-3. Use the model links in [Models](#models) only for the currently released Stage 1/2 checkpoints.
+3. Use the model links in [Models](#models) with the documented status: Stage 1/2 are public checkpoints, while Stage 3 currently points to a public RODS reference checkpoint rather than a completed ToolWeave final model.
 
 Training commands, data-generation commands, and a reproducibility package will be added in a later release after the public code boundary is reviewed.
 

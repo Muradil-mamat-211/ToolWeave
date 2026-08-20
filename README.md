@@ -47,7 +47,7 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 
 ## Overview
 
-ToolWeave studies how an agent can improve multi-turn tool use by learning from executable environment interaction and by generating new training situations exactly where its current capability is uncertain. The central loop is:
+ToolWeave studies how an agent can improve multi-turn tool use by learning from executable environment interaction and by generating new training situations around the current policy's capability boundary. The central loop is:
 
 ```text
 Train → Detect Boundary → Generate → Validate → Replay → Train
@@ -72,11 +72,11 @@ The framework combines:
 
 | Layer | Role in ToolWeave |
 |---|---|
-| Upstream EnvTuning / RODS concepts | Environment-tuning curriculum, progress-based learning, boundary-focused online synthesis, and dynamic replay ideas |
+| RODS-derived / RODS-style concepts | Progress-based learning, capability-boundary seed selection, planning and function/parameter synthesis, executable interaction, query construction, holistic rewriting, quality critique/refinement, and dynamic replay |
 | Reused public infrastructure | BFCL multi-turn data/environment components, EnvTuning interfaces, and the veRL training stack |
-| ToolWeave-specific implementation | Boundary lifecycle integration, deterministic semantic guards, fresh-VM verification, replay admission rules, and the global-plus-local credit adaptation |
+| ToolWeave-specific robustness and adaptation | Deterministic argument provenance, unit and relational guards, genuine Missing Parameter validation, observation entailment, action minimality, recursive result semantics, fresh-VM hardening, exact-content deduplication, lifecycle durability safeguards, and the MatchTIR-derived local residual |
 
-These layers are intentionally documented separately. In particular, project guards and the local credit branch must not be read as claims about the official RODS algorithm.
+These layers are intentionally documented separately. ToolWeave does not claim that its complete synthesis implementation is the official RODS implementation; project guards, lifecycle engineering, and the local credit branch are documented as adaptations or hardening layers.
 
 ## Training Pipeline
 
@@ -192,6 +192,8 @@ S_i^{\mathrm{Stage1}}=I_i^{\mathrm{tool}}(F_i+Q_i).
 $$
 
 Thus the Stage 1 environment score is in `[0, 2]`: it rewards parser-compatible actions and executable tool calls, not fixed-denominator task completion. GRPO normalizes these sequence scores within each 16-rollout prompt group. Training also uses a reward-side adaptive KL controller (`initial β = 0.1`, target `0.1`, horizon `10,000`); the validation tables below report the unpenalized environment metrics.
+
+ToolWeave's diagnostic-code semantics follow the public EnvTuning implementation used by this project. Where downstream prose descriptions are ambiguous, the executable upstream implementation is treated as the implementation reference.
 
 ### Stage 2 — fixed-denominator Progress-Reward RL
 
@@ -359,56 +361,146 @@ The current Stage 3 branch has been implemented and deterministic/smoke-tested l
 
 ### Global branch: Stage 2 reward remains unchanged
 
-For each prompt group `g`, the `K=16` rollouts retain the fixed-denominator `R_P`. The veRL GRPO implementation first computes a scalar group-relative outcome advantage and then broadcasts it over the GRPO response/loss mask:
+For each prompt group `g`, the `K=16` rollouts retain the fixed-denominator `R_P`. In the public notation below, `A_global` means the unchanged group-normalized GRPO advantage computed from that Progress Reward. The implementation retains the compatibility labels `A_RODS` and `rods_advantages` internally; those are code/metric names, not a claim that RODS publishes a separately named estimator:
 
 $$
 a_i=\frac{R_{P,i}-\mu_g}{\sigma_g+10^{-6}},
 \qquad
-A_{\mathrm{RODS},i,t}=m^{\mathrm{GRPO}}_{i,t}\cdot a_i,
+A_{\mathrm{global},i,t}=m^{\mathrm{GRPO}}_{i,t}\cdot a_i,
 $$
 
-where `μ_g` and `σ_g` are the group mean and sample standard deviation of the scalar outcome scores, and `m^{GRPO}` is the response/loss mask. A singleton GRPO group follows the implementation’s special case `μ_g=0`, `σ_g=1`. MatchTIR-derived quantities never enter `R_P`, global GRPO normalization, or boundary classification. Disabling local credit or setting its weight to zero returns the original global advantage tensor exactly.
+where `μ_g` and `σ_g` are the group mean and unbiased/sample standard deviation of the scalar outcome scores, and `m^{GRPO}` is the response/loss mask. A singleton GRPO group follows the implementation's special case `μ_g=0`, `σ_g=1`. MatchTIR-derived quantities never enter `R_P`, global GRPO normalization, or boundary classification. Disabling local credit or setting its weight to zero returns the original global advantage tensor exactly.
 
-### Tool-local branch: one match per BFCL user turn
+### Local credit: ToolWeave's BFCL adaptation of MatchTIR-style credit
 
-Within one `(prompt, rollout, BFCL user turn)` scope, every individual predicted call from every tool policy step is flattened. For predicted call `p` and GT call `g`, different case-insensitive function names force similarity zero. Otherwise:
+#### Scope and provenance
+
+The local branch is a ToolWeave BFCL adaptation inspired by MatchTIR. The global reward remains only the fixed-denominator Progress Reward `R_P`. Local credit is added after the unchanged global GRPO calculation; it does not modify `R_P`, enter reward-side KL, participate in boundary selection, or recompute global GRPO.
+
+The implementation-level hierarchy is:
+
+```text
+prompt → rollout → BFCL user turn → actor policy step → individual calls → actor token span
+```
+
+The matching resolution is the individual call. The temporal and policy-gradient resolution is the actor policy step.
+
+#### Call similarity
+
+The code in `rods_matchtir_v1/matching.py` gives invalid calls and case-insensitive function-name mismatches similarity `0`. For valid calls with the same function name:
 
 $$
-S(p,g)=\frac{1+J_{\mathrm{multiset}}(K_p,K_g)
-+\sum_{k\in K_g}\mathbf{1}[k\in K_p \land p_k=g_k]}
-{2+|K_g|},
+S(p,g)=
+\frac{
+1+J_{\mathrm{multiset}}(K_p,K_g)
++\sum_{k\in K_g}\mathbf{1}[k\in K_p \land p_k=g_k]
+}{2+|K_g|},
 \qquad K_p=\mathrm{keys}(p),\quad K_g=\mathrm{keys}(g).
 $$
 
-Exactly one maximum-weight Hungarian assignment is run over the entire user turn. Unmatched calls receive `0`. Calls are then mapped back to their original policy steps:
+Only GT argument keys contribute exact-value terms. `J_multiset` is the Counter-based multiset Jaccard used by the implementation:
 
 $$
-r_s=\frac{1}{|C_s|}\sum_{c\in C_s}r_c,
+J_{\mathrm{multiset}}(A,B)=
+\frac{\sum_x\min(C_A(x),C_B(x))}
+{|A|+|B|-\sum_x\min(C_A(x),C_B(x))},
+$$
+
+for a non-empty union of key multisets; the audited helper returns `1` when both key lists are empty. Argument equality is exact structured equality after conversion to JSON-stable built-ins; this is not ordinary set Jaccard.
+
+#### One maximum-weight assignment per BFCL user turn
+
+For one `(prompt, rollout, BFCL user turn)`, all individual calls from all eligible tool policy steps are flattened:
+
+$$
+C_u=\bigcup_s C_{u,s}.
+$$
+
+The complete predicted-call-by-GT-call similarity matrix receives **one** maximum-weight assignment across that entire user turn. The implementation calls `scipy.optimize.linear_sum_assignment(..., maximize=True)`. Zero-similarity assignments are treated as unmatched, and V1 uses `unmatched_penalty=0.0`. Matching separately inside each policy step would allow duplicate calls to reuse GT credit and is not the implemented behavior.
+
+The similarity semantics follow the audited MatchTIR implementation at commit [`975c4535fbb86a49f21ff7d291a1fa822f827684`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684). ToolWeave does **not** claim to copy the upstream helper named `hungarian_assignment` verbatim: the audited helper greedily orders non-conflicting positive edges, while this branch uses a true maximum-weight Hungarian assignment for the one-to-one objective.
+
+#### Call reward to policy-step reward
+
+If one actor policy step emits `C_s={c_1,...,c_m}`, matched individual-call rewards are first averaged back to the originating step:
+
+$$
+r_{u,s}=\frac{1}{|C_{u,s}|}\sum_{c\in C_{u,s}}r_{u,c}.
+$$
+
+This is a mean, not a sum. The assignment is individual-call based; the policy-step reward is the temporal credit unit.
+
+#### User-turn-local discounted return
+
+For each non-Missing BFCL user turn, the raw step rewards are discounted only inside that turn:
+
+$$
+G_{u,s}=r_{u,s}+\gamma G_{u,s+1},
+\qquad G_{u,S_u+1}=0,
+\qquad \gamma=0.9.
+$$
+
+The return accumulator resets at the next BFCL user turn. Local rewards never propagate across user-turn boundaries.
+
+#### Ragged same-depth normalization
+
+For prompt identity `uid`, user turn `u`, and policy-step depth `d`, the peer set contains only rollouts that actually have an eligible tool policy step at that location:
+
+$$
+\mathcal{S}_{uid,u,d}=\{i:\text{rollout }i\text{ actually contains an eligible step at }(u,d)\}.
+$$
+
+There is no padding with a fictitious zero for an absent late step. The implementation normalizes the raw discounted returns over this ragged peer set:
+
+$$
+\mu_{uid,u,d}=\frac{1}{|\mathcal{S}_{uid,u,d}|}
+\sum_{i\in\mathcal{S}_{uid,u,d}}G_{i,u,d},
+$$
+
+$$
+\sigma_{uid,u,d}=\sqrt{\frac{1}{|\mathcal{S}_{uid,u,d}|-1}
+\sum_{i\in\mathcal{S}_{uid,u,d}}(G_{i,u,d}-\mu_{uid,u,d})^2},
 \qquad
-G_s=r_s+0.9G_{s+1},
-\qquad
-G_{S+1}=0.
+A_{\mathrm{local},i,u,d}=\frac{G_{i,u,d}-\mu_{uid,u,d}}
+{\sigma_{uid,u,d}+10^{-6}}.
 $$
 
-Discounting is confined to the same BFCL user turn and occurs over policy steps, never individual call indices. At each `(prompt, user turn, policy-step depth)`, returns are normalized only across rollouts that actually contain that depth:
+The normalization key is `(uid, user_turn_id, depth)`. The standard deviation is unbiased/sample standard deviation. `min_group_size=2`; singleton support, zero variance, and non-finite standard deviation all produce local credit `0`.
+
+#### Missing and non-tool behavior
+
+When a BFCL user turn has empty GT, the implementation creates no local calls, assignment, step reward, local return, or local token span. Therefore `A_local=0` for that turn. V1 does not invent clarification local reward or final-answer local reward. Non-tool actions do not create local call credit. When the next user turn has non-empty GT, it starts normally at policy-step depth `0` with a fresh local return chain.
+
+#### Fail-closed provenance
+
+For an eligible tool turn, if any tool policy step has `provenance_reliable=false`, malformed structured calls, an invalid actor span, or inconsistent call/span mapping, the local branch for that `(rollout, user_turn)` fails closed rather than matching a partial subset. If rollout-level provenance is absent or batch-misaligned, the local branch falls back to the unchanged global tensors. This preserves the complete one-to-one anti-duplication matching set.
+
+#### Token placement and fusion
+
+`A_local` is broadcast over the trainable actor tokens inside the originating tool-call policy-step assistant span, intersected with the existing actor response/loss mask. ToolWeave V1 does not define a finer per-call JSON-subspan policy objective. Environment, tool-observation, user, and other non-actor tokens receive no local residual; the implementation asserts that local values do not leak outside the actor mask.
+
+The public fused advantage is:
 
 $$
-\ell_{i,u,d}=\frac{G_{i,u,d}-\mu_{u,d}}{\sigma_{u,d}+10^{-6}},
-\qquad
-A_{\mathrm{local},i,t}=m^{\mathrm{tool}}_{i,t}\cdot\ell_{i,u,d}.
+\boxed{A_{\mathrm{ToolWeave}}=A_{\mathrm{global}}+\lambda_{\mathrm{local}}A_{\mathrm{local}}},
+\qquad \lambda_{\mathrm{local}}=1.0.
 $$
 
-Here `u` is the BFCL user-turn index, `d` is the policy-step depth, and `μ_{u,d}`/`σ_{u,d}` are computed only across rollouts that actually contain that depth. The local `σ` is the sample standard deviation; support smaller than two and zero variance produce zero local credit.
+There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting. Outside an active local step, `A_ToolWeave=A_global`. Internally, for GRPO tensor-contract consistency, the code mirrors the residual into `returns_new=returns_global+λ_local A_local`; the actor-only GRPO path consumes `advantages`, not a critic return. With local credit disabled, weight zero, unavailable provenance, missing GT, singleton/zero-variance support, or unreliable local provenance, the residual is zero and the original global advantage is preserved exactly.
 
-No absent rollout is padded with a fake zero. Empty-GT Missing turns, support smaller than two, and zero-variance groups receive local advantage zero. The local value is assigned only to the exact actor tool-call token span; environment/tool-observation tokens remain masked out.
+This local residual is a ToolWeave adaptation; it is not part of the original RODS global reward.
 
-The final actor advantage is:
+The audited `LocalCreditConfig` is:
 
-$$
-\boxed{A_{\mathrm{new}}=A_{\mathrm{RODS}}+1.0\cdot A_{\mathrm{local}}}.
-$$
-
-This is a ToolWeave BFCL adaptation of MatchTIR-style local credit. It is not part of the original RODS global reward.
+| Field | Value |
+|---|---:|
+| `enabled` | `true` |
+| `weight` (`λ_local`) | `1.0` |
+| `gamma` | `0.9` |
+| `matching` | `hard` |
+| `unmatched_penalty` | `0.0` |
+| `min_group_size` | `2` |
+| `epsilon` | `1e-6` |
 
 ### PPO/GRPO and KL path
 
@@ -448,7 +540,7 @@ $$
 
 then added as `0.01 ×` the same masked loss aggregation. Stage 3 does not add local reward to the reference KL or optimizer state.
 
-### Boundary selection and dynamic lifecycle
+### RODS-style boundary selection and dynamic lifecycle
 
 After an optimizer step, lifecycle selection groups **only `R_P`** by prompt:
 
@@ -464,22 +556,22 @@ $$
 | Boundary | `0.20 ≤ mean R_P ≤ 0.85` |
 | Mastered | `mean R_P > 0.85` |
 
-Boundary candidates pass a sample-identity cooldown, are partitioned into the four BFCL types, ranked by descending `φ` within type, clipped by each type quota `M_τ`, and finally bounded by total `M`. There is no automatic quota redistribution when a type has too few candidates.
+Boundary candidates pass a sample-identity cooldown, are partitioned into the four BFCL types, ranked by descending `φ` within type, clipped by each type quota `M_τ`, and finally bounded by total `M`. There is no automatic quota redistribution when a type has too few candidates. The selector consumes only `R_P`; `A_local`, `A_ToolWeave`, call similarity, and local return diagnostics are not inputs.
 
-RODS specifies the `M`, `M_τ`, and cooldown mechanisms but does not publish one unique numeric default. The formal Stage 3 configuration therefore leaves them `null`, sets `require_seed_selection_config: true`, and fails closed rather than silently emitting zero seeds. The completed online smoke profile used project choices `M=16`, `M_τ=4/4/4/4`, and cooldown `c=13`; these are **not claimed as paper defaults**.
+ToolWeave implements a reproducible adaptation of the RODS-style lifecycle. The paper specifies the mechanisms but does not publish one unique numeric default for `M`, `M_τ`, or cooldown `c`. The formal Stage 3 configuration therefore leaves them `null`, sets `require_seed_selection_config: true`, and fails closed rather than silently emitting zero seeds. The completed online smoke profile used project choices `M=16`, `M_τ=4/4/4/4`, and cooldown `c=13`; these are **not claimed as paper defaults**.
 
-Validated candidates generated in epoch `n` are staged and become eligible only from epoch `n+1`. At an epoch boundary:
+Validated candidates generated in epoch `n` are staged and become eligible only from epoch `n+1`. At an epoch boundary, the code first retires generated rows, applies any restored-state over-cap pruning, and then computes the pre-injection active-pool basis:
 
 $$
 N_{\mathrm{new}}\le
 \left\lfloor0.20\cdot |D_{\mathrm{active,before}}|\right\rfloor,
 $$
 
-while the generated sub-pool is capped at 400. The original 400 BFCL seeds are protected from retirement. Generated rows receive a one-observation trial; rows below `0.20` can be evicted as too hard, rows above `0.95` can retire as mastered, and stale retirement remains disabled because no reproducible paper-default window is available.
+while the generated sub-pool is capped at 400. Only generated rows participate in lifecycle mutation; the original 400 BFCL rows are protected from retirement. Generated rows receive a one-observation trial; rows below `0.20` can be evicted as too hard, rows above `0.95` can retire as mastered, and stale retirement is an optional hook disabled by default because no reproducible paper-default window is available. If a restored state is already over the generated cap, observed generated rows with the lowest available `φ` are pruned; unobserved trial rows are not assigned a fabricated priority. Deferred validated records remain in the append-only candidate queue for a later epoch.
 
-### Boundary-to-generator contract
+### Asynchronous boundary-to-generator contract
 
-The Training Branch stops at a durable selected-seed queue. A separate Data-Generation Branch consumes that contract and performs:
+The Training Branch emits a durable selected-seed queue after a successful optimizer update. A separate Data-Generation Branch consumes that queue asynchronously; it is not a blocking prerequisite for the current policy update. The branch performs:
 
 ```text
 selected boundary seed
@@ -495,7 +587,11 @@ selected boundary seed
   → rate-limited next-epoch admission
 ```
 
-One shared Gemma-4-31B vLLM service is the project’s synthesis-backbone substitution; RODS reports Qwen3-32B. The active audited catalog contains 128 functions. Public sources do not expose a deterministic HIGH_LEVEL-to-BOTTOM_LEVEL decomposition map, so unsupported HIGH_LEVEL plans fail closed rather than allowing the LLM to invent executable GT. Project semantic guards, exact-content deduplication, terminal journal ordering, file locking, and crash reconciliation protect candidate precision and durability without changing the Training Branch reward mathematics.
+Candidates generated from epoch `n` are staged and are not eligible for active-pool admission until epoch `n+1`. One shared Gemma-4-31B vLLM service is the project’s synthesis-backbone substitution; RODS reports Qwen3-32B. RODS-derived high-level concepts include boundary-driven seed selection, planning, function/parameter generation, executable interaction, query construction, whole-conversation coherence rewriting, quality critique/refinement, and dynamic replay. ToolWeave-specific hardening adds deterministic argument provenance, unit semantics, relational/tie resolution, genuine Missing Parameter validation, observation entailment, action minimality, recursive execution-result classification, fresh-VM hardening, exact-content deduplication, and durable queue/lifecycle safeguards.
+
+The active audited catalog contains 128 functions. Public sources do not expose a deterministic HIGH_LEVEL-to-BOTTOM_LEVEL decomposition map, so unsupported HIGH_LEVEL plans fail closed rather than allowing the LLM to invent executable GT. These synthesis concepts and hardening layers remain outside the frozen `R_P`/advantage math and lifecycle selector.
+
+Structural complexity profiles are used as synthesis guidance and diagnostics where they are reproducibly recoverable. ToolWeave does not claim an unpublished official RODS structural-distance acceptance threshold. The HIGH_LEVEL-to-BOTTOM_LEVEL mapping remains public-source blocked and therefore fails closed.
 
 ### Audited implementation map
 

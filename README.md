@@ -8,12 +8,22 @@
 
 ToolWeave trains multi-turn tool-use agents through a staged curriculum, then closes the loop between policy learning and verified online data synthesis by detecting capability-boundary tasks and generating new executable tool-use trajectories.
 
+[![Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Stage1%20%7C%20Stage2%20%7C%20Stage3-yellow)](#models)
+[![SFT Data](https://img.shields.io/badge/%F0%9F%A4%97%20SFT%20Data-Upstream_EnvTuning-yellow)](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning)
+[![Eval Data](https://img.shields.io/badge/%F0%9F%A4%97%20Eval%20Data-Upstream_BFCL-yellow)](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data)
 [![Code](https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white)](https://github.com/Muradil-mamat-211/ToolWeave)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Agentic RL](https://img.shields.io/badge/Agentic-RL-6D28D9)](#toolweave-method)
 [![Tool Calling](https://img.shields.io/badge/Tool-Calling-0EA5E9)](#overview)
 [![BFCL](https://img.shields.io/badge/BFCL-Multi--Turn-F59E0B)](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard)
 [![Qwen3-4B](https://img.shields.io/badge/Qwen3--4B-7C3AED)](https://huggingface.co/Qwen/Qwen3-4B)
+
+🤗 [ToolWeave Stage 1 Model](https://huggingface.co/muradil211/stage1) |
+🤗 [ToolWeave Stage 2 Model](https://huggingface.co/muradil211/stage2) |
+🤗 [ToolWeave Stage 3 Reference](https://huggingface.co/muradil211/stage3)
+
+🔗 [Upstream EnvTuning Data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) |
+🔗 [Upstream BFCL Eval Data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data)
 
 </div>
 

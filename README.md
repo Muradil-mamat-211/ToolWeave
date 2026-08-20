@@ -406,7 +406,7 @@ This is a ToolWeave BFCL adaptation of MatchTIR-style local credit. It is not pa
 The actor uses the stored rollout policy log-probability as `old_log_prob` and computes:
 
 $$
-\rho_t=\exp\!\left(\operatorname{clip}(\log\pi_t-\log\pi_{\mathrm{old},t},-20,20)\right).
+\rho_t=\exp\!\left(\mathrm{clip}(\log\pi_t-\log\pi_{\mathrm{old},t},-20,20)\right).
 $$
 
 The existing veRL sequence-mean/token-mean PPO loss, asymmetric clip range (`0.20/0.28`), dual-clip constant `10`, entropy coefficient `0.001`, and reference low-variance KL loss coefficient `0.01` are preserved. Stage 3 does not add local reward to the reference KL or optimizer state.

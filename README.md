@@ -44,7 +44,6 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 - [Data](#data)
 - [Quick Start](#quick-start)
 - [Repository Layout](#repository-layout)
-- [Roadmap](#roadmap)
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
 
@@ -825,14 +824,6 @@ ToolWeave/
     ├── toolweave-pipeline.svg
     └── toolweave-stage3.svg
 ```
-
-## Roadmap
-
-- [x] Publish the audited Stage 1/2 method, checkpoint metrics, and model links.
-- [x] Implement and locally audit the Stage 3 Training and verified Data-Generation branches.
-- [ ] Publish the reviewed training, generation, and evaluation reproducibility package.
-- [ ] Run and certify formal ToolWeave Stage 3 training.
-- [ ] Release a final ToolWeave Stage 3 checkpoint and benchmark report.
 
 ## Acknowledgements
 

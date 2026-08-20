@@ -21,9 +21,6 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 🤗 [ToolWeave Stage 2 Model](https://huggingface.co/muradil211/stage2) |
 🤗 [ToolWeave Stage 3 Reference](https://huggingface.co/muradil211/stage3)
 
-🔗 [Stage 1/2 Training Data](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train_base.parquet) · [Stage 3 Seed Training Data](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train.parquet) |
-🔗 [RODS BFCL V3 Eval Split](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data) ([validation](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) · [test](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet))
-
 </div>
 
 > [!IMPORTANT]

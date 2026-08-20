@@ -20,13 +20,6 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 > [!IMPORTANT]
 > ToolWeave is a project-level framework. It is **not** the official RODS implementation. The project distinguishes upstream EnvTuning/RODS concepts, reused public BFCL/EnvTuning infrastructure, and ToolWeave-specific extensions and robustness layers.
 
-## Latest News
-
-- **2026-08** — ToolWeave public repository initialized.
-- **2026-08** — Stage 1 curriculum training completed and gate-evaluated, including a direct step20 versus step25 comparison.
-- **2026-08** — Stage 2 curriculum training completed; the Stage 2 update-25 checkpoint was merged, verified, and evaluated on the internal `eval_400` protocol.
-- **2026-08** — Stage 3 generator precision hardening and historical revalidation reached a passing certification. Formal Stage 3 policy training has not started; the final Stage 3 model release remains pending.
-
 ## Table of Contents
 
 - [Overview](#overview)

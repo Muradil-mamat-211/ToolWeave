@@ -338,10 +338,8 @@ Different rollouts can contain different numbers of tool policy steps. ToolWeave
 
 $$
 \mathcal{S}_{q,u,s}=
-\left\{
-i\;\middle|\;
-\tau_i\text{ actually contains an eligible tool step at user turn }u\text{ and depth }s
-\right\}.
+\{\,i\mid
+\tau_i\text{ actually contains an eligible tool step at user turn }u\text{ and depth }s\,\}.
 $$
 
 Absent late steps are not padded with zeros. Over this ragged support,
@@ -374,15 +372,8 @@ The standard deviation is unbiased/sample standard deviation. Support smaller th
 The core Stage 3 advantage is
 
 $$
-\boxed{
-A_{i,u,s}^{\mathrm{ToolWeave}}
-=
-A_i^g
-+
-\lambda_{\mathrm{local}}A_{i,u,s}^{\ell}
-},
-\qquad
-\lambda_{\mathrm{local}}=1.0.
+\boxed{A_{i,u,s}^{\mathrm{ToolWeave}}=A_i^g+\lambda_{\mathrm{local}}A_{i,u,s}^{\ell}}
+\qquad \lambda_{\mathrm{local}}=1.0.
 $$
 
 For a token inside a local-active tool policy step, the actor uses $A_i^g+A_{i,u,s}^{\ell}$. Every other trainable actor token uses $A_i^g$. There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting.

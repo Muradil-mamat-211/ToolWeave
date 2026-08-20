@@ -10,7 +10,7 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Stage1%20%7C%20Stage2%20%7C%20Stage3-yellow)](#models)
 [![SFT Data](https://img.shields.io/badge/%F0%9F%A4%97%20SFT%20Data-Upstream_EnvTuning-yellow)](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning)
-[![Eval Data](https://img.shields.io/badge/%F0%9F%A4%97%20Eval%20Data-Upstream_BFCL-yellow)](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data)
+[![Eval Data](https://img.shields.io/badge/%F0%9F%A4%97%20Eval%20Data-RODS_BFCL_V3-yellow)](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data)
 [![Code](https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white)](https://github.com/Muradil-mamat-211/ToolWeave)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Agentic RL](https://img.shields.io/badge/Agentic-RL-6D28D9)](#toolweave-method)
@@ -22,7 +22,7 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 🤗 [ToolWeave Stage 3 Reference](https://huggingface.co/muradil211/stage3)
 
 🔗 [Upstream EnvTuning Data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) |
-🔗 [Upstream BFCL Eval Data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data)
+🔗 [RODS BFCL V3 Eval Split](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data) ([validation](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) · [test](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet))
 
 </div>
 
@@ -104,10 +104,27 @@ ToolWeave does **not** rehost upstream EnvTuning or RODS BFCL training data in t
 
 | Resource | Source | Role in ToolWeave |
 |---|---|---|
-| BFCL multi-turn data | [BFCL data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data) via [AWorld-RL](https://github.com/inclusionAI/AWorld-RL) | Stage 1/2 environment tasks and evaluation protocol |
+| BFCL V3 Multi-Turn source | [BFCL dataset](https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard) and [BFCL repository data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data) | Original benchmark source for the four multi-turn categories |
+| RODS / BFCL V3 held-in evaluation split | [AWorld-RL `bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) + [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet) | 400 rows total: 100 each for Base, Missing Function, Missing Parameter, and Long Context |
 | EnvTuning infrastructure | [AWorld-RL / EnvTuning](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) | Public multi-turn environment-tuning reference and infrastructure |
 | RODS resources and benchmark setup | [AWorld-RL / RODS](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS) | Stage 3 boundary detection, synthesis, and replay reference |
 | Generated ToolWeave candidates | ToolWeave project | Online validated Stage 3 replay data; **release pending** |
+
+RODS does not publish a separate RODS-only evaluation artifact or standalone evaluation ID manifest in its public `RODS/` directory. Its paper defines the in-distribution protocol as 800 BFCL V3 Multi-Turn samples: 400 training samples (100 per category) and the remaining 400 held-in evaluation samples (100 per category). In the public AWorld-RL processed-data layout, those 400 evaluation rows are represented by the 100-row validation file plus the 300-row test file linked above.
+
+### Local evaluation dataset used by ToolWeave
+
+The Stage 1 final gate and the Stage 2 final comparison both use the same canonical local `eval_400` dataset, recorded as `val_400_combined.parquet` in the workspace:
+
+| Category | Rows |
+|---|---:|
+| Base | 100 |
+| Missing Function | 100 |
+| Missing Parameter | 100 |
+| Long Context | 100 |
+| **Total** | **400** |
+
+An ID-level audit shows that this local 400-row set has exactly the union of the sample IDs in upstream `bfcl_val.parquet` and `bfcl_test.parquet`. Local rows additionally carry project-side protocol-alignment metadata, so the local parquet is not rehosted in this documentation-only repository. The separately prepared local RODS-style audit subset contains 100 rows (25 per category) sampled from this canonical `eval_400`; it is an audit subset, not the main Stage 1/2 evaluation set.
 
 ## ToolWeave Method
 
@@ -221,6 +238,8 @@ Only candidates passing semantic, execution, coherence, and fresh-VM checks are 
 
 ToolWeave does not claim SOTA. Stage 3 final evaluation is pending, and no Stage 3 final model is presented here.
 
+The internal Stage 1/2 measurements below use the local canonical `eval_400` described in [Local evaluation dataset used by ToolWeave](#local-evaluation-dataset-used-by-toolweave). The upstream RODS 400-row held-in protocol is a reference split, not a ToolWeave Stage 3 result.
+
 ### Internal Stage-wise Evaluation
 
 The following recorded workspace measurements document Stage 1/2 development; detailed artifacts are not included in this documentation-only repository release.
@@ -245,6 +264,7 @@ The Stage 1 step20/step25 rows are a direct comparison under the same gate proto
 | Stage 2 model | Public checkpoint repository; release documentation pending | [Hugging Face](https://huggingface.co/muradil211/stage2) |
 | Stage 3 reference checkpoint | Public RODS checkpoint; ToolWeave final release pending | [Hugging Face](https://huggingface.co/muradil211/stage3) |
 | EnvTuning data and environment | Upstream | [AWorld-RL / EnvTuning](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning) |
+| RODS / BFCL V3 held-in evaluation split | Upstream processed files; not rehosted here | [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) + [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet) |
 | RODS resources | Upstream | [AWorld-RL / RODS](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS), [paper](https://arxiv.org/abs/2606.19047) |
 
 ## Quick Start

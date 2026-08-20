@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1460 930" role="img" aria-labelledby="title desc">
-  <title id="title">ToolWeave implementation-aligned Stage 3 pipeline</title>
-  <desc id="desc">A staged curriculum from Qwen3-4B through Stage 1 and Stage 2 into a Stage 3 closed loop. The loop uses Progress Reward for boundary classification, sends boundary seeds through ToolWeave-specific synthesis and validation, admits validated candidates at the next epoch boundary, and applies pure RODS-style global GRPO plus a MatchTIR-inspired local tool-call residual.</desc>
+  <title id="title">ToolWeave implementation-aligned Stage 1 to Stage 3 pipeline</title>
+  <desc id="desc">A staged curriculum from Qwen3-4B through a Stage 1 format and executable-tool reward, a Stage 2 fixed-denominator Progress Reward, and a Stage 3 closed loop. Stage 3 uses Progress Reward alone for global GRPO and boundary selection, sends selected seeds through verified synthesis, admits candidates at the next epoch boundary, and adds a MatchTIR-inspired local residual only on actor tool-call tokens.</desc>
 
   <defs>
     <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
@@ -28,7 +28,7 @@
   <rect x="12" y="12" width="1436" height="906" rx="28" fill="#F8FAFC" stroke="#0F172A" stroke-width="3" />
 
   <text x="730" y="47" text-anchor="middle" class="font title">ToolWeave · staged curriculum and verified online RL</text>
-  <text x="730" y="71" text-anchor="middle" class="font subtitle">Implementation-aligned Stage 3 branch · formal Stage 3 launch remains pending</text>
+  <text x="730" y="71" text-anchor="middle" class="font subtitle">Stage 1/2 completed · implementation-aligned Stage 3 branch · formal Stage 3 training pending</text>
 
   <text x="50" y="103" class="font label">STAGED CURRICULUM</text>
 
@@ -41,19 +41,19 @@
 
     <rect x="340" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
     <text x="465" y="158" text-anchor="middle" class="box-title">Stage 1</text>
-    <text x="465" y="183" text-anchor="middle" class="box-copy">Tool-use cold start</text>
-    <text x="465" y="202" text-anchor="middle" class="box-copy">format + interaction</text>
+    <text x="465" y="183" text-anchor="middle" class="box-copy">GRPO · K = 16</text>
+    <text x="465" y="202" text-anchor="middle" class="box-copy">format + tool score [0, 2]</text>
 
     <rect x="650" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
     <text x="775" y="158" text-anchor="middle" class="box-title">Stage 2</text>
-    <text x="775" y="183" text-anchor="middle" class="box-copy">Progress-Reward RL</text>
-    <text x="775" y="202" text-anchor="middle" class="box-copy">Base task completion</text>
+    <text x="775" y="183" text-anchor="middle" class="box-copy">fixed-denominator R_P</text>
+    <text x="775" y="202" text-anchor="middle" class="box-copy">GRPO · loss KL = 0.01</text>
 
     <rect x="960" y="116" width="450" height="128" rx="18" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
     <text x="1185" y="150" text-anchor="middle" class="box-title">Stage 3 · boundary-guided online RL</text>
-    <text x="1185" y="176" text-anchor="middle" class="box-copy">K = 16 Progress-Reward rollouts</text>
-    <text x="1185" y="196" text-anchor="middle" class="box-copy">boundary-triggered synthesis + dynamic replay</text>
-    <text x="1185" y="216" text-anchor="middle" class="box-copy">global GRPO + local tool-call residual</text>
+    <text x="1185" y="176" text-anchor="middle" class="box-copy">global: unchanged R_P → A_RODS</text>
+    <text x="1185" y="196" text-anchor="middle" class="box-copy">local: per-user-turn call credit</text>
+    <text x="1185" y="216" text-anchor="middle" class="box-copy">A_new = A_RODS + 1.0 A_local</text>
   </g>
 
   <path d="M280 180H325" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
@@ -88,13 +88,13 @@
 
     <rect x="670" y="340" width="260" height="104" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
     <text x="800" y="373" text-anchor="middle" class="box-title">Progress Reward R_P</text>
-    <text x="800" y="398" text-anchor="middle" class="box-copy">fixed-denominator task progress</text>
-    <text x="800" y="418" text-anchor="middle" class="box-copy">mean score across the group</text>
+    <text x="800" y="398" text-anchor="middle" class="box-copy">R_P = successful turns / expected turns</text>
+    <text x="800" y="418" text-anchor="middle" class="box-copy">pure global signal · no local reward</text>
 
     <rect x="980" y="340" width="260" height="104" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
     <text x="1110" y="373" text-anchor="middle" class="box-title">Boundary classification</text>
     <text x="1110" y="398" text-anchor="middle" class="box-copy">too hard · boundary · mastered</text>
-    <text x="1110" y="418" text-anchor="middle" class="box-copy">seed selection uses R_P only</text>
+    <text x="1110" y="418" text-anchor="middle" class="box-copy">r̄_P only · φ = 4r̄_P(1−r̄_P)</text>
   </g>
 
   <path d="M310 392H350" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
@@ -122,8 +122,8 @@
 
     <rect x="980" y="488" width="260" height="112" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
     <text x="1110" y="520" text-anchor="middle" class="box-title">Boundary seed queue</text>
-    <text x="1110" y="545" text-anchor="middle" class="box-copy">only informative boundary tasks</text>
-    <text x="1110" y="565" text-anchor="middle" class="box-copy">dispatch to the generator</text>
+    <text x="1110" y="545" text-anchor="middle" class="box-copy">cooldown + φ rank + type quota</text>
+    <text x="1110" y="565" text-anchor="middle" class="box-copy">selected seeds only → generator</text>
   </g>
 
   <path d="M980 544H940" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
@@ -147,10 +147,10 @@
 
     <rect x="670" y="650" width="260" height="132" rx="16" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
     <text x="800" y="682" text-anchor="middle" class="box-title">Policy optimization</text>
-    <text x="800" y="707" text-anchor="middle" class="box-copy">global: GRPO / A_RODS from R_P</text>
-    <text x="800" y="727" text-anchor="middle" class="box-copy">local: hard 1-to-1 call match</text>
-    <text x="800" y="747" text-anchor="middle" class="box-copy">→ relevant tool-call tokens</text>
-    <text x="800" y="768" text-anchor="middle" class="tiny">A_new = A_RODS + λ A_local</text>
+    <text x="800" y="707" text-anchor="middle" class="box-copy">global: group z(R_P) = A_RODS</text>
+    <text x="800" y="727" text-anchor="middle" class="box-copy">local: call → step mean → return</text>
+    <text x="800" y="747" text-anchor="middle" class="box-copy">ragged z → tool-call tokens only</text>
+    <text x="800" y="768" text-anchor="middle" class="tiny">A_new = A_RODS + 1.0 A_local</text>
 
     <rect x="980" y="650" width="260" height="132" rx="16" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
     <text x="1110" y="682" text-anchor="middle" class="box-title">Updated policy</text>

@@ -364,7 +364,7 @@ For each prompt group `g`, the `K=16` rollouts retain the fixed-denominator `R_P
 $$
 a_i=\frac{R_{P,i}-\mu_g}{\sigma_g+10^{-6}},
 \qquad
-A_{\mathrm{RODS},i,t}=m^{\mathrm{GRPO}}_{i,t}\,a_i,
+A_{\mathrm{RODS},i,t}=m^{\mathrm{GRPO}}_{i,t}\cdot a_i,
 $$
 
 where `μ_g` and `σ_g` are the group mean and sample standard deviation of the scalar outcome scores, and `m^{GRPO}` is the response/loss mask. A singleton GRPO group follows the implementation’s special case `μ_g=0`, `σ_g=1`. MatchTIR-derived quantities never enter `R_P`, global GRPO normalization, or boundary classification. Disabling local credit or setting its weight to zero returns the original global advantage tensor exactly.
@@ -375,9 +375,9 @@ Within one `(prompt, rollout, BFCL user turn)` scope, every individual predicted
 
 $$
 S(p,g)=\frac{1+J_{\mathrm{multiset}}(K_p,K_g)
-+\sum_{k\in K_g}\mathbf{1}[k\in K_p\;\land\;p_k=g_k]}
++\sum_{k\in K_g}\mathbf{1}[k\in K_p \land p_k=g_k]}
 {2+|K_g|},
-\qquad K_p=\mathrm{keys}(p),\;K_g=\mathrm{keys}(g).
+\qquad K_p=\mathrm{keys}(p),\quad K_g=\mathrm{keys}(g).
 $$
 
 Exactly one maximum-weight Hungarian assignment is run over the entire user turn. Unmatched calls receive `0`. Calls are then mapped back to their original policy steps:
@@ -395,7 +395,7 @@ Discounting is confined to the same BFCL user turn and occurs over policy steps,
 $$
 \ell_{i,u,d}=\frac{G_{i,u,d}-\mu_{u,d}}{\sigma_{u,d}+10^{-6}},
 \qquad
-A_{\mathrm{local},i,t}=m^{\mathrm{tool}}_{i,t}\,\ell_{i,u,d}.
+A_{\mathrm{local},i,t}=m^{\mathrm{tool}}_{i,t}\cdot\ell_{i,u,d}.
 $$
 
 Here `u` is the BFCL user-turn index, `d` is the policy-step depth, and `μ_{u,d}`/`σ_{u,d}` are computed only across rollouts that actually contain that depth. The local `σ` is the sample standard deviation; support smaller than two and zero variance produce zero local credit.
@@ -405,7 +405,7 @@ No absent rollout is padded with a fake zero. Empty-GT Missing turns, support sm
 The final actor advantage is:
 
 $$
-\boxed{A_{\mathrm{new}}=A_{\mathrm{RODS}}+1.0\,A_{\mathrm{local}}}.
+\boxed{A_{\mathrm{new}}=A_{\mathrm{RODS}}+1.0\cdot A_{\mathrm{local}}}.
 $$
 
 This is a ToolWeave BFCL adaptation of MatchTIR-style local credit. It is not part of the original RODS global reward.
@@ -425,7 +425,7 @@ the implemented asymmetric PPO objective is:
 $$
 \ell^{(1)}_t=-A_t\rho_t,
 \qquad
-\ell^{(2)}_t=-A_t\,\mathrm{clip}(\rho_t,1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}),
+\ell^{(2)}_t=-A_t\cdot\mathrm{clip}(\rho_t,1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}),
 $$
 
 $$
@@ -443,7 +443,7 @@ and `L_PPO` is `seq-mean-token-mean` aggregation of `ℓᵈᵘᵃˡ` under the r
 The reference low-variance KL term (`kl_loss_type=low_var_kl`) is computed per token from `q_t = log π_ref,t − log π_t`:
 
 $$
-k^{\mathrm{low\text{-}var}}_t=\mathrm{clip}\!\left(\exp(\mathrm{clip}(q_t,-20,20))-\mathrm{clip}(q_t,-20,20)-1,-10,10\right),
+k^{\mathrm{low\text{-}var}}_t=\mathrm{clip}\left(\exp(\mathrm{clip}(q_t,-20,20))-\mathrm{clip}(q_t,-20,20)-1,-10,10\right),
 $$
 
 then added as `0.01 ×` the same masked loss aggregation. Stage 3 does not add local reward to the reference KL or optimizer state.
@@ -455,7 +455,7 @@ After an optimizer step, lifecycle selection groups **only `R_P`** by prompt:
 $$
 \bar r_P=\frac{1}{K}\sum_{k=1}^{K}R_{P,k},
 \qquad
-\phi=4\bar r_P(1-\bar r_P).
+\phi=4\cdot\bar r_P\cdot(1-\bar r_P).
 $$
 
 | Region | Rule |
@@ -472,7 +472,7 @@ Validated candidates generated in epoch `n` are staged and become eligible only 
 
 $$
 N_{\mathrm{new}}\le
-\left\lfloor0.20\,|D_{\mathrm{active,before}}|\right\rfloor,
+\left\lfloor0.20\cdot |D_{\mathrm{active,before}}|\right\rfloor,
 $$
 
 while the generated sub-pool is capped at 400. The original 400 BFCL seeds are protected from retirement. Generated rows receive a one-observation trial; rows below `0.20` can be evicted as too hard, rows above `0.95` can retire as mastered, and stale retirement remains disabled because no reproducible paper-default window is available.

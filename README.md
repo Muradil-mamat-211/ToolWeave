@@ -16,7 +16,6 @@ ToolWeave trains multi-turn tool-use agents through a staged curriculum, then cl
 [![Agentic RL](https://img.shields.io/badge/Agentic-RL-6D28D9)](#toolweave-method)
 [![Tool Calling](https://img.shields.io/badge/Tool-Calling-0EA5E9)](#overview)
 [![BFCL](https://img.shields.io/badge/BFCL-Multi--Turn-F59E0B)](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard)
-[![Qwen3-4B](https://img.shields.io/badge/Qwen3--4B-7C3AED)](https://huggingface.co/Qwen/Qwen3-4B)
 
 🤗 [ToolWeave Stage 1 Model](https://huggingface.co/muradil211/stage1) |
 🤗 [ToolWeave Stage 2 Model](https://huggingface.co/muradil211/stage2) |

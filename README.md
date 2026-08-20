@@ -466,7 +466,7 @@ The first repository release remains documentation-only, but this README was che
 
 | Responsibility | Audited source |
 |---|---|
-| Stage 1 run profile | `stage1_format_rl/configs/stage1_qwen3_4b_k16_retrain_batch20.yaml` |
+| Stage 1 run profile | Audited Stage 1 YAML training profile from the workspace |
 | Stage 1 reward | `env_tuning/format_reward.py::compute_score` |
 | Stage 2 run profile | `stage1_format_rl/configs/stage2_qwen3_4b_k16_base_progress_batch20_plain_env.yaml` |
 | Fixed-denominator Progress Reward | `stage1_format_rl/rewards/rods_stage2_progress_reward.py::compute_score` |

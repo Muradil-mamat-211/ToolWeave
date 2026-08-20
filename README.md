@@ -51,7 +51,7 @@ Train → Detect Boundary → Generate → Validate → Replay → Train
 ```
 
 <div align="center">
-<img src="assets/toolweave-pipeline.svg" alt="ToolWeave staged training and closed-loop replay pipeline" width="100%">
+<img src="assets/toolweave-pipeline.svg" alt="ToolWeave Stage 3 implementation-aligned training, synthesis, validation, replay, and policy-optimization loop" width="100%">
 </div>
 
 The framework combines:

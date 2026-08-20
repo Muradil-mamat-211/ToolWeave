@@ -1,78 +1,170 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
-  <title id="title">ToolWeave staged training and verification loop</title>
-  <desc id="desc">Qwen3-4B moves through Stage 1 and Stage 2 into Stage 3, where capability-boundary detection, verified synthesis, semantic validation, and dynamic replay close the loop back into training.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1460 930" role="img" aria-labelledby="title desc">
+  <title id="title">ToolWeave implementation-aligned Stage 3 pipeline</title>
+  <desc id="desc">A staged curriculum from Qwen3-4B through Stage 1 and Stage 2 into a Stage 3 closed loop. The loop uses Progress Reward for boundary classification, sends boundary seeds through ToolWeave-specific synthesis and validation, admits validated candidates at the next epoch boundary, and applies pure RODS-style global GRPO plus a MatchTIR-inspired local tool-call residual.</desc>
+
   <defs>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0 10 5 0 10Z" fill="#14B8A6" />
+    <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 10 5 0 10Z" fill="#0F766E" />
     </marker>
-    <marker id="arrow-dark" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
-      <path d="M0 0 10 5 0 10Z" fill="#0F172A" />
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 10 5 0 10Z" fill="#C2410C" />
     </marker>
+    <marker id="arrow-navy" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0 0 10 5 0 10Z" fill="#1D4ED8" />
+    </marker>
+    <style>
+      .font { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; fill: #0F172A; }
+      .title { font-size: 23px; font-weight: 700; }
+      .subtitle { font-size: 13px; fill: #475569; }
+      .section { font-size: 15px; font-weight: 700; letter-spacing: 0.04em; }
+      .label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; fill: #64748B; }
+      .box-title { font-size: 15px; font-weight: 700; }
+      .box-copy { font-size: 12px; fill: #334155; }
+      .tiny { font-size: 10.5px; fill: #475569; }
+    </style>
   </defs>
 
-  <rect x="10" y="10" width="1180" height="500" rx="28" fill="#F8FAFC" stroke="#0F172A" stroke-width="3" />
-  <text x="600" y="42" text-anchor="middle" fill="#0F172A" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="21" font-weight="700">ToolWeave staged curriculum and closed-loop replay</text>
+  <rect x="12" y="12" width="1436" height="906" rx="28" fill="#F8FAFC" stroke="#0F172A" stroke-width="3" />
 
-  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fill="#0F172A">
-    <rect x="42" y="74" width="190" height="112" rx="18" fill="#E6FFFB" stroke="#0F766E" stroke-width="3" />
-    <text x="137" y="111" text-anchor="middle" font-size="16" font-weight="700">Qwen3-4B</text>
-    <text x="137" y="137" text-anchor="middle" font-size="13">verified starting</text>
-    <text x="137" y="157" text-anchor="middle" font-size="13">checkpoint</text>
+  <text x="730" y="47" text-anchor="middle" class="font title">ToolWeave · staged curriculum and verified online RL</text>
+  <text x="730" y="71" text-anchor="middle" class="font subtitle">Implementation-aligned Stage 3 branch · formal Stage 3 launch remains pending</text>
 
-    <rect x="288" y="74" width="205" height="112" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="3" />
-    <text x="390" y="108" text-anchor="middle" font-size="16" font-weight="700">Stage 1</text>
-    <text x="390" y="134" text-anchor="middle" font-size="13">Tool-use cold start</text>
-    <text x="390" y="155" text-anchor="middle" font-size="13">format + interaction</text>
+  <text x="50" y="103" class="font label">STAGED CURRICULUM</text>
 
-    <rect x="550" y="74" width="205" height="112" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="3" />
-    <text x="652" y="108" text-anchor="middle" font-size="16" font-weight="700">Stage 2</text>
-    <text x="652" y="134" text-anchor="middle" font-size="13">Progress-reward RL</text>
-    <text x="652" y="155" text-anchor="middle" font-size="13">task completion</text>
+  <!-- Curriculum row -->
+  <g class="font">
+    <rect x="50" y="122" width="230" height="116" rx="18" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
+    <text x="165" y="158" text-anchor="middle" class="box-title">Qwen3-4B</text>
+    <text x="165" y="183" text-anchor="middle" class="box-copy">verified starting</text>
+    <text x="165" y="202" text-anchor="middle" class="box-copy">checkpoint</text>
 
-    <rect x="812" y="62" width="342" height="136" rx="18" fill="#FFF7ED" stroke="#C2410C" stroke-width="3" />
-    <text x="983" y="95" text-anchor="middle" font-size="16" font-weight="700">Stage 3 · boundary-guided online RL</text>
-    <text x="983" y="123" text-anchor="middle" font-size="13">detect capability boundary</text>
-    <text x="983" y="145" text-anchor="middle" font-size="13">synthesize + verify tool-use data</text>
-    <text x="983" y="167" text-anchor="middle" font-size="13">global trajectory + local tool credit</text>
+    <rect x="340" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
+    <text x="465" y="158" text-anchor="middle" class="box-title">Stage 1</text>
+    <text x="465" y="183" text-anchor="middle" class="box-copy">Tool-use cold start</text>
+    <text x="465" y="202" text-anchor="middle" class="box-copy">format + interaction</text>
+
+    <rect x="650" y="122" width="250" height="116" rx="18" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
+    <text x="775" y="158" text-anchor="middle" class="box-title">Stage 2</text>
+    <text x="775" y="183" text-anchor="middle" class="box-copy">Progress-Reward RL</text>
+    <text x="775" y="202" text-anchor="middle" class="box-copy">Base task completion</text>
+
+    <rect x="960" y="116" width="450" height="128" rx="18" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
+    <text x="1185" y="150" text-anchor="middle" class="box-title">Stage 3 · boundary-guided online RL</text>
+    <text x="1185" y="176" text-anchor="middle" class="box-copy">K = 16 Progress-Reward rollouts</text>
+    <text x="1185" y="196" text-anchor="middle" class="box-copy">boundary-triggered synthesis + dynamic replay</text>
+    <text x="1185" y="216" text-anchor="middle" class="box-copy">global GRPO + local tool-call residual</text>
   </g>
 
-  <path d="M232 130H278" fill="none" stroke="#14B8A6" stroke-width="4" marker-end="url(#arrow)" />
-  <path d="M493 130H540" fill="none" stroke="#14B8A6" stroke-width="4" marker-end="url(#arrow)" />
-  <path d="M755 130H802" fill="none" stroke="#14B8A6" stroke-width="4" marker-end="url(#arrow)" />
+  <path d="M280 180H325" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M590 180H635" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M900 180H945" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
 
-  <text x="600" y="246" text-anchor="middle" fill="#0F172A" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" font-size="18" font-weight="700">Train → Detect Boundary → Generate → Validate → Replay → Train</text>
+  <path d="M50 271H1410" fill="none" stroke="#CBD5E1" stroke-width="2" />
+  <text x="50" y="298" class="font section">STAGE 3 · TRAINING-BRANCH ORDER</text>
+  <text x="50" y="320" class="font subtitle">RODS-style lifecycle mechanisms are marked in teal; ToolWeave-specific validation and local credit are marked in orange.</text>
 
-  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fill="#0F172A">
-    <rect x="42" y="280" width="175" height="90" rx="16" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
-    <text x="129" y="316" text-anchor="middle" font-size="15" font-weight="700">Train</text>
-    <text x="129" y="340" text-anchor="middle" font-size="12">policy rollouts</text>
-
-    <rect x="252" y="280" width="175" height="90" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
-    <text x="339" y="310" text-anchor="middle" font-size="15" font-weight="700">Detect Boundary</text>
-    <text x="339" y="338" text-anchor="middle" font-size="12">K rollouts + progress</text>
-
-    <rect x="462" y="280" width="175" height="90" rx="16" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
-    <text x="549" y="310" text-anchor="middle" font-size="15" font-weight="700">Generate</text>
-    <text x="549" y="338" text-anchor="middle" font-size="12">online synthetic traces</text>
-
-    <rect x="672" y="280" width="175" height="90" rx="16" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
-    <text x="759" y="310" text-anchor="middle" font-size="15" font-weight="700">Validate</text>
-    <text x="759" y="338" text-anchor="middle" font-size="12">real VM + semantic guards</text>
-
-    <rect x="882" y="280" width="175" height="90" rx="16" fill="#FFFFFF" stroke="#0F172A" stroke-width="2.5" />
-    <text x="969" y="310" text-anchor="middle" font-size="15" font-weight="700">Replay</text>
-    <text x="969" y="338" text-anchor="middle" font-size="12">eligible next epoch</text>
+  <!-- Legend -->
+  <g class="font">
+    <rect x="920" y="280" width="116" height="25" rx="12" fill="#E6FFFB" stroke="#0F766E" stroke-width="1.5" />
+    <text x="978" y="297" text-anchor="middle" class="tiny">RODS-style</text>
+    <rect x="1048" y="280" width="156" height="25" rx="12" fill="#FFF7ED" stroke="#C2410C" stroke-width="1.5" />
+    <text x="1126" y="297" text-anchor="middle" class="tiny">ToolWeave-specific</text>
+    <rect x="1216" y="280" width="112" height="25" rx="12" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="1.5" />
+    <text x="1272" y="297" text-anchor="middle" class="tiny">policy update</text>
   </g>
 
-  <path d="M217 325H242" fill="none" stroke="#14B8A6" stroke-width="3.5" marker-end="url(#arrow)" />
-  <path d="M427 325H452" fill="none" stroke="#14B8A6" stroke-width="3.5" marker-end="url(#arrow)" />
-  <path d="M637 325H662" fill="none" stroke="#14B8A6" stroke-width="3.5" marker-end="url(#arrow)" />
-  <path d="M847 325H872" fill="none" stroke="#14B8A6" stroke-width="3.5" marker-end="url(#arrow)" />
-  <path d="M969 370V432H129V380" fill="none" stroke="#0F172A" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrow-dark)" />
+  <!-- Rollout and boundary row -->
+  <g class="font">
+    <rect x="50" y="340" width="260" height="104" rx="16" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
+    <text x="180" y="373" text-anchor="middle" class="box-title">Active pool + policy</text>
+    <text x="180" y="398" text-anchor="middle" class="box-copy">original seeds + generated rows</text>
+    <text x="180" y="418" text-anchor="middle" class="box-copy">current actor checkpoint</text>
 
-  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" fill="#0F172A">
-    <rect x="120" y="414" width="960" height="54" rx="15" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
-    <text x="600" y="447" text-anchor="middle" font-size="14">Only validated candidates enter the replay pool; same-epoch leakage is disallowed.</text>
+    <rect x="360" y="340" width="260" height="104" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
+    <text x="490" y="373" text-anchor="middle" class="box-title">K = 16 rollouts</text>
+    <text x="490" y="398" text-anchor="middle" class="box-copy">multi-turn BFCL environment</text>
+    <text x="490" y="418" text-anchor="middle" class="box-copy">grouped by prompt identity</text>
+
+    <rect x="670" y="340" width="260" height="104" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
+    <text x="800" y="373" text-anchor="middle" class="box-title">Progress Reward R_P</text>
+    <text x="800" y="398" text-anchor="middle" class="box-copy">fixed-denominator task progress</text>
+    <text x="800" y="418" text-anchor="middle" class="box-copy">mean score across the group</text>
+
+    <rect x="980" y="340" width="260" height="104" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
+    <text x="1110" y="373" text-anchor="middle" class="box-title">Boundary classification</text>
+    <text x="1110" y="398" text-anchor="middle" class="box-copy">too hard · boundary · mastered</text>
+    <text x="1110" y="418" text-anchor="middle" class="box-copy">seed selection uses R_P only</text>
   </g>
+
+  <path d="M310 392H350" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M620 392H660" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M930 392H970" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M1110 444V476" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+
+  <!-- Synthesis and validation row, intentionally read right to left -->
+  <g class="font">
+    <rect x="50" y="488" width="260" height="112" rx="16" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
+    <text x="180" y="520" text-anchor="middle" class="box-title">Validate + package</text>
+    <text x="180" y="541" text-anchor="middle" class="box-copy">coherence rewrite + MF/MP transform</text>
+    <text x="180" y="561" text-anchor="middle" class="box-copy">semantic gates + fresh-VM reverify</text>
+    <text x="180" y="581" text-anchor="middle" class="box-copy">Quality Judge → validated candidate</text>
+
+    <rect x="360" y="488" width="260" height="112" rx="16" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
+    <text x="490" y="520" text-anchor="middle" class="box-title">BFCL VM + query</text>
+    <text x="490" y="545" text-anchor="middle" class="box-copy">execute sampled calls in the VM</text>
+    <text x="490" y="565" text-anchor="middle" class="box-copy">generate + verify user queries</text>
+
+    <rect x="670" y="488" width="260" height="112" rx="16" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
+    <text x="800" y="520" text-anchor="middle" class="box-title">Planner + function sampling</text>
+    <text x="800" y="545" text-anchor="middle" class="box-copy">plan multi-turn intent</text>
+    <text x="800" y="565" text-anchor="middle" class="box-copy">sample functions + parameters</text>
+
+    <rect x="980" y="488" width="260" height="112" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
+    <text x="1110" y="520" text-anchor="middle" class="box-title">Boundary seed queue</text>
+    <text x="1110" y="545" text-anchor="middle" class="box-copy">only informative boundary tasks</text>
+    <text x="1110" y="565" text-anchor="middle" class="box-copy">dispatch to the generator</text>
+  </g>
+
+  <path d="M980 544H940" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
+  <path d="M670 544H630" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
+  <path d="M360 544H320" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
+  <path d="M180 600V642" fill="none" stroke="#C2410C" stroke-width="3.5" marker-end="url(#arrow-orange)" />
+
+  <!-- Replay and policy optimization row -->
+  <g class="font">
+    <rect x="50" y="650" width="260" height="132" rx="16" fill="#FFF7ED" stroke="#C2410C" stroke-width="2.5" />
+    <text x="180" y="682" text-anchor="middle" class="box-title">Epoch n · staged</text>
+    <text x="180" y="707" text-anchor="middle" class="box-copy">generated + fully validated</text>
+    <text x="180" y="727" text-anchor="middle" class="box-copy">not eligible in the same epoch</text>
+    <text x="180" y="755" text-anchor="middle" class="tiny">candidate queue</text>
+
+    <rect x="360" y="650" width="260" height="132" rx="16" fill="#E6FFFB" stroke="#0F766E" stroke-width="2.5" />
+    <text x="490" y="682" text-anchor="middle" class="box-title">Epoch n + 1 · replay</text>
+    <text x="490" y="707" text-anchor="middle" class="box-copy">admit at epoch boundary</text>
+    <text x="490" y="727" text-anchor="middle" class="box-copy">≤ 20% injection · cap 400</text>
+    <text x="490" y="755" text-anchor="middle" class="tiny">retire mastered / too-hard rows</text>
+
+    <rect x="670" y="650" width="260" height="132" rx="16" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
+    <text x="800" y="682" text-anchor="middle" class="box-title">Policy optimization</text>
+    <text x="800" y="707" text-anchor="middle" class="box-copy">global: GRPO / A_RODS from R_P</text>
+    <text x="800" y="727" text-anchor="middle" class="box-copy">local: hard 1-to-1 call match</text>
+    <text x="800" y="747" text-anchor="middle" class="box-copy">→ relevant tool-call tokens</text>
+    <text x="800" y="768" text-anchor="middle" class="tiny">A_new = A_RODS + λ A_local</text>
+
+    <rect x="980" y="650" width="260" height="132" rx="16" fill="#EFF6FF" stroke="#1D4ED8" stroke-width="2.5" />
+    <text x="1110" y="682" text-anchor="middle" class="box-title">Updated policy</text>
+    <text x="1110" y="707" text-anchor="middle" class="box-copy">actor optimizer step</text>
+    <text x="1110" y="727" text-anchor="middle" class="box-copy">new policy for the next rollout</text>
+    <text x="1110" y="755" text-anchor="middle" class="tiny">closed-loop continuation</text>
+  </g>
+
+  <path d="M310 716H350" fill="none" stroke="#0F766E" stroke-width="3.5" marker-end="url(#arrow-teal)" />
+  <path d="M620 716H660" fill="none" stroke="#1D4ED8" stroke-width="3.5" marker-end="url(#arrow-navy)" />
+  <path d="M930 716H970" fill="none" stroke="#1D4ED8" stroke-width="3.5" marker-end="url(#arrow-navy)" />
+
+  <!-- Dedicated outer loop lane: no line crosses a box or the explanatory note. -->
+  <path d="M1110 782V850H28V392H50" fill="none" stroke="#1D4ED8" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrow-navy)" />
+  <text x="700" y="837" text-anchor="middle" class="font tiny" fill="#1D4ED8">updated policy → next rollout group</text>
+  <text x="730" y="890" text-anchor="middle" class="font subtitle">Validated candidates become eligible only at the next epoch boundary; same-epoch leakage is blocked.</text>
 </svg>

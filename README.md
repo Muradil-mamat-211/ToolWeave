@@ -473,7 +473,7 @@ where $\sigma_{u,t}$ is the unbiased sample standard deviation. If peer support 
 
 $$
 A_k^{\mathrm{RODS}}=
-\operatorname{GRPOAdv}(R_P^{(k)}),
+\mathrm{GRPOAdv}(R_P^{(k)}),
 \qquad
 A_{k,u,t}^{\mathrm{TW}}=
 A_k^{\mathrm{RODS}}+A_{k,u,t}^{\mathrm{local}}.
@@ -491,8 +491,8 @@ $$
 R_P=\frac{\text{number of terminally successful user turns}}{5},
 \qquad
 A_{\mathrm{RODS}}=
-\frac{R_P-\operatorname{mean}_{K=16}(R_P)}
-{\operatorname{std}_{K=16}^{\mathrm{sample}}(R_P)+10^{-6}}.
+\frac{R_P-\mathrm{mean}_{K=16}(R_P)}
+{\mathrm{std}_{K=16}^{\mathrm{sample}}(R_P)+10^{-6}}.
 $$
 
 Thus the table's **full-rollout $A_{\mathrm{RODS}}$** is the global, same-prompt peer-normalized advantage derived from the full-rollout $R_P$; it is not the local advantage of User Turn 3.

@@ -273,12 +273,6 @@ $$
 
 ToolWeave V1 uses `unmatched_penalty = 0.0`. One-to-one assignment prevents duplicate predicted calls from repeatedly claiming the same GT call, which independent per-call maxima would allow.
 
-#### ToolWeave assignment scope
-
-The assignment is run **once across the entire BFCL user turn**. All individual calls from every eligible tool policy step are flattened into $P_{i,u}$ before building the matrix. Assignment is not repeated independently for each policy step.
-
-The audited implementation uses `scipy.optimize.linear_sum_assignment(..., maximize=True)`, an actual maximum-weight Hungarian assignment. At audited MatchTIR commit [`975c4535fbb86a49f21ff7d291a1fa822f827684`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the upstream helper is named `hungarian_assignment` but greedily selects sorted positive edges. ToolWeave follows the MatchTIR-style similarity and one-to-one objective while intentionally using the exact optimizer.
-
 #### Call-level reward to policy-step reward
 
 An actor policy step may emit more than one call. Individual-call rewards are averaged back to the originating policy step:

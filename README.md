@@ -595,7 +595,13 @@ $$
 \mathbf{1}[n_{i,0}+n_{i,1}<U_i].
 $$
 
-`Observed progress` is a Stage 1 diagnostic that divides only by terminal turns that happened to be observed. $R_P$ divides by all expected turns and is the Stage 2/3 training reward. Dataset metrics are sample-macro means, $N^{-1}\sum_i m_i$. `Tool-use rate` is the mean of $I_i^{\mathrm{tool}}`; `rounds` is the mean of $T_i$. For action bucket $b$, parser rate is `valid_actions_b / total_actions_b`.
+`Observed progress` is a Stage 1 diagnostic that divides only by terminal turns that happened to be observed. $R_P$ divides by all expected turns and is the Stage 2/3 training reward. Dataset metrics are sample-macro means:
+
+$$
+\frac{1}{N}\sum_{i=1}^{N} m_i.
+$$
+
+`Tool-use rate` is the mean of $I_i^{\mathrm{tool}}$; `rounds` is the mean of $T_i$. For action bucket $b$, parser rate is `valid_actions_b / total_actions_b`.
 
 #### Validation dataset identity
 
@@ -606,14 +612,7 @@ $$
 
 The Stage 1 directory retains validation outputs for updates 10, 15, 20, and 25. No update-5 Stage 1 validation JSON was retained, so no value is reconstructed or imputed.
 
-The selected update-25 models were also evaluated on the same canonical 400-row set:
-
-```text
-val_400_combined.parquet
-SHA256: ee1eba107d6e8ae0602abb3eb8db566d965515ea0da10fdd9eff264ad481423f
-```
-
-It contains 100 rows each of Base, Long Context, Missing Function, and Missing Parameter. ID-level audit matches the union of upstream `bfcl_val.parquet` and `bfcl_test.parquet`.
+The canonical 400-row held-in evaluation set is assembled from the upstream [AWorld-RL EnvTuning data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data): 100 rows from [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) and 300 rows from [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet). It contains 100 rows each of Base, Long Context, Missing Function, and Missing Parameter.
 
 ### Stage 1
 

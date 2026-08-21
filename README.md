@@ -757,6 +757,8 @@ The model links do not imply that the full reproducibility package has already b
 
 ToolWeave does not rehost upstream BFCL/EnvTuning data in this documentation release.
 
+**Trajectory anatomy.** See [Data & Trajectory Anatomy](docs/data-and-trajectories.md) for the BFCL sample → user turn → interaction turn → tool-call hierarchy and a real parser-recovery rollout.
+
 | Resource | Composition and role | Source |
 |---|---|---|
 | Stage 1/2 training | 100 Base interaction rows | [AWorld-RL `bfcl_train_base.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train_base.parquet) |

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1120" viewBox="0 0 1440 1120" role="img" aria-labelledby="title desc">
+  <title id="title">ToolWeave data and trajectory anatomy</title>
+  <desc id="desc">The upper panel distinguishes a static BFCL sample from runtime interaction turns and calls inside one tool action. The lower panel shows five parser errors followed by one valid two-call recovery action.</desc>
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .panel { fill: #fbfdff; stroke: #cbd5e1; stroke-width: 2; }
+      .static { fill: #f8fafc; stroke: #64748b; stroke-width: 2; }
+      .policy { fill: #eaf2ff; stroke: #2563eb; stroke-width: 2; }
+      .environment { fill: #e6f7f4; stroke: #0f766e; stroke-width: 2; }
+      .error { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; }
+      .success { fill: #ecfdf5; stroke: #059669; stroke-width: 2.4; }
+      .title { font-family: Inter, Arial, sans-serif; font-size: 31px; font-weight: 700; fill: #0f172a; }
+      .subtitle { font-family: Inter, Arial, sans-serif; font-size: 17px; font-weight: 500; fill: #475569; }
+      .panelTitle { font-family: Inter, Arial, sans-serif; font-size: 22px; font-weight: 700; fill: #0f172a; }
+      .label { font-family: Inter, Arial, sans-serif; font-size: 17px; font-weight: 700; fill: #0f172a; }
+      .body { font-family: Inter, Arial, sans-serif; font-size: 15px; font-weight: 500; fill: #475569; }
+      .small { font-family: Inter, Arial, sans-serif; font-size: 14px; font-weight: 550; fill: #475569; }
+      .errorText { font-family: Inter, Arial, sans-serif; font-size: 15px; font-weight: 700; fill: #c2410c; }
+      .successText { font-family: Inter, Arial, sans-serif; font-size: 15px; font-weight: 700; fill: #047857; }
+      .arrow { fill: none; stroke: #64748b; stroke-width: 2.4; marker-end: url(#arrow); }
+      .tealArrow { fill: none; stroke: #0f766e; stroke-width: 2.4; marker-end: url(#arrowTeal); }
+      .orangeArrow { fill: none; stroke: #ea580c; stroke-width: 2.4; marker-end: url(#arrowOrange); }
+      .greenArrow { fill: none; stroke: #059669; stroke-width: 2.4; marker-end: url(#arrowGreen); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 Z" fill="#64748b"/></marker>
+    <marker id="arrowTeal" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 Z" fill="#0f766e"/></marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 Z" fill="#ea580c"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L10,5 L0,10 Z" fill="#059669"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1440" height="1120"/>
+  <text class="title" x="720" y="43" text-anchor="middle">ToolWeave Data &amp; Trajectory Anatomy</text>
+  <text class="subtitle" x="720" y="72" text-anchor="middle">Static BFCL task data becomes a stateful on-policy trajectory only through runtime interaction</text>
+
+  <rect class="panel" x="40" y="98" rx="20" ry="20" width="1360" height="590"/>
+  <text class="panelTitle" x="70" y="136">Four-level runtime hierarchy</text>
+  <text class="body" x="70" y="162">BFCL Sample  →  User Turn  →  Interaction Turn  →  Calls inside one tool-call action</text>
+
+  <rect class="static" x="75" y="205" rx="16" ry="16" width="270" height="300"/>
+  <text class="label" x="210" y="240" text-anchor="middle">Static BFCL Sample</text>
+  <line x1="100" y1="258" x2="320" y2="258" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text class="body" x="105" y="292">• user questions</text>
+  <text class="body" x="105" y="326">• ground-truth calls</text>
+  <text class="body" x="105" y="360">• available functions</text>
+  <text class="body" x="105" y="394">• initial environment</text>
+  <text class="body" x="105" y="428">• BFCL data type</text>
+  <text class="small" x="210" y="468" text-anchor="middle">No prewritten</text>
+  <text class="small" x="210" y="489" text-anchor="middle">interaction trajectory</text>
+
+  <path class="arrow" d="M345 355 H395"/>
+  <text class="small" x="370" y="337" text-anchor="middle">run</text>
+
+  <rect class="policy" x="405" y="185" rx="18" ry="18" width="940" height="435"/>
+  <text class="label" x="435" y="220">User Turn u</text>
+  <text class="small" x="1315" y="220" text-anchor="end">statefully connected inside one rollout</text>
+
+  <text class="body" x="435" y="258">Interaction t=0</text>
+  <rect class="static" x="435" y="278" rx="12" ry="12" width="145" height="78"/>
+  <text class="label" x="507.5" y="309" text-anchor="middle">Context o_t</text>
+  <text class="small" x="507.5" y="333" text-anchor="middle">input context</text>
+
+  <rect class="policy" x="620" y="278" rx="12" ry="12" width="150" height="78"/>
+  <text class="label" x="695" y="309" text-anchor="middle">Policy</text>
+  <text class="small" x="695" y="333" text-anchor="middle">one generation</text>
+
+  <rect class="policy" x="810" y="268" rx="12" ry="12" width="205" height="98"/>
+  <text class="label" x="912.5" y="301" text-anchor="middle">ONE action block</text>
+  <text class="small" x="912.5" y="326" text-anchor="middle">[call1, call2, ...]</text>
+  <text class="small" x="912.5" y="348" text-anchor="middle">one or multiple calls</text>
+
+  <rect class="environment" x="1055" y="278" rx="12" ry="12" width="130" height="78"/>
+  <text class="label" x="1120" y="309" text-anchor="middle">BFCL VM</text>
+  <text class="small" x="1120" y="333" text-anchor="middle">execute all</text>
+
+  <rect class="environment" x="1225" y="278" rx="12" ry="12" width="95" height="78"/>
+  <text class="label" x="1272.5" y="309" text-anchor="middle">o_t+1</text>
+  <text class="small" x="1272.5" y="333" text-anchor="middle">feedback</text>
+
+  <path class="arrow" d="M580 317 H610"/>
+  <path class="arrow" d="M770 317 H800"/>
+  <path class="tealArrow" d="M1015 317 H1045"/>
+  <path class="tealArrow" d="M1185 317 H1215"/>
+
+  <text class="body" x="435" y="405">Interaction t=1</text>
+  <rect class="environment" x="435" y="425" rx="12" ry="12" width="185" height="74"/>
+  <text class="label" x="527.5" y="455" text-anchor="middle">Previous feedback</text>
+  <text class="small" x="527.5" y="478" text-anchor="middle">enters current context</text>
+
+  <rect class="policy" x="680" y="425" rx="12" ry="12" width="185" height="74"/>
+  <text class="label" x="772.5" y="455" text-anchor="middle">Generate again</text>
+  <text class="small" x="772.5" y="478" text-anchor="middle">same rollout</text>
+
+  <rect class="environment" x="925" y="425" rx="12" ry="12" width="190" height="74"/>
+  <text class="label" x="1020" y="455" text-anchor="middle">Parse + execute</text>
+  <text class="small" x="1020" y="478" text-anchor="middle">or parser feedback</text>
+
+  <rect class="static" x="1175" y="425" rx="12" ry="12" width="145" height="74"/>
+  <text class="label" x="1247.5" y="455" text-anchor="middle">Continue</text>
+  <text class="small" x="1247.5" y="478" text-anchor="middle">until complete</text>
+
+  <path class="tealArrow" d="M620 462 H670"/>
+  <path class="arrow" d="M865 462 H915"/>
+  <path class="arrow" d="M1115 462 H1165"/>
+
+  <rect class="policy" x="560" y="540" rx="12" ry="12" width="190" height="55"/>
+  <text class="small" x="655" y="573" text-anchor="middle">&lt;answer&gt;...&lt;/answer&gt;</text>
+  <rect class="environment" x="850" y="540" rx="12" ry="12" width="190" height="55"/>
+  <text class="label" x="945" y="574" text-anchor="middle">Evaluate User Turn</text>
+  <rect class="static" x="1140" y="540" rx="12" ry="12" width="180" height="55"/>
+  <text class="label" x="1230" y="574" text-anchor="middle">Next User Turn</text>
+  <path class="arrow" d="M750 567.5 H840"/>
+  <path class="tealArrow" d="M1040 567.5 H1130"/>
+
+  <rect class="panel" x="40" y="718" rx="20" ry="20" width="1360" height="362"/>
+  <text class="panelTitle" x="70" y="757">Real recovery example: multi_turn_base_156 / User Turn 3</text>
+  <text class="body" x="70" y="783">One rollout · five parser failures · one clean two-call recovery action</text>
+
+  <rect class="error" x="70" y="815" rx="14" ry="14" width="190" height="135"/>
+  <text class="label" x="165" y="847" text-anchor="middle">t=0</text>
+  <text class="body" x="165" y="878" text-anchor="middle">two action blocks</text>
+  <text class="errorText" x="165" y="918" text-anchor="middle">parse error</text>
+
+  <rect class="error" x="285" y="815" rx="14" ry="14" width="190" height="135"/>
+  <text class="label" x="380" y="847" text-anchor="middle">t=1</text>
+  <text class="body" x="380" y="878" text-anchor="middle">multiple blocks again</text>
+  <text class="errorText" x="380" y="918" text-anchor="middle">parse error</text>
+
+  <rect class="error" x="500" y="815" rx="14" ry="14" width="190" height="135"/>
+  <text class="label" x="595" y="847" text-anchor="middle">t=2</text>
+  <text class="body" x="595" y="878" text-anchor="middle">comma-separated JSON</text>
+  <text class="errorText" x="595" y="918" text-anchor="middle">invalid JSON</text>
+
+  <rect class="error" x="715" y="815" rx="14" ry="14" width="190" height="135"/>
+  <text class="label" x="810" y="847" text-anchor="middle">t=3</text>
+  <text class="body" x="810" y="878" text-anchor="middle">malformed JSON again</text>
+  <text class="errorText" x="810" y="918" text-anchor="middle">invalid JSON</text>
+
+  <rect class="error" x="930" y="815" rx="14" ry="14" width="190" height="135"/>
+  <text class="label" x="1025" y="847" text-anchor="middle">t=4</text>
+  <text class="body" x="1025" y="878" text-anchor="middle">array visible; outer</text>
+  <text class="body" x="1025" y="899" text-anchor="middle">parser still rejects</text>
+  <text class="errorText" x="1025" y="928" text-anchor="middle">parse error</text>
+
+  <rect class="success" x="1145" y="802" rx="14" ry="14" width="225" height="161"/>
+  <text class="label" x="1257.5" y="834" text-anchor="middle">t=5</text>
+  <text class="successText" x="1257.5" y="862" text-anchor="middle">valid one-block array</text>
+  <rect class="environment" x="1170" y="883" rx="10" ry="10" width="175" height="27"/>
+  <text class="small" x="1257.5" y="902" text-anchor="middle">ticket_login</text>
+  <rect class="environment" x="1170" y="918" rx="10" ry="10" width="175" height="27"/>
+  <text class="small" x="1257.5" y="937" text-anchor="middle">create_ticket</text>
+
+  <path class="orangeArrow" d="M260 882.5 H275"/>
+  <path class="orangeArrow" d="M475 882.5 H490"/>
+  <path class="orangeArrow" d="M690 882.5 H705"/>
+  <path class="orangeArrow" d="M905 882.5 H920"/>
+  <path class="greenArrow" d="M1120 882.5 H1135"/>
+
+  <rect class="success" x="1115" y="997" rx="12" ry="12" width="285" height="54"/>
+  <text class="label" x="1257.5" y="1031" text-anchor="middle">User Turn 3 completes</text>
+  <path class="greenArrow" d="M1257.5 963 V987"/>
+
+  <text class="small" x="70" y="1033">Parser feedback is appended to context before the next generation.</text>
+  <text class="small" x="70" y="1056">The sequence is one raw on-policy trajectory—not six independent rollouts.</text>
+</svg>

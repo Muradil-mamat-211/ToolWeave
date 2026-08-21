@@ -38,6 +38,9 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
   - [3.2 Dual-Level Advantage Estimation](#32-dual-level-advantage-estimation)
   - [3.3 Policy Optimization](#33-policy-optimization)
     - [Real Rollout Case Study](#real-rollout-case-study-interaction-level-credit-assignment)
+      - [Why Dual-Level Credit Assignment](#why-dual-level-credit-assignment)
+      - [Full K=16 User Turn 3 Interaction Audit](#full-k16-user-turn-3-interaction-audit)
+      - [Four Credit-Assignment Regimes](#four-credit-assignment-regimes-in-one-real-k16-group)
   - [3.4 Boundary-Guided Online Data Evolution](#34-boundary-guided-online-data-evolution)
 - [Verified Online Data Synthesis](#verified-online-data-synthesis)
 - [Experiments and Results](#experiments-and-results)
@@ -481,6 +484,23 @@ $$
 
 There is no division by two and no post-fusion normalization.
 
+##### Why Dual-Level Credit Assignment?
+
+A trajectory-only global estimator assigns the same signal to every interaction in one rollout:
+
+$$
+A_{i,u,t}^{\mathrm{trajectory-only}}=A_i^{\mathrm{RODS}}.
+$$
+
+It can distinguish which rollout was better overall, but it cannot distinguish a strong interaction from a weak interaction inside that same rollout. ToolWeave adds the interaction-level residual:
+
+$$
+A_{i,u,t}^{\mathrm{ToolWeave}}
+=A_i^{\mathrm{RODS}}+A_{i,u,t}^{\mathrm{local}}.
+$$
+
+This permits $A_{i,u,t_0}^{\mathrm{ToolWeave}}\ne A_{i,u,t_1}^{\mathrm{ToolWeave}}$ and can even produce opposite signs at two interaction depths within one globally successful trajectory. The resulting dual-level credit has **strictly finer interaction-level credit resolution** than trajectory-only supervision. This is evidence about credit assignment in the observed offline group, not a claim of superior final-policy performance.
+
 For User Turn 3, 15 peer rollouts use two parsed one-call actions—`ticket_login` followed by `create_ticket`—before their terminal answer action. The special rollout instead makes five parser-rejected tool attempts and then self-corrects with one legal tool action containing a JSON array of two calls:
 
 > **Scope of the peer table.** The `Tool-attempt pattern`, `Immediate rewards`, and `Discounted returns` columns below describe **User Turn 3 only**. In contrast, **full-rollout $R_P$** and **full-rollout $A_{\mathrm{RODS}}$** are trajectory-level quantities computed over **all five BFCL user turns**. Therefore, a rollout can have `parsed → parsed` with locally perfect User Turn 3 call rewards while still having $R_P=0$ if none of its five user turns receives terminal success.
@@ -557,9 +577,79 @@ ToolWeave abstains from local relative credit when no same-depth peer exists; th
 | 15 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
 <!-- TOOLWEAVE_CASE_STUDY_K16_TABLE_END -->
 
+##### Full K=16 User Turn 3 Interaction Audit
+
+The following table is generated directly from the deterministic offline recomputation. It expands the 15 non-special peer rollouts into one row per actual User Turn 3 tool-attempt interaction; the special offset 9 is intentionally not repeated here because its six interactions are shown above. The complete 36-row K=16 artifact, including offset 9, is available as [`user_turn3_k16_full_interaction_advantage.json`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json) and [`CSV`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.csv).
+
+<!-- TOOLWEAVE_CASE_STUDY_FULL_INTERACTION_TABLE_BEGIN -->
+| Offset | t | Runtime outcome | Parsed calls | Call rewards | $r_t$ | $R_t$ | Peer support | Peer mean $R$ | Peer sample std $R$ | $A_{\mathrm{local}}$ | $A_{\mathrm{RODS}}$ | $A_{\mathrm{TW}}$ |
+|---:|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 0 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 1 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 1 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 2 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | -3.6756 | -3.4107 |
+| 2 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | -3.6756 | -3.3690 |
+| 3 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 3 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 4 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 4 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 5 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 5 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 6 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 6 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 7 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 7 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 8 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 8 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 10 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 10 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 11 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 11 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 12 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 12 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 13 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 13 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+| 14 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.825000 | 16 | 1.813468 | 0.326664 | 0.0353 | 0.2980 | 0.3333 |
+| 14 | 1 | Valid tool action | create_ticket | [0.916667] | 0.916667 | 0.916667 | 16 | 0.973298 | 0.087103 | -0.6502 | 0.2980 | -0.3521 |
+| 15 | 0 | Valid tool action | ticket_login | [1.000000] | 1.000000 | 1.900000 | 16 | 1.813468 | 0.326664 | 0.2649 | 0.2980 | 0.5629 |
+| 15 | 1 | Valid tool action | create_ticket | [1.000000] | 1.000000 | 1.000000 | 16 | 0.973298 | 0.087103 | 0.3066 | 0.2980 | 0.6046 |
+<!-- TOOLWEAVE_CASE_STUDY_FULL_INTERACTION_TABLE_END -->
+
 The local and global branches answer different questions. A final correct action can receive the same immediate reward as an efficient rollout's correct action, while discounted temporal credit separates direct execution (`[1.9, 1.0]`) from delayed recovery (`[0.59049, ..., 1.0]`). The global branch still supervises whole-trajectory success—for example, offset 2 has locally correct User Turn 3 calls but $R_P=0$ over the full five-turn sample.
 
-This real rollout illustrates the discriminative behavior of ToolWeave's proposed interaction-aware local credit; it is an offline credit-assignment case study, not a training ablation or a claim of superiority. Full call arguments, all runtime messages, parser provenance, individual rollout IDs, exact floating-point values, and the complete trajectory are available in the [dataset record](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/data/multi_turn_base_156_rollout_offset_9.json) and [K=16 analysis](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_credit_summary.json).
+##### Four Credit-Assignment Regimes in One Real K=16 Group
+
+| Observed behavior | Global signal | Local signal | Fused $A_{\mathrm{TW}}$ | What the policy learns |
+|---|:---:|:---:|---:|---|
+| Efficient + globally successful | + | + | stronger + | Reinforce efficient correct execution |
+| Globally successful + locally weaker | + | − | can become − | Do not reward a weak interaction merely because the trajectory succeeds |
+| Locally correct + globally failed | − | + | still − here, but softened | Preserve local correctness evidence while prioritizing whole-episode consistency |
+| Repeated failure + delayed recovery | − | early strong − | early stronger negative | Suppress redundant/error interactions while retaining the final correction's immediate reward |
+
+The four rows are all observed in this group:
+
+- **Offset 0 — efficient and globally successful.** User Turn 3 has $r=[1.000000,1.000000]$, $A_{\mathrm{local}}=[0.264895,0.306555]$, $A_{\mathrm{RODS}}=+0.298019$, and $A_{\mathrm{TW}}=[+0.562914,+0.604573]$. The global and local branches agree, so both correct interactions receive stronger positive reinforcement.
+
+- **Offset 14 — globally successful but locally weaker.** The second `create_ticket` call has matching reward `0.916667`, giving $A_{\mathrm{local}}=[+0.035302,-0.650158]$ while $A_{\mathrm{RODS}}=+0.298019$. The fused values are $A_{\mathrm{TW}}=[+0.333320,-0.352139]$. A trajectory-only estimator would give both interactions the same positive global value; the dual-level estimator suppresses the relatively weaker second interaction.
+
+- **Offset 2 — locally correct but globally failed.** User Turn 3 parses `ticket_login` and `create_ticket`, each matching at `1.000000`, so $r=[1.000000,1.000000]$ and $A_{\mathrm{local}}=[+0.264895,+0.306555]$. Nevertheless, the full rollout has $R_P=0$ and $A_{\mathrm{RODS}}=-3.675562$, producing $A_{\mathrm{TW}}=[-3.410667,-3.369008]$: the positive local evidence softens the negative global signal, but does not override whole-trajectory failure.
+
+  The runtime replay identifies the cause precisely. In User Turn 0, the model emitted only `get_flight_cost` with `travel_from='SAN'`, while the GT uses `travel_from='SFO'` and also requires `book_flight`. At the User Turn 3 terminal check, `state_checker` reports `multi_turn:instance_state_mismatch` in `booking_record` and `credit_card_list`: the model has an empty booking record and card balance `6000`, whereas the GT state contains booking `3426812` and balance `5000`. The TicketAPI state itself matches. Thus these User Turn 3 actions are locally correct, not locally bad; the negative fused value comes from the stateful global branch.
+
+- **Offset 9 — repeated parser failure with delayed recovery.** Its interaction rewards remain `[0,0,0,0,0,1]`. The first two depths have strong negative local advantages because same-depth peers exist; the late depths have singleton support, so $A_{\mathrm{local}}=0$. The final valid two-call action retains $r=1$ and is not directly punished by a fabricated local singleton penalty; its negative fused value is inherited from the global $A_{\mathrm{RODS}}=-0.496698$.
+
+The trajectory-only comparison is therefore explicit:
+
+$$
+\text{trajectory-only:}\quad A_t=A_{\mathrm{RODS}},
+\qquad
+\text{ToolWeave:}\quad A_t=A_{\mathrm{RODS}}+A_{\mathrm{local},t}.
+$$
+
+Offset 14 is a concrete counterexample: trajectory-only supervision would assign `+0.298019` to both User Turn 3 interactions, while the dual-level estimator assigns `+0.333320` to the first and `-0.352139` to the weaker second interaction. This is the observed evidence for strictly finer credit resolution, not a formal final-policy performance claim.
+
+This real K=16 group demonstrates the credit-assignment advantage of dual-level supervision over trajectory-only supervision: efficient locally correct behavior is strengthened; a relatively weaker interaction can be suppressed inside a successful rollout; locally correct actions remain visible inside a globally failed stateful trajectory; and delayed recovery is distinguished from direct execution. This remains an offline credit-assignment case study, not a training ablation or a claim of superior final-policy performance. Full call arguments, all runtime messages, parser provenance, individual rollout IDs, exact floating-point values, and the complete trajectory are available in the [dataset record](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/data/multi_turn_base_156_rollout_offset_9.json), [K=16 summary](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_credit_summary.json), and [full interaction audit](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json).
 
 > **Matching provenance.** The MatchTIR paper describes maximum-weight Hungarian/KM assignment. At audited public commit [`975c453`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the helper named `hungarian_assignment` performs greedy sorted-edge matching. ToolWeave's target analysis uses the paper-style one-to-one objective with SciPy's true `linear_sum_assignment(..., maximize=True)`.
 

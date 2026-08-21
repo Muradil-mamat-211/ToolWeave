@@ -108,30 +108,6 @@ $$
 
 ToolWeave matches at the **individual-call** level, accumulates temporal credit at the **actor policy-step** level, and applies policy gradients at the **trainable actor-token** level. These are related but not interchangeable units.
 
-The symbols $u$, $p$, and the labels below are illustrative only; their exact names and indices are not important. The interaction structure is what matters.
-
-```text
-One BFCL sample
-│
-├── User Turn u=0
-│   │
-│   ├── policy step d=0
-│   │   ├── call p1
-│   │   └── call p2
-│   │
-│   ├── observation
-│   │
-│   ├── policy step d=1
-│   │   └── call p3
-│   │
-│   └── ...
-│
-├── User Turn u=1
-│   └── ...
-│
-└── User Turn u=2
-```
-
 ### 2. Three-Stage Curriculum
 
 #### Stage 1 — Tool-Use Cold Start

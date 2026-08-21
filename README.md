@@ -37,6 +37,7 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
   - [3.1 Reward Modeling](#31-reward-modeling)
   - [3.2 Dual-Level Advantage Estimation](#32-dual-level-advantage-estimation)
   - [3.3 Policy Optimization](#33-policy-optimization)
+    - [Real Rollout Case Study](#real-rollout-case-study-interaction-level-credit-assignment)
   - [3.4 Boundary-Guided Online Data Evolution](#34-boundary-guided-online-data-evolution)
 - [Verified Online Data Synthesis](#verified-online-data-synthesis)
 - [Experiments and Results](#experiments-and-results)
@@ -422,6 +423,131 @@ The unchanged implementation applies the configured clipped/dual-clipped surroga
 - For GRPO tensor-contract consistency, the implementation mirrors the local residual into `returns_new = returns_global + lambda_local * A_local`; the actor-only path consumes `advantages`, not a critic return. This does not introduce critic learning.
 
 </details>
+
+#### Real Rollout Case Study: Interaction-Level Credit Assignment
+
+**Full trajectory and reproducible group statistics:** [Hugging Face dataset](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study)
+
+> [!IMPORTANT]
+> This case study describes the **target interaction-aware design**. Current ToolWeave V1 builds local credit from eligible successfully parsed tool steps, so it does not yet reproduce the exact parse-error-inclusive timeline analyzed below. The target design retains real parser-rejected tool attempts at $r_t=0$ while preserving the current global RODS signal.
+
+The audited record is JSONL line 10 (`trajectory_index=9`) from the final Stage 3 smoke artifact at `global_step=2`, `batch_index=1`, and `epoch=0`. It is one complete stateful BFCL sample with five user turns:
+
+| BFCL user turn | Ground-truth calls |
+|---:|---|
+| 0 | `get_flight_cost`, `book_flight` |
+| 1 | `retrieve_invoice` |
+| 2 | `contact_customer_support` |
+| 3 | `ticket_login`, `create_ticket` |
+| 4 | `edit_ticket` |
+
+The original sample ID is `multi_turn_base_156`. Its group/prompt UID is `1b94ddc9-3612-48c4-acf2-7b755d72330f`, shared by all $K=16$ rollouts. The individual rollout ID is `8516d0df-e6fb-4a67-969d-637bfd967e77`, with `rollout_offset=9`. The group UID is therefore not a unique rollout identifier.
+
+For this local-credit audit, $t$ indexes **tool-attempt interactions** in runtime order: successfully parsed tool actions and parser-rejected attempted tool actions. The code field `policy_step_id` supplies the corresponding runtime index. Terminal answer actions remain in the complete trajectory but do not create trailing tool-local depths.
+
+Only successfully parsed calls enter the matching matrix. For one interaction,
+
+$$
+r_{k,u,t}=
+\frac{1}{|P_{k,u,t}|}
+\sum_{p\in P_{k,u,t}}r_p,
+$$
+
+and $r_{k,u,t}=0$ when $P_{k,u,t}$ is empty. The user-turn-local return is
+
+$$
+R_{k,u,t}=
+\sum_{h=t}^{T-1}\gamma^{h-t}r_{k,u,h},
+\qquad \gamma=0.9.
+$$
+
+For the existing same-group peers at the same $(u,t)$,
+
+$$
+A_{k,u,t}^{\mathrm{local}}=
+\frac{R_{k,u,t}-\mu_{u,t}}
+{\sigma_{u,t}+10^{-6}},
+$$
+
+where $\sigma_{u,t}$ is the unbiased sample standard deviation. If peer support is below two, or the standard deviation is zero or non-finite, ToolWeave abstains with $A_{k,u,t}^{\mathrm{local}}=0$. Missing late interactions are never zero-padded. The global and fused targets are
+
+$$
+A_k^{\mathrm{RODS}}=
+\operatorname{GRPOAdv}(R_P^{(k)}),
+\qquad
+A_{k,u,t}^{\mathrm{TW}}=
+A_k^{\mathrm{RODS}}+A_{k,u,t}^{\mathrm{local}}.
+$$
+
+There is no division by two and no post-fusion normalization.
+
+For User Turn 3, 15 peer rollouts use two parsed one-call actions—`ticket_login` followed by `create_ticket`—before their terminal answer action. The special rollout instead makes five parser-rejected tool attempts and then self-corrects with one legal tool action containing a JSON array of two calls:
+
+```text
+Efficient tool-attempt chain
+t=0  ticket_login  ── r=1.000000
+                         ↓
+t=1  create_ticket ── r=1.000000
+
+Special recovery chain
+t=0  parse_error ── r=0
+         ↓
+t=1  parse_error ── r=0
+         ↓
+t=2  parse_error ── r=0
+         ↓
+t=3  parse_error ── r=0
+         ↓
+t=4  parse_error ── r=0
+         ↓
+t=5  ONE valid tool-call action ── r=1.000000
+       ├── ticket_login       call reward=1.000000
+       └── create_ticket      call reward=1.000000
+```
+
+The five errors and final action were replayed through the current runtime parser. The final two calls were scored with the current ToolWeave similarity and one true SciPy maximum-weight Hungarian assignment over the complete User Turn 3 call set.
+
+<!-- TOOLWEAVE_CASE_STUDY_CORE_TABLE_BEGIN -->
+| $t$ | Runtime outcome | Parsed calls | Call rewards | $r_t$ | $R_t$ | Peer support | Peer mean $R$ | Peer sample std $R$ | $A_{\mathrm{local}}$ | $A_{\mathrm{RODS}}$ | $A_{\mathrm{TW}}$ |
+|---:|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | Parse error | — | — | 0.000000 | 0.590490 | 16 | 1.813468 | 0.326664 | -3.7438 | -0.4967 | -4.2405 |
+| 1 | Parse error | — | — | 0.000000 | 0.656100 | 16 | 0.973298 | 0.087103 | -3.6416 | -0.4967 | -4.1383 |
+| 2 | Parse error | — | — | 0.000000 | 0.729000 | 1 | 0.729000 | 0.000000 | 0.0000 | -0.4967 | -0.4967 |
+| 3 | Parse error | — | — | 0.000000 | 0.810000 | 1 | 0.810000 | 0.000000 | 0.0000 | -0.4967 | -0.4967 |
+| 4 | Parse error | — | — | 0.000000 | 0.900000 | 1 | 0.900000 | 0.000000 | 0.0000 | -0.4967 | -0.4967 |
+| 5 | Valid two-call action | `ticket_login`, `create_ticket` | `[1.000000, 1.000000]` | 1.000000 | 1.000000 | 1 | 1.000000 | 0.000000 | 0.0000 | -0.4967 | -0.4967 |
+<!-- TOOLWEAVE_CASE_STUDY_CORE_TABLE_END -->
+
+The special rollout closes four of five expected BFCL user turns, so the source-of-truth fixed-denominator wrapper gives $R_P=4/5=0.8$. Across the 16-rollout group, the recomputed Progress Rewards have mean `0.925000` and unbiased sample standard deviation `0.251661`, producing $A_{\mathrm{RODS}}=-0.496698$ for this rollout.
+
+ToolWeave abstains from local relative credit when no same-depth peer exists; the global RODS advantage remains active. Thus the late self-correction is not assigned fabricated singleton credit, while the earlier inefficient/error interactions at $t=0$ and $t=1$ are sharply distinguished from their peers.
+
+<!-- TOOLWEAVE_CASE_STUDY_K16_TABLE_BEGIN -->
+| Offset | Tool-attempt pattern | Immediate rewards | Discounted returns | $R_P$ | $A_{\mathrm{RODS}}$ |
+|---:|---|---|---|---:|---:|
+| 0 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 1 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 2 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 0.000000 | -3.6756 |
+| 3 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 4 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 5 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 6 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 7 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 8 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| **9** | **5× parse error → parsed[2 calls]** | **`[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000]`** | **`[0.590490, 0.656100, 0.729000, 0.810000, 0.900000, 1.000000]`** | **0.800000** | **-0.4967** |
+| 10 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 11 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 12 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 13 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+| 14 | parsed → parsed | `[1.000000, 0.916667]` | `[1.825000, 0.916667]` | 1.000000 | 0.2980 |
+| 15 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
+<!-- TOOLWEAVE_CASE_STUDY_K16_TABLE_END -->
+
+The local and global branches answer different questions. A final correct action can receive the same immediate reward as an efficient rollout's correct action, while discounted temporal credit separates direct execution (`[1.9, 1.0]`) from delayed recovery (`[0.59049, ..., 1.0]`). The global branch still supervises whole-trajectory success—for example, offset 2 has locally correct User Turn 3 calls but $R_P=0$ over the full five-turn sample.
+
+This real rollout illustrates the discriminative behavior of ToolWeave's proposed interaction-aware local credit; it is an offline credit-assignment case study, not a training ablation or a claim of superiority. Full call arguments, all runtime messages, parser provenance, individual rollout IDs, exact floating-point values, and the complete trajectory are available in the [dataset record](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/data/multi_turn_base_156_rollout_offset_9.json) and [K=16 analysis](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_credit_summary.json).
+
+> **Matching provenance.** The MatchTIR paper describes maximum-weight Hungarian/KM assignment. At audited public commit [`975c453`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the helper named `hungarian_assignment` performs greedy sorted-edge matching. ToolWeave's target analysis uses the paper-style one-to-one objective with SciPy's true `linear_sum_assignment(..., maximize=True)`.
 
 ### 3.4 Boundary-Guided Online Data Evolution
 

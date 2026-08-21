@@ -37,7 +37,7 @@ static BFCL sample
 
 The resulting trajectory can contain raw assistant actions, parsed calls, observations, parser or execution failures, final answers, actor-token spans, and runtime provenance. Those objects are generated online; they are not pre-authored interaction trajectories stored in the dataset.
 
-For one prompt, ToolWeave samples a group of rollouts. In the audited smoke artifact, each prompt has `K=16` independently sampled trajectories that share one prompt-group UID but have distinct rollout IDs.
+For one prompt, ToolWeave samples a group of rollouts. In the audited formal-training artifact, each prompt has `K=16` independently sampled trajectories that share one prompt-group UID but have distinct rollout IDs.
 
 ## 3. The Four-Level Interaction Hierarchy
 
@@ -46,7 +46,7 @@ ToolWeave documentation uses the following hierarchy:
 ```text
 BFCL Sample
 └── User Turn u
-    └── Interaction Turn t
+    └── Runtime Interaction j
         └── Calls inside one tool-call action
 ```
 
@@ -54,14 +54,24 @@ The levels have different meanings:
 
 1. **BFCL Sample** — one stateful task containing multiple connected user turns.
 2. **User Turn** — one user request and its corresponding GT call structure `G_u`.
-3. **Interaction Turn** — one policy generation followed by parser/environment handling.
+3. **Runtime Interaction** — one policy generation followed by parser/environment handling.
 4. **Calls inside one action** — zero, one, or several parsed API calls emitted by that single generation.
 
-The implementation field `policy_step_id` is the zero-based **interaction-turn index within a BFCL user turn**. It resets when the runtime advances to the next user turn. The public terminology here prioritizes “interaction turn” because it describes the runtime event directly.
+The active provenance records `runtime_interaction_index=j` as the zero-based generation index within a BFCL user turn. The backward-compatible field `policy_step_id` is a legacy alias for this runtime index. Both reset when the runtime advances to the next user turn.
 
-## 4. What Defines an Interaction Turn?
+Stage 3 local credit selects an ordered **tool-attempt interaction** subsequence, indexed by `tool_attempt_index=t`, from those runtime interactions:
 
-One interaction turn begins from the current context and ends after the runtime returns one new observation or advances the BFCL user turn:
+- a successfully parsed `tool_call` is included;
+- a parser-rejected tool attempt is included when its attempted-action classification and temporal provenance are reliable;
+- a valid answer is not part of the tool-local timeline and remains global-only;
+- an action whose attempted type cannot be classified reliably fails closed and is not assigned a fabricated local event; and
+- every call inside one valid multi-call action remains inside the same $t$ rather than becoming a separate temporal step.
+
+Thus $j$ counts every assistant generation, while $t$ counts only provenance-reliable tool attempts. This section maps runtime data to the implemented terminology; the complete reward and advantage equations remain in the main README.
+
+## 4. What Defines a Runtime Interaction?
+
+One runtime interaction begins from the current context and ends after the runtime returns one new observation or advances the BFCL user turn:
 
 ```text
 current context / observation
@@ -83,7 +93,7 @@ environment executes all parsed calls
 one new observation enters the context
         |
         v
-next interaction turn
+next runtime interaction
 ```
 
 Alternatively, the generation can end with an answer:
@@ -115,7 +125,7 @@ The executable outer protocol accepts one thinking block and exactly one action 
 </tool_call>
 ```
 
-The body may be one JSON object or a JSON array. An array represents several executable calls inside **one** interaction turn. The runtime parses that complete action, executes all parsed calls, and returns one environment-feedback message containing the execution results.
+The body may be one JSON object or a JSON array. An array represents several executable calls inside **one** runtime interaction and one tool-attempt interaction. The runtime parses that complete action, executes all parsed calls, and returns one environment-feedback message containing the execution results.
 
 The following is not one valid multi-call interaction:
 
@@ -176,7 +186,7 @@ Here the two GT calls are ultimately represented by two parsed calls inside one 
 
 ### Case Study: Recovering from Tool-Call Format Errors
 
-The audited record is JSONL line 10 of `stage3_full_smoke_final_20260812T123540Z/training/update_2/raw_trajectories.jsonl`:
+The audited record is JSONL line 10 of the Stage 3 formal-training rollout artifact:
 
 | Identity field | Audited value |
 |---|---|
@@ -191,18 +201,18 @@ The prompt-group UID is shared by all 16 rollouts sampled for this prompt. It is
 
 The runtime-recorded sequence for User Turn 3 is:
 
-| Interaction | Recorded action shape | Parser result |
+| Runtime interaction / tool-attempt index | Recorded action shape | Parser result |
 |---:|---|---|
-| `t=0` | Two separate `<tool_call>` blocks | `parse_error`: multiple tool-call pairs |
-| `t=1` | Again emits two action blocks | `parse_error`: multiple tool-call pairs |
-| `t=2` | One visible action block with comma-separated JSON objects but no array | `parse_error`: invalid JSON |
-| `t=3` | Repeats the malformed comma-separated form | `parse_error`: invalid JSON |
-| `t=4` | The visible action block contains a valid two-object JSON array, but the reasoning text itself includes a literal `<tool_call>` opener | `parse_error`: the outer parser extracts contaminated content and rejects it as invalid JSON |
-| `t=5` | One clean action block containing one valid JSON array | `tool_call`: parses `ticket_login` and `create_ticket` |
+| `j=0 / t=0` | Two separate `<tool_call>` blocks | `parse_error`: multiple tool-call pairs |
+| `j=1 / t=1` | Again emits two action blocks | `parse_error`: multiple tool-call pairs |
+| `j=2 / t=2` | One visible action block with comma-separated JSON objects but no array | `parse_error`: invalid JSON |
+| `j=3 / t=3` | Repeats the malformed comma-separated form | `parse_error`: invalid JSON |
+| `j=4 / t=4` | The visible action block contains a valid two-object JSON array, but the reasoning text itself includes a literal `<tool_call>` opener | `parse_error`: the outer parser extracts contaminated content and rejects it as invalid JSON |
+| `j=5 / t=5` | One clean action block containing one valid JSON array | `tool_call`: parses `ticket_login` and `create_ticket` |
 
 The `t=4` diagnosis follows the actual parser order: its tag regular expression scans the complete response, including reasoning text, before JSON decoding. The literal opener inside `<think>` is therefore visible to the outer grammar.
 
-These are **not six new rollouts**. They are six interaction turns inside:
+These are **not six new rollouts**. They are six runtime interactions—and, because each is reliably identified as a tool attempt, six tool-attempt interactions—inside:
 
 ```text
 ONE rollout trajectory
@@ -233,7 +243,7 @@ The following values were recomputed by parsing all 512 JSONL records and replay
 | Mean user turns per trajectory | 4.53125 |
 | Total recorded interaction turns | 5,173 |
 
-`global_step=2` labels the second training-step update bundle in this smoke run. It is training metadata, not a user-turn, interaction-turn, or rollout identifier.
+`global_step=2` labels the second training-step update bundle in this formal-training run. It is training metadata, not a user-turn, interaction-turn, or rollout identifier.
 
 ### Four-type balance
 
@@ -261,9 +271,9 @@ Among the 2,827 parsed tool-call interactions:
 
 - 2,826 contain exactly one parsed call;
 - exactly one contains two parsed calls; and
-- that unique two-call interaction is `multi_turn_base_156`, rollout ID `8516d0df-e6fb-4a67-969d-637bfd967e77`, User Turn 3, Interaction Turn 5.
+- that unique two-call interaction is `multi_turn_base_156`, rollout ID `8516d0df-e6fb-4a67-969d-637bfd967e77`, User Turn 3, runtime interaction `j=5` / tool-attempt interaction `t=5`.
 
-For an observed recovery statistic, define a parser-error user turn as **same-turn recovered** when any later interaction with the same `user_turn_id` has `response_type` in `{tool_call, answer}`. Under that exact definition, 105 of 161 turns recover (`65.22%`). A stricter terminal criterion—requiring a parsed action after the **final** parser error—gives 102 of 161 (`63.35%`). These are descriptive measurements of this smoke artifact, not BFCL benchmark metrics.
+For an observed recovery statistic, define a parser-error user turn as **same-turn recovered** when any later interaction with the same `user_turn_id` has `response_type` in `{tool_call, answer}`. Under that exact definition, 105 of 161 turns recover (`65.22%`). A stricter terminal criterion—requiring a parsed action after the **final** parser error—gives 102 of 161 (`63.35%`). These are descriptive measurements of this formal-training artifact, not BFCL benchmark metrics.
 
 Parser replay produced zero response-type mismatches, structured-call replay produced zero call-list mismatches, all prompt groups contained offsets `0..15`, and all per-user-turn `policy_step_id` sequences were contiguous from zero.
 
@@ -287,10 +297,10 @@ ToolWeave uses the following structural analogy when discussing interaction-loca
 | MatchTIR structure | ToolWeave/BFCL structure |
 |---|---|
 | MatchTIR query | BFCL user turn |
-| MatchTIR interaction turn | ToolWeave interaction turn (`policy_step_id` in code) |
+| MatchTIR interaction turn | ToolWeave tool-attempt interaction (`tool_attempt_index`), selected from runtime interactions |
 | Predicted calls in one interaction | Parsed calls inside one ToolWeave tool-call action |
 
-The analogy is not dataset identity. A BFCL sample contains multiple statefully connected user turns, whereas a MatchTIR task uses a single-query trajectory. Interaction turns are the natural temporal units available to a MatchTIR-style local-credit method, but this document intentionally does not freeze or extend the project’s local-credit algorithm.
+The analogy is not dataset identity. A BFCL sample contains multiple statefully connected user turns, whereas a MatchTIR task uses a single-query trajectory. ToolWeave's implemented local method operates on the provenance-reliable tool-attempt subsequence described above; this data document intentionally leaves its mathematical definition in the main README rather than duplicating it here.
 
 ## 11. Field Reference
 
@@ -305,8 +315,14 @@ The analogy is not dataset identity. A BFCL sample contains multiple statefully 
 | `matchtir_provenance.rollout_id` | Independent identity of one sampled rollout trajectory. |
 | `matchtir_provenance.rollout_offset` | Zero-based rollout position inside the prompt’s `K`-sample group. |
 | `user_turn_id` | Zero-based BFCL user-turn index inside one stateful sample. |
-| `policy_step_id` | Code name for the zero-based interaction-turn index inside one user turn; resets at each new user turn. |
+| `policy_step_id` | Backward-compatible legacy name for the zero-based runtime-generation index inside one user turn. |
+| `runtime_interaction_index` | Explicit zero-based index $j$ for every assistant generation inside one user turn. |
+| `tool_attempt_index` | Zero-based local index $t$ assigned only to provenance-reliable tool attempts; absent for answers and unclassified actions. |
 | `response_type` | Runtime parser classification: `tool_call`, `answer`, or `parse_error`. |
+| `attempted_action_type` | Parser-grounded attempted action: `tool_call`, `answer`, or `unknown`. |
+| `temporal_provenance_reliable` | Whether rollout ownership, user-turn ownership, runtime ordering, and attempted-action timing are trustworthy. |
+| `actor_span_reliable` | Whether the assistant action's actor-token interval can safely receive a local residual. |
+| `call_parse_reliable` | Whether the action produced successfully parsed structured calls; false for parser-rejected tool attempts. |
 | `calls` | Structured individual calls parsed from one valid tool-call action; grouping inside the interaction is preserved. |
 | `actor_span` | Response-relative half-open token interval `[start, end)` for the policy-generated assistant action. Environment tokens are outside this actor span. |
 | `ground_truth` | Static BFCL per-user-turn expected call structure copied into rollout provenance. It does not prescribe interaction segmentation. |

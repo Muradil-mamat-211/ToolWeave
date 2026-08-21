@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1060" viewBox="0 0 1440 1060" role="img" aria-labelledby="title desc">
   <title id="title">ToolWeave Stage 3 method</title>
-  <desc id="desc">Four panels show multi-turn rollout progress, one-to-one call matching, dual-level advantage estimation, and asynchronous boundary-guided data evolution.</desc>
+  <desc id="desc">Four panels show multi-turn rollout progress, one-to-one call matching, interaction-aware dual-level advantage estimation, and asynchronous boundary-guided data evolution.</desc>
   <defs>
     <style>
       .bg { fill: #ffffff; }
@@ -96,7 +96,7 @@
 
   <rect class="local" x="1185" y="345" rx="14" ry="14" width="175" height="76"/>
   <text class="label" x="1272.5" y="374" text-anchor="middle">Call rewards</text>
-  <text class="tiny" x="1272.5" y="397" text-anchor="middle">mean → step reward</text>
+  <text class="tiny" x="1272.5" y="397" text-anchor="middle">calls mean → one r_t</text>
   <path class="orangeArrow" d="M1282.5 296 V335"/>
 
   <text class="small" x="1035" y="468" text-anchor="middle">P3 stays unmatched: duplicate GT credit is not reused</text>
@@ -104,7 +104,7 @@
   <!-- Panel C -->
   <rect class="panel" x="35" y="530" rx="20" ry="20" width="820" height="450"/>
   <text class="panelTitle" x="65" y="567">(c) Dual-Level Advantage</text>
-  <text class="small" x="65" y="593">Global trajectory signal and local tool-step residual meet only at actor optimization</text>
+  <text class="small" x="65" y="593">Global trajectory signal and local tool-attempt residual meet only at actor optimization</text>
 
   <text class="small" x="75" y="643">GLOBAL</text>
   <rect class="rods" x="145" y="612" rx="13" ry="13" width="125" height="60"/>
@@ -120,16 +120,16 @@
   <text class="small" x="75" y="746">LOCAL</text>
   <rect class="local" x="145" y="710" rx="13" ry="13" width="120" height="68"/>
   <text class="label" x="205" y="737" text-anchor="middle">Call rewards</text>
-  <text class="tiny" x="205" y="759" text-anchor="middle">matched scores</text>
+  <text class="tiny" x="205" y="759" text-anchor="middle">parsed calls only</text>
   <rect class="local" x="295" y="710" rx="13" ry="13" width="120" height="68"/>
-  <text class="label" x="355" y="737" text-anchor="middle">Step mean</text>
-  <text class="tiny" x="355" y="759" text-anchor="middle">calls → step</text>
+  <text class="label" x="355" y="737" text-anchor="middle">Attempt mean</text>
+  <text class="tiny" x="355" y="759" text-anchor="middle">parse error → 0</text>
   <rect class="local" x="445" y="710" rx="13" ry="13" width="135" height="68"/>
   <text class="label" x="512.5" y="737" text-anchor="middle">Turn-local</text>
   <text class="tiny" x="512.5" y="759" text-anchor="middle">discounted return</text>
   <rect class="local" x="610" y="710" rx="13" ry="13" width="155" height="68"/>
-  <text class="label" x="687.5" y="737" text-anchor="middle">Ragged depth</text>
-  <text class="tiny" x="687.5" y="759" text-anchor="middle">normalization</text>
+  <text class="label" x="687.5" y="737" text-anchor="middle">Ragged (q,u,t)</text>
+  <text class="tiny" x="687.5" y="759" text-anchor="middle">same-index peers</text>
   <path class="orangeArrow" d="M265 744 H285"/>
   <path class="orangeArrow" d="M415 744 H435"/>
   <path class="orangeArrow" d="M580 744 H600"/>

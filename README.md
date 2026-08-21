@@ -17,9 +17,9 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 [![Tool Calling](https://img.shields.io/badge/Tool-Calling-0EA5E9)](#overview)
 [![BFCL](https://img.shields.io/badge/BFCL-Multi--Turn-F59E0B)](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard)
 
-🤗 [ToolWeave Stage 1 Model](https://huggingface.co/muradil211/stage1) |
-🤗 [ToolWeave Stage 2 Model](https://huggingface.co/muradil211/stage2) |
-🤗 [ToolWeave Stage 3 Reference](https://huggingface.co/muradil211/stage3)
+🤗 [ToolWeave Stage 1 Model](https://huggingface.co/muradil211/ToolWeave_stage1) |
+🤗 [ToolWeave Stage 2 Model](https://huggingface.co/muradil211/ToolWeave_stage2) |
+🤗 [ToolWeave Stage 3 Model](https://huggingface.co/muradil211/ToolWeave_stage3)
 
 </div>
 
@@ -54,9 +54,9 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 ## News and Open Resources
 
 - **2026-08:** The public method description was aligned with the audited Stage 1, Stage 2, Stage 3, and verified-synthesis implementations.
-- **Stage 1 and Stage 2 checkpoints:** [Stage 1](https://huggingface.co/muradil211/stage1) and [Stage 2](https://huggingface.co/muradil211/stage2).
+- **Stage 1 and Stage 2 checkpoints:** [Stage 1](https://huggingface.co/muradil211/ToolWeave_stage1) and [Stage 2](https://huggingface.co/muradil211/ToolWeave_stage2).
 - **Public upstream data:** [AWorld-RL / EnvTuning data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data).
-- **Stage 3 status:** the Training and Data-Generation branches are implemented and locally audited; formal ToolWeave Stage 3 training remains pending.
+- **Stage 3 status:** formal ToolWeave Stage 3 training is complete, and the final Stage 3 checkpoint is publicly available.
 
 ## Overview
 
@@ -79,7 +79,7 @@ Stage 3 deliberately has two non-blocking branches after the same rollout-derive
 | [EnvTuning](https://arxiv.org/abs/2510.10197) | Multi-turn interaction protocol, public BFCL environment path, and Stage 1 diagnostic semantics |
 | [RODS](https://arxiv.org/abs/2606.19047) | Progress Reward, boundary-driven online synthesis, and dynamic-replay concepts |
 | [MatchTIR](https://arxiv.org/abs/2601.10712) | Tool-call similarity, one-to-one local matching, and dual-level credit inspiration |
-| ToolWeave | BFCL user-turn-local return, ragged same-depth normalization, additive residual fusion, deterministic semantic hardening, and durable online lifecycle safeguards |
+| ToolWeave | BFCL user-turn-local return, ragged same-index normalization, additive residual fusion, deterministic semantic hardening, and durable online lifecycle safeguards |
 
 ## Method
 
@@ -98,19 +98,20 @@ Each rollout contains several distinct levels. Keeping them separate is essentia
 | Prompt | $q$ | One BFCL sample and its initial environment/tool contract |
 | Rollout | $\tau_i$ | One sampled stateful interaction for prompt $q$ |
 | BFCL user turn | $u$ | One expected user task inside the multi-turn sample |
-| Actor policy step | $s=1,\ldots,S_{i,u}$ | One assistant action generated while solving user turn $u$ |
-| Predicted calls | $P_{i,u,s}$ | Individual tool calls emitted by policy step $s$ |
-| User-turn call sequence | $P_{i,u}$ | All predicted calls across the tool policy steps of user turn $u$ |
+| Runtime interaction | $j=0,\ldots,J_{i,u}-1$ | One assistant generation followed by parser/environment handling |
+| Tool-attempt interaction | $t=0,\ldots,T_{i,u}-1$ | The ordered subsequence of reliably classified tool attempts: valid tool actions and parser-rejected tool attempts |
+| Parsed calls | $P_{i,u,t}$ | Successfully parsed structured calls in tool-attempt interaction $t$; empty for a rejected attempt |
+| User-turn call sequence | $P_{i,u}$ | All successfully parsed calls across the tool-attempt interactions of user turn $u$ |
 | Ground-truth calls | $G_u$ | The expected executable calls for user turn $u$ |
-| Observation | $o_{i,u,s}$ | The stateful BFCL environment result after an action |
+| Observation | $o_{i,u,j+1}$ | The parser/environment feedback produced after runtime interaction $j$ |
 
 The complete predicted-call sequence for a user turn is the duplicate-preserving concatenation
 
 $$
-P_{i,u}=\biguplus_{s=1}^{S_{i,u}}P_{i,u,s}.
+P_{i,u}=\biguplus_{t=0}^{T_{i,u}-1}P_{i,u,t}.
 $$
 
-ToolWeave matches at the **individual-call** level, accumulates temporal credit at the **actor policy-step** level, and applies policy gradients at the **trainable actor-token** level. These are related but not interchangeable units.
+Every valid answer remains a runtime interaction $j$ but does not create a tool-attempt index $t$. A malformed action whose attempted type cannot be classified reliably is also excluded from the local timeline. ToolWeave matches at the **individual-call** level, accumulates temporal credit at the **tool-attempt-interaction** level, and applies policy gradients at the **trainable actor-token** level. These are related but not interchangeable units.
 
 ### 2. Three-Stage Curriculum
 
@@ -153,7 +154,7 @@ $U_i$ is the number of expected BFCL user turns. Missing terminal outcomes, trun
 
 #### Stage 3 — Boundary-Guided Fine-Grained Online RL
 
-Stage 3 retains the same global Progress Reward and adds a MatchTIR-derived local residual for tool policy steps. In parallel, grouped $R_P$ statistics drive boundary selection and asynchronous verified synthesis. Local credit changes neither $R_P$ nor the boundary selector.
+Stage 3 retains the same global Progress Reward and adds a MatchTIR-derived, interaction-aware local residual over the ordered tool-attempt timeline. In parallel, grouped $R_P$ statistics drive boundary selection and asynchronous verified synthesis. Local credit changes neither $R_P$ nor the boundary selector.
 
 | Stage | Starting model | Primary signal | Data behavior |
 |---|---|---|---|
@@ -173,12 +174,12 @@ For a rollout $\tau_i$, ToolWeave uses the following consistent notation:
 |---|---|
 | $R_P^{(i)}$ | Scalar fixed-denominator Progress Reward |
 | $A_i^{g}$ | Group-normalized global advantage for rollout $i$ |
-| $r_{i,u,s}$ | Local reward of actor policy step $s$ in BFCL user turn $u$ |
-| $R_{i,u,s}^{\ell}$ | User-turn-local discounted return |
-| $A_{i,u,s}^{\ell}$ | Ragged same-depth normalized local advantage |
-| $A_{i,u,s}^{\mathrm{ToolWeave}}$ | Advantage used on tokens belonging to that local-active policy step |
+| $r_{i,u,t}$ | Local reward of tool-attempt interaction $t$ in BFCL user turn $u$ |
+| $R_{i,u,t}^{\ell}$ | User-turn-local discounted return over tool attempts |
+| $A_{i,u,t}^{\ell}$ | Ragged same-index normalized local advantage |
+| $A_{i,u,t}^{\mathrm{ToolWeave}}$ | Advantage used on tokens belonging to that local-active tool attempt |
 
-Implementation fields map to this paper-style notation as follows: prompt identity `uid` corresponds to $q$, `user_turn_id` to $u$, and tool-step `depth` to $s$.
+Implementation fields map to this notation as follows: prompt identity `uid` corresponds to $q$; `user_turn_id` to $u$; `runtime_interaction_index` to $j$; and `tool_attempt_index` to $t$. The backward-compatible field `policy_step_id` remains a legacy alias for the runtime generation index $j$, not the local tool-attempt index. The package path `rods_matchtir_v1` is likewise a legacy module name; the active configuration selects `interaction_aware_v2` semantics.
 
 ### 3.1 Reward Modeling
 
@@ -275,19 +276,22 @@ r_{p_a}=
 \end{cases}
 $$
 
-ToolWeave V1 uses `unmatched_penalty = 0.0`. One-to-one assignment prevents duplicate predicted calls from repeatedly claiming the same GT call, which independent per-call maxima would allow.
+The implementation uses `unmatched_penalty = 0.0`. One-to-one assignment prevents duplicate predicted calls from repeatedly claiming the same GT call, which independent per-call maxima would allow.
 
-#### Call-level reward to policy-step reward
+#### Call-level reward to interaction reward
 
-An actor policy step may emit more than one call. Individual-call rewards are averaged back to the originating policy step:
+A single tool-attempt interaction may contain more than one parsed call. Individual-call rewards are averaged back to that one interaction:
 
 $$
-r_{i,u,s}=
-\frac{1}{|P_{i,u,s}|}
-\sum_{p\in P_{i,u,s}}r_p.
+r_{i,u,t}=
+\begin{cases}
+\dfrac{1}{|P_{i,u,t}|}\displaystyle\sum_{p\in P_{i,u,t}}r_p,
+& |P_{i,u,t}|>0,\\
+0, & |P_{i,u,t}|=0.
+\end{cases}
 $$
 
-Matching resolution is the individual call; temporal and policy-gradient resolution is the actor policy step. The aggregation is a mean, not a sum.
+Only successfully parsed calls participate in matching. A reliably identified parser-rejected tool attempt therefore remains one temporal interaction with $P_{i,u,t}=\varnothing$ and $r_{i,u,t}=0$. A successfully parsed call remains in matching even if its later environment execution fails: the local branch measures tool-call semantic correctness, while the global Progress Reward measures stateful task success. Multiple calls inside one action are never converted into multiple temporal steps.
 
 ### 3.2 Dual-Level Advantage Estimation
 
@@ -296,15 +300,15 @@ Matching resolution is the individual call; temporal and policy-gradient resolut
 For the $K$ rollouts sampled from the same prompt, ToolWeave computes the unchanged GRPO advantage from $R_P$:
 
 $$
-\mu_q^g=\frac{1}{K}\sum_{j=1}^{K}R_P^{(j)},
+\mu_q^g=\frac{1}{K}\sum_{k=1}^{K}R_P^{(k)},
 $$
 
 $$
 \sigma_q^g=
 \sqrt{
 \frac{1}{K-1}
-\sum_{j=1}^{K}
-\left(R_P^{(j)}-\mu_q^g\right)^2
+\sum_{k=1}^{K}
+\left(R_P^{(k)}-\mu_q^g\right)^2
 },
 $$
 
@@ -318,100 +322,102 @@ This scalar is the trajectory-level signal and is shared by trainable actor toke
 
 #### Local discounted return
 
-Within one BFCL user turn $u$, the policy-step rewards are accumulated backward:
+Within one BFCL user turn $u$, tool-attempt interaction rewards are accumulated backward:
 
 $$
-R_{i,u,s}^{\ell}=
-\sum_{k=s}^{S_{i,u}}
-\gamma^{k-s}r_{i,u,k},
+R_{i,u,t}^{\ell}=
+\sum_{h=t}^{T_{i,u}-1}
+\gamma^{h-t}r_{i,u,h},
 \qquad \gamma=0.9.
 $$
 
-> **ToolWeave adaptation.** MatchTIR's paper discounts local reward across subsequent interaction turns. ToolWeave V1 truncates the chain inside each BFCL user turn. The accumulator resets at the next user turn, so local reward never propagates backward across a BFCL turn boundary.
+> **ToolWeave adaptation.** MatchTIR's paper discounts local reward across subsequent interaction turns. ToolWeave retains reliably identified parser-rejected tool attempts in that temporal chain at $r=0$ and truncates the chain inside each BFCL user turn. The accumulator resets at the next user turn, so local reward never propagates across a BFCL turn boundary. Valid answers do not create trailing tool-local steps.
 
-#### Ragged same-depth normalization
+#### Ragged same-index normalization
 
-Different rollouts can contain different numbers of tool policy steps. ToolWeave therefore defines the real peer set
+Different rollouts can contain different numbers of tool-attempt interactions. ToolWeave therefore defines the real peer set
 
 $$
-\mathcal{S}_{q,u,s}=
+\mathcal{S}_{q,u,t}=
 \{\,i\mid
-\tau_i\text{ actually contains an eligible tool step at user turn }u\text{ and depth }s\,\}.
+\tau_i\text{ actually contains a provenance-reliable tool attempt at user turn }u\text{ and index }t\,\}.
 $$
 
 Absent late steps are not padded with zeros. Over this ragged support,
 
 $$
-\mu_{q,u,s}^{\ell}=
-\frac{1}{|\mathcal{S}_{q,u,s}|}
-\sum_{i\in\mathcal{S}_{q,u,s}}R_{i,u,s}^{\ell},
+\mu_{q,u,t}^{\ell}=
+\frac{1}{|\mathcal{S}_{q,u,t}|}
+\sum_{i\in\mathcal{S}_{q,u,t}}R_{i,u,t}^{\ell},
 $$
 
 $$
-\sigma_{q,u,s}^{\ell}=
+\sigma_{q,u,t}^{\ell}=
 \sqrt{
-\frac{1}{|\mathcal{S}_{q,u,s}|-1}
-\sum_{i\in\mathcal{S}_{q,u,s}}
-\left(R_{i,u,s}^{\ell}-\mu_{q,u,s}^{\ell}\right)^2
+\frac{1}{|\mathcal{S}_{q,u,t}|-1}
+\sum_{i\in\mathcal{S}_{q,u,t}}
+\left(R_{i,u,t}^{\ell}-\mu_{q,u,t}^{\ell}\right)^2
 },
 $$
 
 $$
-A_{i,u,s}^{\ell}=
-\frac{R_{i,u,s}^{\ell}-\mu_{q,u,s}^{\ell}}
-{\sigma_{q,u,s}^{\ell}+\epsilon}.
+A_{i,u,t}^{\ell}=
+\frac{R_{i,u,t}^{\ell}-\mu_{q,u,t}^{\ell}}
+{\sigma_{q,u,t}^{\ell}+\epsilon}.
 $$
 
-The standard deviation is unbiased/sample standard deviation. Support smaller than two, zero variance, or a non-finite standard deviation yields $A_{i,u,s}^{\ell}=0$. In implementation terms, the normalization key is `(uid, user_turn_id, depth)`.
+The standard deviation is unbiased/sample standard deviation. Support smaller than two, zero variance, or a non-finite standard deviation yields $A_{i,u,t}^{\ell}=0$. In implementation terms, the normalization key is `(uid, user_turn_id, tool_attempt_index)`. Missing late attempts are never zero-padded or shifted to an earlier index.
 
 ### 3.3 Policy Optimization
 
 The core Stage 3 advantage is
 
 $$
-\boxed{A_{i,u,s}^{\mathrm{ToolWeave}}=A_i^g+\lambda_{\mathrm{local}}A_{i,u,s}^{\ell}}
+\boxed{A_{i,u,t}^{\mathrm{ToolWeave}}=A_i^g+\lambda_{\mathrm{local}}A_{i,u,t}^{\ell}}
 \qquad \lambda_{\mathrm{local}}=1.0.
 $$
 
-For a token inside a local-active tool policy step, the actor uses $A_i^g+A_{i,u,s}^{\ell}$. Every other trainable actor token uses $A_i^g$. There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting.
+For a token inside a local-active, actor-span-reliable tool attempt, the actor uses $A_i^g+A_{i,u,t}^{\ell}$. Every other trainable actor token uses $A_i^g$. There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting.
 
 #### Token assignment
 
-The local scalar is broadcast over the trainable actor tokens inside the originating tool-call policy-step assistant span, intersected with the existing actor response/loss mask. ToolWeave V1 does **not** define a finer per-call JSON-token-subspan objective. User messages, tool observations, environment tokens, and other non-actor positions receive zero local residual, and the implementation asserts that local values cannot leak outside the actor mask.
+The local scalar is broadcast over the trainable actor tokens inside the originating tool-attempt assistant span, intersected with the existing actor response/loss mask. This includes a parser-rejected tool attempt when its attempted-action classification and actor span are reliable. ToolWeave does **not** define a finer per-call JSON-token-subspan objective. User messages, tool observations, environment tokens, and other non-actor positions receive zero local residual, and the implementation asserts that local values cannot leak outside the actor mask.
 
 #### Implementation invariants
 
 | Condition | Local branch behavior |
 |---|---|
 | Empty GT / Missing turn | $A^{\ell}=0$; no clarification or final-answer local reward is invented |
-| Non-tool actor action | No local call credit |
-| Any unreliable tool-step provenance in an eligible user turn | The entire `(rollout, user turn)` local branch fails closed; no partial matching |
-| Invalid actor span or inconsistent call/span mapping | Local branch fails closed |
+| Valid answer | Remains a runtime interaction but does not enter the tool-attempt timeline; global-only credit |
+| Reliably classified parser-rejected tool attempt | Enters the local timeline with no parsed calls and $r=0$ |
+| Unknown or unreliable attempted-action classification | Excluded from the local timeline; fail closed rather than fabricate a tool attempt |
+| Reliable temporal provenance but unreliable actor span | Remains in the return chain, but receives no token-level local residual |
+| Successfully parsed call with environment execution failure | Participates in semantic call matching; stateful failure remains visible through $A^g$ |
 | No rollout-level provenance or batch misalignment | Exact global baseline |
 | Ragged peer support below 2 | $A^{\ell}=0$ |
 | Zero variance or non-finite sample std | $A^{\ell}=0$ |
 | Local disabled or weight set to zero | Original global tensors are returned unchanged |
 
-When the next non-empty user turn begins after a Missing turn, local depth and the discount accumulator restart from zero.
+At every new BFCL user turn, `tool_attempt_index` and the local discount accumulator restart from zero.
 
 #### PPO/GRPO actor update
 
-The fused advantage is passed to the existing actor-only PPO/GRPO path. For token $t$,
+The fused advantage is passed to the existing actor-only PPO/GRPO path. For actor-token position $z$,
 
 $$
-\rho_{i,t}=
+\rho_{i,z}=
 \exp\left(
-\log\pi_{\theta}(a_{i,t})-
-\log\pi_{\mathrm{old}}(a_{i,t})
+\log\pi_{\theta}(a_{i,z})-
+\log\pi_{\mathrm{old}}(a_{i,z})
 \right),
 $$
 
 $$
-\ell_{i,t}^{(1)}=-A_{i,t}^{\mathrm{ToolWeave}}\rho_{i,t},
+\ell_{i,z}^{(1)}=-A_{i,z}^{\mathrm{ToolWeave}}\rho_{i,z},
 \qquad
-\ell_{i,t}^{(2)}=
--A_{i,t}^{\mathrm{ToolWeave}}
-\mathrm{clip}(\rho_{i,t},1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}).
+\ell_{i,z}^{(2)}=
+-A_{i,z}^{\mathrm{ToolWeave}}
+\mathrm{clip}(\rho_{i,z},1-\epsilon_{\mathrm{low}},1+\epsilon_{\mathrm{high}}).
 $$
 
 The unchanged implementation applies the configured clipped/dual-clipped surrogate, response mask, reference KL, backward pass, and optimizer step. Local credit is not added to reward-side KL or to boundary statistics.
@@ -432,9 +438,9 @@ The unchanged implementation applies the configured clipped/dual-clipped surroga
 **Full trajectory and reproducible group statistics:** [Hugging Face dataset](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study)
 
 > [!IMPORTANT]
-> This case study describes the **target interaction-aware design**. Current ToolWeave V1 builds local credit from eligible successfully parsed tool steps, so it does not yet reproduce the exact parse-error-inclusive timeline analyzed below. The target design retains real parser-rejected tool attempts at $r_t=0$ while preserving the current global RODS signal.
+> This case study is reproduced by the **current implemented interaction-aware design**. Reliably identified parser-rejected tool attempts remain in the local tool-attempt timeline at $r_t=0$, while only successfully parsed calls enter matching and the global RODS signal remains unchanged. The stored rollout is immutable formal-training evidence; the current production implementation deterministically replays its parser/provenance timeline and trainer fusion.
 
-The audited record is JSONL line 10 (`trajectory_index=9`) from the final Stage 3 smoke artifact at `global_step=2`, `batch_index=1`, and `epoch=0`. It is one complete stateful BFCL sample with five user turns:
+The audited record is JSONL line 10 (`trajectory_index=9`) from a Stage 3 formal-training rollout artifact at `global_step=2`, `batch_index=1`, and `epoch=0`. It is one complete stateful BFCL sample with five user turns:
 
 | BFCL user turn | Ground-truth calls |
 |---:|---|
@@ -446,7 +452,7 @@ The audited record is JSONL line 10 (`trajectory_index=9`) from the final Stage 
 
 The original sample ID is `multi_turn_base_156`. Its group/prompt UID is `1b94ddc9-3612-48c4-acf2-7b755d72330f`, shared by all $K=16$ rollouts. The individual rollout ID is `8516d0df-e6fb-4a67-969d-637bfd967e77`, with `rollout_offset=9`. The group UID is therefore not a unique rollout identifier.
 
-For this local-credit audit, $t$ indexes **tool-attempt interactions** in runtime order: successfully parsed tool actions and parser-rejected attempted tool actions. The code field `policy_step_id` supplies the corresponding runtime index. Terminal answer actions remain in the complete trajectory but do not create trailing tool-local depths.
+For this local-credit audit, $j$ indexes every runtime generation and $t$ indexes the ordered **tool-attempt interaction** subsequence: successfully parsed tool actions and reliably classified parser-rejected tool attempts. The current provenance writes `runtime_interaction_index=j` and `tool_attempt_index=t`; the legacy `policy_step_id` also records $j$. Terminal answers remain in the complete trajectory but do not create trailing tool-local indices.
 
 Only successfully parsed calls enter the matching matrix. For one interaction,
 
@@ -499,7 +505,7 @@ A_{i,u,t}^{\mathrm{ToolWeave}}
 =A_i^{\mathrm{RODS}}+A_{i,u,t}^{\mathrm{local}}.
 $$
 
-This permits $A_{i,u,t_0}^{\mathrm{ToolWeave}}\ne A_{i,u,t_1}^{\mathrm{ToolWeave}}$ and can even produce opposite signs at two interaction depths within one globally successful trajectory. The resulting dual-level credit has **strictly finer interaction-level credit resolution** than trajectory-only supervision. This is evidence about credit assignment in the observed offline group, not a claim of superior final-policy performance.
+This permits $A_{i,u,t_0}^{\mathrm{ToolWeave}}\ne A_{i,u,t_1}^{\mathrm{ToolWeave}}$ and can even produce opposite signs at two tool-attempt indices within one globally successful trajectory. The resulting dual-level credit has **strictly finer interaction-level credit resolution** than trajectory-only supervision. This is evidence about credit assignment in a real formal-training K=16 group reproduced by the production implementation, not a claim of superior final-policy performance.
 
 For User Turn 3, 15 peer rollouts use two parsed one-call actions—`ticket_login` followed by `create_ticket`—before their terminal answer action. The special rollout instead makes five parser-rejected tool attempts and then self-corrects with one legal tool action containing a JSON array of two calls:
 
@@ -554,7 +560,7 @@ The five errors and final action were replayed through the current runtime parse
 
 The special rollout closes four of five expected BFCL user turns, so the source-of-truth fixed-denominator wrapper gives $R_P=4/5=0.8$. Across the 16-rollout group, the recomputed Progress Rewards have mean `0.925000` and unbiased sample standard deviation `0.251661`, producing $A_{\mathrm{RODS}}=-0.496698$ for this rollout.
 
-ToolWeave abstains from local relative credit when no same-depth peer exists; the global RODS advantage remains active. Thus the late self-correction is not assigned fabricated singleton credit, while the earlier inefficient/error interactions at $t=0$ and $t=1$ are sharply distinguished from their peers.
+ToolWeave abstains from local relative credit when no same-index peer exists; the global RODS advantage remains active. Thus the late self-correction is not assigned fabricated singleton credit, while the earlier inefficient/error interactions at $t=0$ and $t=1$ are sharply distinguished from their peers.
 
 <!-- TOOLWEAVE_CASE_STUDY_K16_TABLE_BEGIN -->
 | Offset | Tool-attempt pattern *(User Turn 3)* | Immediate rewards *(User Turn 3)* | Discounted returns *(User Turn 3)* | Full-rollout $R_P$ *(5 turns)* | Full-rollout $A_{\mathrm{RODS}}$ |
@@ -579,7 +585,7 @@ ToolWeave abstains from local relative credit when no same-depth peer exists; th
 
 ##### Full K=16 User Turn 3 Interaction Audit
 
-The following table is generated directly from the deterministic offline recomputation. It expands the 15 non-special peer rollouts into one row per actual User Turn 3 tool-attempt interaction; the special offset 9 is intentionally not repeated here because its six interactions are shown above. The complete 36-row K=16 artifact, including offset 9, is available as [`user_turn3_k16_full_interaction_advantage.json`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json) and [`CSV`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.csv).
+The following table is generated directly by deterministic replay through the production implementation. It expands the 15 non-special peer rollouts into one row per actual User Turn 3 tool-attempt interaction; the special offset 9 is intentionally not repeated here because its six interactions are shown above. The complete 36-row K=16 artifact, including offset 9, is available as [`user_turn3_k16_full_interaction_advantage.json`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json) and [`CSV`](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.csv).
 
 <!-- TOOLWEAVE_CASE_STUDY_FULL_INTERACTION_TABLE_BEGIN -->
 | Offset | t | Runtime outcome | Parsed calls | Call rewards | $r_t$ | $R_t$ | Peer support | Peer mean $R$ | Peer sample std $R$ | $A_{\mathrm{local}}$ | $A_{\mathrm{RODS}}$ | $A_{\mathrm{TW}}$ |
@@ -637,7 +643,7 @@ The four rows are all observed in this group:
 
   The runtime replay identifies the cause precisely. In User Turn 0, the model emitted only `get_flight_cost` with `travel_from='SAN'`, while the GT uses `travel_from='SFO'` and also requires `book_flight`. At the User Turn 3 terminal check, `state_checker` reports `multi_turn:instance_state_mismatch` in `booking_record` and `credit_card_list`: the model has an empty booking record and card balance `6000`, whereas the GT state contains booking `3426812` and balance `5000`. The TicketAPI state itself matches. Thus these User Turn 3 actions are locally correct, not locally bad; the negative fused value comes from the stateful global branch.
 
-- **Offset 9 — repeated parser failure with delayed recovery.** Its interaction rewards remain `[0,0,0,0,0,1]`. The first two depths have strong negative local advantages because same-depth peers exist; the late depths have singleton support, so $A_{\mathrm{local}}=0$. The final valid two-call action retains $r=1$ and is not directly punished by a fabricated local singleton penalty; its negative fused value is inherited from the global $A_{\mathrm{RODS}}=-0.496698$.
+- **Offset 9 — repeated parser failure with delayed recovery.** Its interaction rewards remain `[0,0,0,0,0,1]`. The first two tool-attempt indices have strong negative local advantages because same-index peers exist; the later indices have singleton support, so $A_{\mathrm{local}}=0$. The final valid two-call action retains $r=1$ and is not directly punished by a fabricated local singleton penalty; its negative fused value is inherited from the global $A_{\mathrm{RODS}}=-0.496698$.
 
 The trajectory-only comparison is therefore explicit:
 
@@ -649,9 +655,9 @@ $$
 
 Offset 14 is a concrete counterexample: trajectory-only supervision would assign `+0.298019` to both User Turn 3 interactions, while the dual-level estimator assigns `+0.333320` to the first and `-0.352139` to the weaker second interaction. This is the observed evidence for strictly finer credit resolution, not a formal final-policy performance claim.
 
-This real K=16 group demonstrates the credit-assignment advantage of dual-level supervision over trajectory-only supervision: efficient locally correct behavior is strengthened; a relatively weaker interaction can be suppressed inside a successful rollout; locally correct actions remain visible inside a globally failed stateful trajectory; and delayed recovery is distinguished from direct execution. This remains an offline credit-assignment case study, not a training ablation or a claim of superior final-policy performance. Full call arguments, all runtime messages, parser provenance, individual rollout IDs, exact floating-point values, and the complete trajectory are available in the [dataset record](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/data/multi_turn_base_156_rollout_offset_9.json), [K=16 summary](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_credit_summary.json), and [full interaction audit](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json).
+This real K=16 group demonstrates the credit-assignment advantage of dual-level supervision over trajectory-only supervision: efficient locally correct behavior is strengthened; a relatively weaker interaction can be suppressed inside a successful rollout; locally correct actions remain visible inside a globally failed stateful trajectory; and delayed recovery is distinguished from direct execution. This is a formal-training rollout credit-assignment case study, not a controlled training ablation or a claim of superior final-policy performance. Full call arguments, all runtime messages, parser provenance, individual rollout IDs, exact floating-point values, and the complete trajectory are available in the [dataset record](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/data/multi_turn_base_156_rollout_offset_9.json), [K=16 summary](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_credit_summary.json), and [full interaction audit](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study/blob/main/analysis/user_turn3_k16_full_interaction_advantage.json).
 
-> **Matching provenance.** The MatchTIR paper describes maximum-weight Hungarian/KM assignment. At audited public commit [`975c453`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the helper named `hungarian_assignment` performs greedy sorted-edge matching. ToolWeave's target analysis uses the paper-style one-to-one objective with SciPy's true `linear_sum_assignment(..., maximize=True)`.
+> **Matching provenance.** The MatchTIR paper describes maximum-weight Hungarian/KM assignment. At audited public commit [`975c453`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the helper named `hungarian_assignment` performs greedy sorted-edge matching. ToolWeave's implemented solver uses the paper-style one-to-one objective with SciPy's true `linear_sum_assignment(..., maximize=True)`.
 
 ### 3.4 Boundary-Guided Online Data Evolution
 
@@ -681,7 +687,7 @@ $$
 \sum_{\tau}M_{\tau}=M.
 $$
 
-There is no quota redistribution when one type has too few eligible samples. The paper specifies the mechanism but does not publish one unique numeric default for $M$, $M_{\tau}$, or cooldown $c$; the formal configuration therefore fails fast until these project hyperparameters are explicitly supplied.
+There is no quota redistribution when one type has too few eligible samples. The paper specifies the mechanism but does not publish one unique numeric default for $M$, $M_{\tau}$, or cooldown $c$; ToolWeave's formal training configuration supplies these project hyperparameters explicitly, and validation fails fast if they are omitted.
 
 This branch consumes only $R_P$. It never consumes $A^{\ell}$, call similarities, or the fused advantage. Seed dispatch occurs after a successful optimizer update, and the separate generator proceeds asynchronously while policy learning can continue.
 
@@ -707,12 +713,12 @@ For each training update:
   1. Sample K stateful BFCL rollouts for each prompt.
   2. Compute fixed-denominator Progress Reward R_P.
   3. Group-normalize R_P to obtain A_global.
-  4. Match predicted and GT tool calls once per BFCL user turn.
-  5. Convert matched similarities into individual-call rewards.
-  6. Average call rewards back to each actor policy step.
+  4. Classify runtime interactions and build the ordered tool-attempt subsequence.
+  5. Match successfully parsed calls to GT once per BFCL user turn.
+  6. Average call rewards inside each tool-attempt interaction; parser-rejected attempts receive r=0.
   7. Compute discounted local returns within each BFCL user turn.
-  8. Normalize over ragged same-depth rollout peers to obtain A_local.
-  9. Form A_ToolWeave = A_global + A_local on local-active actor spans.
+  8. Normalize over ragged (prompt, user turn, tool-attempt index) peers to obtain A_local.
+  9. Form A_ToolWeave = A_global + A_local on reliable local-active actor spans.
  10. Run the unchanged PPO/GRPO actor update.
  11. Asynchronously select boundary seeds from grouped R_P only.
  12. Synthesize and validate executable candidate trajectories.
@@ -725,11 +731,14 @@ For each training update:
 | Responsibility | Audited workspace source |
 |---|---|
 | Global GRPO followed by residual fusion | `verl/verl/trainer/ppo/ray_trainer.py` |
-| Structured rollout provenance | `env_tuning/rods_matchtir_v1/provenance.py` and the interaction stack |
+| Parser classification and runtime/tool-attempt indexing | `env_tuning/interaction/utils.py`, `response_handler.py`, and `new_multi_turn_fc.py` |
+| Structured rollout provenance and actor-span binding | `env_tuning/rods_matchtir_v1/provenance.py` and the veRL rollout schema |
 | Call similarity and maximum-weight assignment | `env_tuning/rods_matchtir_v1/matching.py` |
-| Step reward, turn-local return, ragged normalization, and fusion | `env_tuning/rods_matchtir_v1/advantage.py` |
+| Interaction reward, turn-local return, ragged normalization, token residual, and fusion | `env_tuning/rods_matchtir_v1/advantage.py` |
 | Boundary selection and next-epoch lifecycle | `env_tuning/rods_matchtir_v1/lifecycle.py` |
 | Verified synthesis | `env_tuning/rods_data_generation_v1/` |
+
+The `rods_matchtir_v1` directory name is retained for import compatibility. Its active Stage 3 local-credit mode is `interaction_aware_v2`.
 
 | Local-credit setting | Value |
 |---|---:|
@@ -939,7 +948,7 @@ The paired overall improvement is `+0.0839`, with a paired 95% bootstrap interva
 
 ### Stage 3
 
-The Stage 3 Training and Data-Generation branches have passed deterministic CPU tests and targeted online integration audits. **Formal five-epoch ToolWeave Stage 3 training has not been launched**, so no final Stage 3 checkpoint or benchmark claim is reported here.
+Formal ToolWeave Stage 3 training is complete, and the final Stage 3 checkpoint is public. The interaction-aware credit path additionally passes deterministic unit tests, the full relevant regression suite, a real K=16 production replay, and the trainer tensor-contract integration smoke described above. This README does not convert those implementation checks into an official BFCL leaderboard claim.
 
 <details>
 <summary>Audited Stage 1/2 training configuration</summary>
@@ -970,17 +979,17 @@ The Stage 3 Training and Data-Generation branches have passed deterministic CPU 
 
 | Model | Stage | Description | Status | Link |
 |---|---|---|---|---|
-| `ToolWeave-Stage1-4B` | Stage 1 | Selected merged update-25 checkpoint after the Stage 1 gate | Public checkpoint; release documentation pending | [Hugging Face](https://huggingface.co/muradil211/stage1) |
-| `ToolWeave-Stage2-4B` | Stage 2 | Selected merged update-25 checkpoint initialized from Stage 1 update 25 | Public checkpoint; release documentation pending | [Hugging Face](https://huggingface.co/muradil211/stage2) |
-| `Qwen3-4B-RODS` reference | Stage 3 reference | Public RODS checkpoint stored in the Stage 3 repository | Reference only; not a ToolWeave final model | [Hugging Face](https://huggingface.co/muradil211/stage3) |
+| `ToolWeave_stage1` | Stage 1 | Selected merged update-25 checkpoint after the Stage 1 gate | Public selected checkpoint | [Hugging Face](https://huggingface.co/muradil211/ToolWeave_stage1) |
+| `ToolWeave_stage2` | Stage 2 | Selected merged update-25 checkpoint initialized from Stage 1 update 25 | Public selected checkpoint | [Hugging Face](https://huggingface.co/muradil211/ToolWeave_stage2) |
+| `ToolWeave_stage3` | Stage 3 | Final checkpoint after formal boundary-guided interaction-aware online reinforcement learning | Final ToolWeave Stage 3 model | [Hugging Face](https://huggingface.co/muradil211/ToolWeave_stage3) |
 
-The model links do not imply that the full reproducibility package has already been released. The Stage 3 link points to a public RODS reference checkpoint, not a completed ToolWeave Stage 3 model.
+The model links do not imply that the full reproducibility package has already been released. The Stage 3 link points to the completed final ToolWeave Stage 3 model.
 
 ## Data
 
 ToolWeave does not rehost upstream BFCL/EnvTuning data in this documentation release.
 
-**Trajectory anatomy.** See [Data & Trajectory Anatomy](docs/data-and-trajectories.md) for the BFCL sample → user turn → interaction turn → tool-call hierarchy and a real parser-recovery rollout.
+**Trajectory anatomy.** See [Data & Trajectory Anatomy](docs/data-and-trajectories.md) for the BFCL sample → user turn → runtime interaction → tool-attempt interaction → parsed-call hierarchy and a real parser-recovery rollout.
 
 | Resource | Composition and role | Source |
 |---|---|---|
@@ -988,7 +997,7 @@ ToolWeave does not rehost upstream BFCL/EnvTuning data in this documentation rel
 | Stage 3 original pool | 400 rows: 100 per BFCL multi-turn category | [AWorld-RL `bfcl_train.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train.parquet) |
 | Held-in evaluation | 400 rows: 100-row validation + 300-row test | [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) + [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet) |
 | Original benchmark source | BFCL V3 Multi-Turn | [BFCL dataset](https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard) and [repository data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data) |
-| Generated Stage 3 candidates | Execution- and semantics-validated online replay rows | Project artifact; public release pending |
+| Generated Stage 3 candidates | Execution- and semantics-validated online replay rows | Formal-training project artifact; separate data release not included here |
 
 These parquet rows provide prompts, tools, environment metadata, and reward-side GT for executable RL interaction; ToolWeave does not describe them as supervised trajectory-imitation data.
 
@@ -1020,7 +1029,10 @@ Training commands, generation commands, and the reproducibility package will be 
 ```text
 ToolWeave/
 ├── README.md
+├── docs/
+│   └── data-and-trajectories.md
 └── assets/
+    ├── toolweave-data-anatomy.svg
     ├── toolweave-mark.svg
     ├── toolweave-pipeline.svg
     └── toolweave-stage3.svg

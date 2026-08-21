@@ -483,6 +483,20 @@ There is no division by two and no post-fusion normalization.
 
 For User Turn 3, 15 peer rollouts use two parsed one-call actions—`ticket_login` followed by `create_ticket`—before their terminal answer action. The special rollout instead makes five parser-rejected tool attempts and then self-corrects with one legal tool action containing a JSON array of two calls:
 
+> **Scope of the peer table.** The `Tool-attempt pattern`, `Immediate rewards`, and `Discounted returns` columns below describe **User Turn 3 only**. In contrast, **full-rollout $R_P$** and **full-rollout $A_{\mathrm{RODS}}$** are trajectory-level quantities computed over **all five BFCL user turns**. Therefore, a rollout can have `parsed → parsed` with locally perfect User Turn 3 call rewards while still having $R_P=0$ if none of its five user turns receives terminal success.
+
+Concretely, for each rollout,
+
+$$
+R_P=\frac{\text{number of terminally successful user turns}}{5},
+\qquad
+A_{\mathrm{RODS}}=
+\frac{R_P-\operatorname{mean}_{K=16}(R_P)}
+{\operatorname{std}_{K=16}^{\mathrm{sample}}(R_P)+10^{-6}}.
+$$
+
+Thus the table's **full-rollout $A_{\mathrm{RODS}}$** is the global, same-prompt peer-normalized advantage derived from the full-rollout $R_P$; it is not the local advantage of User Turn 3.
+
 ```text
 Efficient tool-attempt chain
 t=0  ticket_login  ── r=1.000000
@@ -523,7 +537,7 @@ The special rollout closes four of five expected BFCL user turns, so the source-
 ToolWeave abstains from local relative credit when no same-depth peer exists; the global RODS advantage remains active. Thus the late self-correction is not assigned fabricated singleton credit, while the earlier inefficient/error interactions at $t=0$ and $t=1$ are sharply distinguished from their peers.
 
 <!-- TOOLWEAVE_CASE_STUDY_K16_TABLE_BEGIN -->
-| Offset | Tool-attempt pattern | Immediate rewards | Discounted returns | $R_P$ | $A_{\mathrm{RODS}}$ |
+| Offset | Tool-attempt pattern *(User Turn 3)* | Immediate rewards *(User Turn 3)* | Discounted returns *(User Turn 3)* | Full-rollout $R_P$ *(5 turns)* | Full-rollout $A_{\mathrm{RODS}}$ |
 |---:|---|---|---|---:|---:|
 | 0 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |
 | 1 | parsed → parsed | `[1.000000, 1.000000]` | `[1.900000, 1.000000]` | 1.000000 | 0.2980 |

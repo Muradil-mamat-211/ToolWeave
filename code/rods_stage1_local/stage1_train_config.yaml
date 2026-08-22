@@ -1,0 +1,95 @@
+hydra:
+  searchpath:
+    - pkg://verl.trainer.config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+custom_reward_function:
+  path: /root/autodl-tmp/rods-workspace/code/rods_stage1_local/format_reward.py
+  name: compute_score
+
+data:
+  train_files: /root/autodl-tmp/rods-workspace/data/stage1_format/bfcl_v3_multiturn_base_100.parquet
+  val_files: /root/autodl-tmp/rods-workspace/data/stage1_format/bfcl_v3_multiturn_base_100.parquet
+  train_max_samples: 100
+  val_max_samples: 100
+  max_prompt_length: 2048
+  max_response_length: 512
+  train_batch_size: 2
+  val_batch_size: 2
+  return_raw_chat: true
+  apply_chat_template_kwargs:
+    enable_thinking: false
+  filter_overlong_prompts: false
+  truncation: left
+  dataloader_num_workers: 0
+
+actor_rollout_ref:
+  hybrid_engine: true
+  model:
+    path: /root/autodl-tmp/rods-workspace/models/Qwen3-1.7B
+    use_remove_padding: true
+    enable_gradient_checkpointing: true
+    override_config:
+      attn_implementation: eager
+  actor:
+    ppo_mini_batch_size: 16
+    use_dynamic_bsz: true
+    use_remove_padding: false
+    ppo_max_token_len_per_gpu: 4096
+    use_kl_loss: false
+  rollout:
+    name: vllm
+    mode: async
+    n_gpus_per_node: 2
+    n: 8
+    tensor_model_parallel_size: 2
+    gpu_memory_utilization: 0.90
+    max_model_len: 4096
+    max_num_batched_tokens: 8192
+    logprobs_mode: null
+    prompt_length: 2048
+    response_length: 512
+    enforce_eager: true
+    load_format: dummy
+    multi_turn:
+      enable: false
+
+algorithm:
+  adv_estimator: grpo
+  use_kl_in_reward: false
+  kl_ctrl:
+    kl_coef: 0.0
+
+reward:
+  custom_reward_function:
+    path: /root/autodl-tmp/rods-workspace/code/rods_stage1_local/format_reward.py
+    name: compute_score
+  reward_manager:
+    source: register
+    name: naive
+  reward_model:
+    enable: false
+
+trainer:
+  use_v1: false
+  n_gpus_per_node: 2
+  nnodes: 1
+  total_epochs: 1
+  total_training_steps: 5
+  project_name: rods_stage1_format
+  experiment_name: qwen3_1p7b_smoke
+  logger: [console]
+  default_local_dir: /root/autodl-tmp/rods-workspace/outputs/stage1_format_qwen3_1p7b/checkpoints
+  rollout_data_dir: /root/autodl-tmp/rods-workspace/outputs/stage1_format_qwen3_1p7b/logs/rollouts
+  validation_data_dir: /root/autodl-tmp/rods-workspace/outputs/stage1_format_qwen3_1p7b/logs/validation
+  save_freq: 5
+  test_freq: 0
+
+ray_kwargs:
+  ray_init:
+    num_cpus: 8
+    include_dashboard: false
+    object_store_memory: 209715200

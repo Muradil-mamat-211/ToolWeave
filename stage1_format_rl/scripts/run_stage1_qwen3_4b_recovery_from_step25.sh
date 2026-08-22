@@ -6,23 +6,23 @@ if [[ "${ALLOW_STAGE1_RECOVERY_TRAINING:-0}" != "1" ]]; then
     exit 2
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
 CONFIG_NAME="stage1_qwen3_4b_k16_recovery_from_step25"
-MODEL="$TOOLWEAVE_ARTIFACTS_ROOT/checkpoint_eval/merged/global_step_25"
-TRAIN_DATA="$TOOLWEAVE_DATA_ROOT/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b_recovery_from_step25"
+MODEL="$STAGE_ROOT/artifacts/checkpoint_eval/merged/global_step_25"
+TRAIN_DATA="$STAGE_ROOT/data/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b_recovery_from_step25"
 CHECKPOINT_ROOT="$OUTPUT_ROOT/checkpoints"
 FINAL_MODEL="$OUTPUT_ROOT/final_model"
 STAGING_MODEL="$OUTPUT_ROOT/.final_model_staging"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/recovery_from_step25"
+LOG_DIR="$STAGE_ROOT/logs/recovery_from_step25"
 LOG_FILE="$LOG_DIR/training.log"
 GPU_CSV="$LOG_DIR/gpu.csv"
 CPU_CSV="$LOG_DIR/cpu.csv"
 STATUS_FILE="$LOG_DIR/status.txt"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-recovery"
+TMP_ROOT="/tmp/r1r"
 
 for path in "$AWORLD/EnvTuning" "$AWORLD/EnvTuning/verl" "$MODEL" "$TRAIN_DATA"; do
     [[ -e "$path" ]] || { echo "Required path missing: $path"; exit 3; }
@@ -37,11 +37,16 @@ touch "$LOG_FILE" "$GPU_CSV" "$CPU_CSV"
 printf '%q ' python -m verl.trainer.main_ppo --config-path="$CONFIG_DIR" --config-name="$CONFIG_NAME" > "$OUTPUT_ROOT/launch_command.sh"
 printf '\n' >> "$OUTPUT_ROOT/launch_command.sh"
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-toolweave_apply_topology learner
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1
@@ -100,7 +105,7 @@ LATEST_STEP="$(tr -dc '0-9' < "$CHECKPOINT_ROOT/latest_checkpointed_iteration.tx
 LATEST_DIR="$CHECKPOINT_ROOT/global_step_$LATEST_STEP"
 ACTOR_DIR="$LATEST_DIR/actor"
 
-toolweave_safe_rm_rf "$STAGING_MODEL"
+rm -rf "$STAGING_MODEL"
 python -m verl.model_merger merge --backend fsdp --local_dir "$ACTOR_DIR" --target_dir "$STAGING_MODEL" --use_cpu_initialization
 
 FINAL_PATH="$STAGING_MODEL" SOURCE_CHECKPOINT="$LATEST_DIR" python - <<'PY'
@@ -113,8 +118,8 @@ path = Path(os.environ["FINAL_PATH"])
 payload = {
     "stage": "stage1_format_rl",
     "recovery_reason": "original run collapsed after epoch 1; held-out selection chose global_step_25",
-    "original_base_model": str(Path(os.environ["TOOLWEAVE_MODELS_ROOT"]) / "Qwen3-4B"),
-    "continuation_model": str(Path(os.environ["TOOLWEAVE_ARTIFACTS_ROOT"]) / "checkpoint_eval/merged/global_step_25"),
+    "original_base_model": "/root/autodl-tmp/rods-workspace/models/Qwen3-4B",
+    "continuation_model": "/root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/checkpoint_eval/merged/global_step_25",
     "source_checkpoint": os.environ["SOURCE_CHECKPOINT"],
     "logical_global_step": 125,
     "outer_epochs_total": 5,

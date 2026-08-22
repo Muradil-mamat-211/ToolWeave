@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import copy
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -13,10 +12,9 @@ import pandas as pd
 import pytest
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", SOURCE_ROOT)).expanduser().resolve()
-SCRIPTS = SOURCE_ROOT / "stage1_format_rl/scripts"
-ENVTUNING = SOURCE_ROOT / "code/AWorld-RL-stage1-worktree/EnvTuning"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+SCRIPTS = WORKSPACE / "stage1_format_rl/scripts"
+ENVTUNING = WORKSPACE / "code/AWorld-RL-stage1-worktree/EnvTuning"
 sys.path.insert(0, str(SCRIPTS))
 sys.path.insert(0, str(ENVTUNING))
 

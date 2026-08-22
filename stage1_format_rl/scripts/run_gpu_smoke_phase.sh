@@ -36,29 +36,34 @@ if [[ -n "${SMOKE_RUN_SUFFIX:-}" ]]; then
     RUN_ID="${RUN_ID}_${SMOKE_RUN_SUFFIX}"
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
-DATA_DIR="$TOOLWEAVE_DATA_ROOT/smoke"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/gpu_smoke"
-ARTIFACT_DIR="$TOOLWEAVE_ARTIFACTS_ROOT/gpu_smoke"
+DATA_DIR="$STAGE_ROOT/data/smoke"
+LOG_DIR="$STAGE_ROOT/logs/gpu_smoke"
+ARTIFACT_DIR="$STAGE_ROOT/artifacts/gpu_smoke"
 PHASE_ARTIFACT_DIR="$ARTIFACT_DIR/$RUN_ID"
 LOG_FILE="$LOG_DIR/${RUN_ID}.log"
 GPU_CSV="$LOG_DIR/${RUN_ID}_gpu.csv"
 CPU_CSV="$LOG_DIR/${RUN_ID}_cpu.csv"
 # Ray's plasma-store UNIX socket must fit within the 107-byte AF_UNIX limit.
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-smoke/$RUN_ID"
+TMP_ROOT="/tmp/r1s/$RUN_ID"
 
 mkdir -p "$LOG_DIR" "$PHASE_ARTIFACT_DIR" "$TMP_ROOT"
-toolweave_safe_rm_rf "$TMP_ROOT/ray" "$TMP_ROOT/triton"
+rm -rf "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$STAGE_ROOT/smoke_instrumentation:$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-toolweave_apply_topology learner
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1
@@ -142,8 +147,8 @@ COMMON_OVERRIDES=(
     "actor_rollout_ref.actor.clip_ratio_c=10.0"
     "algorithm.use_kl_in_reward=false"
     "algorithm.kl_ctrl.kl_coef=0.0"
-    "trainer.n_gpus_per_node=$TOOLWEAVE_LEARNER_GPUS_PER_NODE"
-    "trainer.nnodes=$TOOLWEAVE_NNODES"
+    "trainer.n_gpus_per_node=2"
+    "trainer.nnodes=1"
 )
 if [[ -n "${SMOKE_MAX_RESPONSE_LENGTH:-}" ]]; then
     COMMON_OVERRIDES+=("data.max_response_length=$SMOKE_MAX_RESPONSE_LENGTH")

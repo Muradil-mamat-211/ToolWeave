@@ -1,5 +1,6 @@
 # Formal Stage 3 profile: pure RODS global GRPO plus ToolWeave's implemented
-# non-answer runtime-interaction local credit.
+# non-answer runtime-interaction local credit. Paths remain machine-bound in
+# this historical undeccoupled branch.
 hydra:
   searchpath:
     - pkg://verl.trainer.config
@@ -10,13 +11,13 @@ defaults:
 
 custom_reward_function:
   # Fixed expected-user-turn denominator; unchanged from verified Stage 2.
-  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/stage1_format_rl/rewards/rods_stage2_progress_reward.py
+  path: /root/autodl-tmp/rods-workspace/stage1_format_rl/rewards/rods_stage2_progress_reward.py
   name: compute_score
 
 data:
   # Original human/BFCL seeds: 100 each of Base/MF/MP/Long Context.
-  train_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_stage3_train_all_400_shuffled_seed42.parquet
-  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_val_400.parquet
+  train_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_stage3_train_all_400_shuffled_seed42.parquet
+  val_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_val_400.parquet
   train_batch_size: 20
   max_prompt_length: 8192
   max_response_length: 10000
@@ -34,7 +35,7 @@ actor_rollout_ref:
   hybrid_engine: true
   model:
     # Hugging Face merge of the verified Stage 2 update-25 model.
-    path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage2_eval/merged/global_step_25
+    path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage2_eval/merged/global_step_25
     trust_remote_code: true
     use_remove_padding: true
     enable_gradient_checkpointing: true
@@ -92,7 +93,7 @@ actor_rollout_ref:
       enable: true
       max_assistant_turns: 100
       max_user_turns: 100
-      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config_stage2.yaml
+      interaction_config_path: /root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config_stage2.yaml
       format: qwen
       use_inference_chat_template: false
       tokenization_sanity_check_mode: "off"
@@ -138,8 +139,8 @@ trainer:
   project_name: rods_stage1_format_rl
   experiment_name: stage3_rods_matchtir_v1_training_branch
   rollout_data_dir: null
-  validation_data_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage3_rods_matchtir_v1_training_branch/validation_outputs
-  default_local_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage3_rods_matchtir_v1_training_branch/checkpoints
+  validation_data_dir: /root/autodl-tmp/rods-workspace/outputs/stage3_rods_matchtir_v1_training_branch/validation_outputs
+  default_local_dir: /root/autodl-tmp/rods-workspace/outputs/stage3_rods_matchtir_v1_training_branch/checkpoints
   default_hdfs_dir: null
   n_gpus_per_node: 2
   nnodes: 1
@@ -162,9 +163,9 @@ trainer:
     # This production Stage3 profile must refuse to launch synthesis until the
     # paper-unspecified project choices M, all M_tau, and c are supplied.
     require_seed_selection_config: true
-    seed_output_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/boundary_seeds.jsonl
-    candidate_input_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/validated_candidates.jsonl
-    state_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/training_lifecycle_state.json
+    seed_output_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_queues/boundary_seeds.jsonl
+    candidate_input_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_queues/validated_candidates.jsonl
+    state_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_queues/training_lifecycle_state.json
     boundary_low: 0.20
     boundary_high: 0.85
     # RODS specifies M, per-type M_tau, and cooldown c, but the paper does not

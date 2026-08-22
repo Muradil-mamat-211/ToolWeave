@@ -5,35 +5,16 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 from pathlib import Path
-import re
 
 import yaml
 
-from .config import ARTIFACTS_ROOT, ASSET_ROOT, DATA_ROOT, MODELS_ROOT, WORKSPACE, GeneratorConfig
+from .config import GeneratorConfig
 from .daemon import GENERATION_GUARD_ENV, daemon_from_config
 
 
 def load_config(path: str | Path) -> GeneratorConfig:
-    variables = {
-        "TOOLWEAVE_SOURCE_ROOT": str(WORKSPACE),
-        "TOOLWEAVE_ASSET_ROOT": str(ASSET_ROOT),
-        "TOOLWEAVE_MODELS_ROOT": str(MODELS_ROOT),
-        "TOOLWEAVE_DATA_ROOT": str(DATA_ROOT),
-        "TOOLWEAVE_ARTIFACTS_ROOT": str(ARTIFACTS_ROOT),
-    }
-    variables.update(os.environ)
-    pattern = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
-
-    def replace(match: re.Match[str]) -> str:
-        key = match.group(1)
-        if key not in variables:
-            raise ValueError(f"Unresolved machine-local variable in Generator config: {key}")
-        return str(variables[key])
-
-    text = pattern.sub(replace, Path(path).read_text(encoding="utf-8"))
-    raw = yaml.safe_load(text) or {}
+    raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
         raise ValueError("Generator YAML root must be an object")
     return GeneratorConfig.from_mapping(raw)

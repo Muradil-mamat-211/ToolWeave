@@ -21,26 +21,31 @@ if [[ ! -d "$MODEL_PATH" ]]; then
     exit 5
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
-VAL_FILE="${STAGE1_CHECKPOINT_EVAL_VAL_FILE:-$TOOLWEAVE_DATA_ROOT/checkpoint_eval/heldout_base_20.parquet}"
-EVAL_DIR="$TOOLWEAVE_ARTIFACTS_ROOT/checkpoint_eval/$LABEL"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/checkpoint_eval"
+VAL_FILE="${STAGE1_CHECKPOINT_EVAL_VAL_FILE:-$STAGE_ROOT/data/checkpoint_eval/heldout_base_20.parquet}"
+EVAL_DIR="$STAGE_ROOT/artifacts/checkpoint_eval/$LABEL"
+LOG_DIR="$STAGE_ROOT/logs/checkpoint_eval"
 LOG_FILE="$LOG_DIR/$LABEL.log"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-checkpoint-eval/$LABEL"
+TMP_ROOT="/tmp/r1e/$LABEL"
 
 test -f "$VAL_FILE"
 mkdir -p "$EVAL_DIR/rollouts" "$LOG_DIR" "$TMP_ROOT/ray" "$TMP_ROOT/triton"
-toolweave_safe_rm_rf "$TMP_ROOT/ray" "$TMP_ROOT/triton"
+rm -rf "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 
-toolweave_activate_conda
-toolweave_apply_topology learner
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=48
+export MKL_NUM_THREADS=48
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1

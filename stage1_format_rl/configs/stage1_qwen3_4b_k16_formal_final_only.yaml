@@ -11,12 +11,12 @@ defaults:
   - _self_
 
 custom_reward_function:
-  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/format_reward.py
+  path: /root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/format_reward.py
   name: compute_score
 
 data:
-  train_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_stage1_train_base_100.parquet
-  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_val_400.parquet
+  train_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_stage1_train_base_100.parquet
+  val_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_val_400.parquet
   max_prompt_length: 8192
   max_response_length: 16384
   train_batch_size: 4
@@ -28,7 +28,7 @@ data:
 actor_rollout_ref:
   hybrid_engine: true
   model:
-    path: ${oc.env:TOOLWEAVE_MODELS_ROOT}/Qwen3-4B
+    path: /root/autodl-tmp/rods-workspace/models/Qwen3-4B
     trust_remote_code: true
     use_remove_padding: true
     enable_gradient_checkpointing: true
@@ -78,7 +78,7 @@ actor_rollout_ref:
       enable: true
       max_assistant_turns: 100
       max_user_turns: 100
-      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml
+      interaction_config_path: /root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml
       format: qwen
       use_inference_chat_template: false
       tokenization_sanity_check_mode: "off"
@@ -115,7 +115,7 @@ trainer:
   experiment_name: qwen3_4b_k16_stage1_format_final_only
   rollout_data_dir: null
   validation_data_dir: null
-  default_local_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage1_format_qwen3_4b/.final_export_tmp
+  default_local_dir: /root/autodl-tmp/rods-workspace/outputs/stage1_format_qwen3_4b/.final_export_tmp
   default_hdfs_dir: null
   n_gpus_per_node: 2
   nnodes: 1

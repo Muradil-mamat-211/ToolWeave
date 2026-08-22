@@ -1,5 +1,4 @@
 from types import SimpleNamespace
-from pathlib import Path
 
 import numpy as np
 import yaml
@@ -29,8 +28,8 @@ def test_generation_receives_canonical_bfcl_data_source_without_removing_trainin
 
 def test_online_smoke_uses_multistage_sglang_wakeup_for_weight_sync():
     config_path = (
-        Path(__file__).resolve().parents[1]
-        / "configs/stage3_online_smoke_2x_rtxpro6000_two_updates.yaml"
+        "/root/autodl-tmp/rods-workspace/stage1_format_rl/configs/"
+        "stage3_online_smoke_2x_rtxpro6000_two_updates.yaml"
     )
     with open(config_path, encoding="utf-8") as handle:
         config = yaml.safe_load(handle)

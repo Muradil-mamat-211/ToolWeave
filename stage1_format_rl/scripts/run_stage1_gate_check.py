@@ -3,11 +3,8 @@
 import json, re, statistics, sys
 from pathlib import Path
 
-from machine_paths import project_roots
-
-ROOTS = project_roots()
-METRIC_ROOT = ROOTS.artifacts_root / "gate_vs_base/metrics"
-TRAIN_LOG = ROOTS.logs_root / "retrain_train.log"
+METRIC_ROOT = Path("/root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/gate_vs_base/metrics")
+TRAIN_LOG = Path("/root/autodl-tmp/rods-workspace/stage1_format_rl/logs/retrain_train.log")
 
 def load(name):
     p = METRIC_ROOT / f"{name}.json"

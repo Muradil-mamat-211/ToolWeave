@@ -5,30 +5,31 @@
 #   bash run_stage2_base_progress.sh --full      # formal Stage 2 (background tmux)
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
 CONFIG_NAME="stage2_qwen3_4b_k16_base_progress_batch20_plain_env"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage2_qwen3_4b_k16_base_progress_batch20_plain_env"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage2_qwen3_4b_k16_base_progress_batch20_plain_env"
 CKPT_DIR="$OUTPUT_ROOT/checkpoints"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT"
-SMOKE_DIR="$TOOLWEAVE_ARTIFACTS_ROOT/gpu_smoke/stage2_smoke"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage2-progress"
-MODEL_PATH="$TOOLWEAVE_ARTIFACTS_ROOT/gate_vs_base/merged/global_step_25"
-TRAIN_FILE="$TOOLWEAVE_DATA_ROOT/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
-VAL_BASE100="$TOOLWEAVE_DATA_ROOT/checkpoint_gate_eval/val_base_100.parquet"
+LOG_DIR="$STAGE_ROOT/logs"
+SMOKE_DIR="$STAGE_ROOT/artifacts/gpu_smoke/stage2_smoke"
+TMP_ROOT="/tmp/r1g2"
+MODEL_PATH="$STAGE_ROOT/artifacts/gate_vs_base/merged/global_step_25"
+TRAIN_FILE="$STAGE_ROOT/data/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
+VAL_BASE100="$STAGE_ROOT/data/checkpoint_gate_eval/val_base_100.parquet"
 
 setup_env() {
-    toolweave_activate_conda
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate rods
     export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-    toolweave_apply_topology learner
-    export TOKENIZERS_PARALLELISM=true
+    export CUDA_VISIBLE_DEVICES=0,1
+    export OMP_NUM_THREADS=48 MKL_NUM_THREADS=48 NUMEXPR_MAX_THREADS=48
+    export TOKENIZERS_PARALLELISM=true RAYON_NUM_THREADS=48
     export NCCL_P2P_DISABLE=1 NCCL_SHM_DISABLE=0 NCCL_IB_DISABLE=1 NCCL_DEBUG=WARN NCCL_TIMEOUT=3600
     export PYTHONUNBUFFERED=1
     unset PYTORCH_CUDA_ALLOC_CONF
-    toolweave_safe_rm_rf "$TMP_ROOT"
-    mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
+    rm -rf "$TMP_ROOT"; mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
     export TRITON_CACHE_DIR="$TMP_ROOT/triton"
     export RAY_TMPDIR="$TMP_ROOT/ray"
     export TMPDIR="$TMP_ROOT"
@@ -41,7 +42,7 @@ require_ok() {
 
 verify_plain_env() {
     echo "== Stage 2 plain-environment assertion =="
-    "$TOOLWEAVE_PYTHON" "$STAGE_ROOT/scripts/verify_stage2_plain_env.py" || exit 1
+    /root/miniconda3/envs/rods/bin/python "$STAGE_ROOT/scripts/verify_stage2_plain_env.py" || exit 1
     local fail=0
     require_ok "start model"  "$MODEL_PATH"   || fail=1
     require_ok "train data"   "$TRAIN_FILE"   || fail=1
@@ -56,8 +57,7 @@ run_smoke() {
     setup_env
     verify_plain_env
     echo "== Stage 2 smoke: 1 prompt group (K=16), no checkpoint =="
-    toolweave_safe_rm_rf "$SMOKE_DIR"
-    mkdir -p "$SMOKE_DIR"
+    rm -rf "$SMOKE_DIR"; mkdir -p "$SMOKE_DIR"
     ( cd "$AWORLD/EnvTuning" && \
       python -m verl.trainer.main_ppo \
         --config-path="$CONFIG_DIR" --config-name="$CONFIG_NAME" \

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import os
 from pathlib import Path
 from typing import Any
 
@@ -13,9 +12,8 @@ from env_tuning.rods_data_generation_v1.llm_backend import FakeLLMBackend
 from env_tuning.rods_data_generation_v1.models import SEED_SCHEMA_VERSION
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
-ASSET_ROOT = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", SOURCE_ROOT)).expanduser().resolve()
-CATALOG_DIR = ASSET_ROOT / "data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+CATALOG_DIR = WORKSPACE / "data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc"
 
 PLANNER_ADD_MULTIPLY = (
     "<reason>Preserve two arithmetic turns.</reason>"
@@ -99,9 +97,7 @@ def make_config(
             tracker_path=str(tmp_path / "tracker.json"),
             event_log_path=str(tmp_path / "events.jsonl"),
             expanded_log_dir=str(tmp_path / "expanded"),
-            production_candidate_path=str(
-                SOURCE_ROOT / ".runtime/test-production-queue-must-not-be-written.jsonl"
-            ),
+            production_candidate_path=str(WORKSPACE / "stage1_format_rl/artifacts/stage3_queues/validated_candidates.jsonl"),
         )
     return GeneratorConfig(
         llm=LLMConfig(backend="fake", model="fixture-gemma-4-31b"),

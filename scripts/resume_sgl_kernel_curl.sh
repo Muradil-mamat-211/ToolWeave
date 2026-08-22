@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -u
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../stage1_format_rl/scripts" && pwd -P)/_machine.sh"
-
 USE_PROXY="${SGL_USE_PROXY:-0}"
 if [[ "$USE_PROXY" == "1" ]]; then
   CURL_ROUTE=(--proxy "${SGL_PROXY:?SGL_PROXY is required when SGL_USE_PROXY=1}")
@@ -12,7 +10,7 @@ else
 fi
 
 URL='https://files.pythonhosted.org/packages/da/74/d804e757d7dd85aecdd534429d9335ce87b881a1601341c01a39f9b256fd/sgl_kernel-0.1.4-cp39-abi3-manylinux2014_x86_64.whl'
-DIR="$TOOLWEAVE_CACHE_ROOT/sgl_kernel_parts"
+DIR=/root/autodl-tmp/rods-workspace/cache/sgl_kernel_parts
 TOTAL=231504246
 CHUNK=16777216
 mkdir -p "$DIR"

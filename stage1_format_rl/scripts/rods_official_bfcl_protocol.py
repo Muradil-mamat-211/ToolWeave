@@ -24,12 +24,10 @@ import re
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-
-from machine_paths import project_roots
 from typing import Any, Mapping, Sequence
 
 
-WORKSPACE = project_roots().source_root
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
 GORILLA_ROOT = WORKSPACE / "code/gorilla/berkeley-function-call-leaderboard"
 QWEN_HANDLER_SOURCE = (
     GORILLA_ROOT / "bfcl_eval/model_handler/local_inference/qwen_fc.py"

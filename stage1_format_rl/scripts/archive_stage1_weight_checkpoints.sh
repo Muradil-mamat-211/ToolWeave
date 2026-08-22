@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
-toolweave_apply_topology learner
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b"
 SOURCE_ROOT="$OUTPUT_ROOT/checkpoints"
 ARCHIVE_ROOT="$OUTPUT_ROOT/weight_checkpoints"
-LOG_FILE="$TOOLWEAVE_LOGS_ROOT/formal_5epoch/stage1_weight_checkpoint_archive.log"
-STATUS_FILE="$TOOLWEAVE_LOGS_ROOT/formal_5epoch/stage1_weight_checkpoint_archive_status.txt"
+LOG_FILE="$WORKSPACE/stage1_format_rl/logs/formal_5epoch/stage1_weight_checkpoint_archive.log"
+STATUS_FILE="$WORKSPACE/stage1_format_rl/logs/formal_5epoch/stage1_weight_checkpoint_archive_status.txt"
 EXPECTED_STEPS=(25 50 75 100 125)
 
 mkdir -p "$ARCHIVE_ROOT" "$(dirname "$LOG_FILE")"
@@ -24,18 +23,17 @@ archive_step() {
     [[ ! -e "$target" ]] || return 0
     [[ -d "$source/huggingface" && -f "$source/fsdp_config.json" ]] || return 1
     mapfile -t shards < <(find "$source" -maxdepth 1 -type f \
-        -name "model_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_*.pt" | sort)
-    [[ "${#shards[@]}" -eq "$TOOLWEAVE_LEARNER_WORLD_SIZE" ]] || return 1
-    local shard
-    for shard in "${shards[@]}"; do [[ -s "$shard" ]] || return 1; done
+        -name 'model_world_size_2_rank_*.pt' | sort)
+    [[ "${#shards[@]}" -eq 2 ]] || return 1
+    [[ -s "${shards[0]}" && -s "${shards[1]}" ]] || return 1
 
-    toolweave_safe_rm_rf "$staging"
+    rm -rf "$staging"
     mkdir -p "$staging/actor"
     cp -al "${shards[@]}" "$staging/actor/"
     cp -al "$source/huggingface" "$staging/actor/"
     cp -al "$source/fsdp_config.json" "$staging/actor/"
 
-    STEP="$step" TARGET="$staging" SOURCE="$source" WORLD_SIZE="$TOOLWEAVE_LEARNER_WORLD_SIZE" "$TOOLWEAVE_PYTHON" - <<'PY'
+    STEP="$step" TARGET="$staging" SOURCE="$source" python - <<'PY'
 import json
 import os
 from datetime import datetime, timezone
@@ -44,8 +42,7 @@ from pathlib import Path
 step = int(os.environ["STEP"])
 target = Path(os.environ["TARGET"])
 actor = target / "actor"
-world_size = int(os.environ["WORLD_SIZE"])
-shards = sorted(path.name for path in actor.glob(f"model_world_size_{world_size}_rank_*.pt"))
+shards = sorted(path.name for path in actor.glob("model_world_size_2_rank_*.pt"))
 forbidden = sorted(
     path.name
     for path in actor.rglob("*")
@@ -56,17 +53,17 @@ forbidden = sorted(
         or path.name == "data.pt"
     )
 )
-if len(shards) != world_size or forbidden:
+if len(shards) != 2 or forbidden:
     raise RuntimeError(f"Invalid model-only archive: shards={shards}, forbidden={forbidden}")
 
 manifest = {
     "stage": "stage1_format_rl",
     "global_step": step,
     "epoch": step // 25,
-    "base_model": str(Path(os.environ["TOOLWEAVE_MODELS_ROOT"]) / "Qwen3-4B"),
+    "base_model": "/root/autodl-tmp/rods-workspace/models/Qwen3-4B",
     "source_actor_checkpoint": os.environ["SOURCE"],
     "checkpoint_type": "model_weights_only_fsdp_sharded",
-    "world_size": world_size,
+    "world_size": 2,
     "model_shards": shards,
     "optimizer_state_saved": False,
     "scheduler_state_saved": False,

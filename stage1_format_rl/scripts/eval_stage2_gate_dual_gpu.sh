@@ -27,14 +27,14 @@ VAL_FILE="${3:?usage: eval_stage2_gate_dual_gpu.sh MODEL_PATH LABEL VAL_FILE}"
 test -d "$MODEL_PATH"
 test -f "$VAL_FILE"
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
-EVAL_ROOT="$TOOLWEAVE_ARTIFACTS_ROOT/stage2_eval"
+EVAL_ROOT="$STAGE_ROOT/artifacts/stage2_eval"
 EVAL_DIR="$EVAL_ROOT/runs/$LABEL"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/stage2_eval"
+LOG_DIR="$STAGE_ROOT/logs/stage2_eval"
 LOG_FILE="$LOG_DIR/$LABEL.log"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage2-gate-dual/$LABEL"
+TMP_ROOT="/tmp/s2g/$LABEL"
 
 if [[ -e "$EVAL_DIR/SUCCESS" ]]; then
     echo "Evaluation already completed: $LABEL"
@@ -45,14 +45,19 @@ if [[ -e "$EVAL_DIR" ]]; then
     exit 5
 fi
 mkdir -p "$EVAL_DIR/rollouts" "$LOG_DIR"
-toolweave_safe_rm_rf "$TMP_ROOT"
+rm -rf "$TMP_ROOT"
 mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 
-toolweave_activate_conda
-toolweave_apply_topology learner
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=48
+export MKL_NUM_THREADS=48
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1
@@ -79,15 +84,15 @@ COMMAND=(
     "actor_rollout_ref.actor.use_kl_loss=false"
     "actor_rollout_ref.actor.entropy_coeff=0.0"
     "actor_rollout_ref.rollout.n=1"
-    "actor_rollout_ref.rollout.tensor_model_parallel_size=$TOOLWEAVE_ROLLOUT_TP"
+    "actor_rollout_ref.rollout.tensor_model_parallel_size=1"
     "actor_rollout_ref.rollout.gpu_memory_utilization=0.70"
     "actor_rollout_ref.rollout.val_kwargs.n=1"
     "actor_rollout_ref.rollout.val_kwargs.do_sample=false"
     "actor_rollout_ref.rollout.val_kwargs.temperature=0"
     "data.val_files=$VAL_FILE"
     "data.val_batch_size=16"
-    "trainer.n_gpus_per_node=$TOOLWEAVE_LEARNER_GPUS_PER_NODE"
-    "trainer.nnodes=$TOOLWEAVE_NNODES"
+    "trainer.n_gpus_per_node=2"
+    "trainer.nnodes=1"
     "trainer.val_before_train=true"
     "trainer.val_only=true"
     "trainer.save_freq=-1"
@@ -98,7 +103,7 @@ COMMAND=(
     "trainer.rollout_data_dir=null"
     "trainer.logger=[console]"
     "trainer.experiment_name=stage2_gate_eval_$LABEL"
-    "ray_init.num_cpus=$TOOLWEAVE_RAY_NUM_CPUS"
+    "ray_init.num_cpus=48"
 )
 
 printf '%q ' "${COMMAND[@]}" > "$EVAL_DIR/launch_command.txt"

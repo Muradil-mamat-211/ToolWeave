@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
-import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -153,8 +152,9 @@ def _official_jsonl_record(path: Path, record_id: str) -> dict:
 def test_real_stateful_gorilla_filesystem_chain_and_fresh_vm_replay(tmp_path):
     """Official base_12 state: touch -> echo dependency across user turns."""
 
-    asset_root = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", Path(__file__).resolve().parents[2]))
-    bfcl_root = asset_root / "data/Berkeley-Function-Calling-Leaderboard"
+    bfcl_root = Path(
+        "/root/autodl-tmp/rods-workspace/data/Berkeley-Function-Calling-Leaderboard"
+    )
     task = _official_jsonl_record(
         bfcl_root / "BFCL_v3_multi_turn_base.json", "multi_turn_base_12"
     )

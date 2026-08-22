@@ -4,13 +4,12 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 
-from project_paths import MODELS_ROOT, SHARED_DATA_ROOT, SOURCE_ROOT
 
-
-WORKSPACE = SOURCE_ROOT
-MODEL_PATH = MODELS_ROOT / "Qwen3-1.7B"
-DATA_PATH = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+MODEL_PATH = WORKSPACE / "models" / "Qwen3-1.7B"
+DATA_PATH = WORKSPACE / "data" / "Berkeley-Function-Calling-Leaderboard"
 
 
 def report_import(name: str) -> None:

@@ -6,22 +6,22 @@ if [[ "${ALLOW_STAGE1_TRAINING:-0}" != "1" ]]; then
     exit 2
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
 CONFIG_NAME="stage1_qwen3_4b_k16_formal_final_only"
-MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
-TRAIN_DATA="$TOOLWEAVE_DATA_ROOT/bfcl_stage1_train_base_100.parquet"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b"
+MODEL="$WORKSPACE/models/Qwen3-4B"
+TRAIN_DATA="$STAGE_ROOT/data/bfcl_stage1_train_base_100.parquet"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b"
 TEMP_EXPORT="$OUTPUT_ROOT/.final_export_tmp"
 FINAL_MODEL="$OUTPUT_ROOT/final_model"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/formal"
+LOG_DIR="$STAGE_ROOT/logs/formal"
 LOG_FILE="$LOG_DIR/stage1_qwen3_4b_k16_formal.log"
 GPU_CSV="$LOG_DIR/stage1_qwen3_4b_k16_gpu.csv"
 CPU_CSV="$LOG_DIR/stage1_qwen3_4b_k16_cpu.csv"
 STATUS_FILE="$LOG_DIR/stage1_qwen3_4b_k16_status.txt"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-formal"
+TMP_ROOT="/tmp/r1f"
 
 for path in "$AWORLD/EnvTuning" "$AWORLD/EnvTuning/verl" "$MODEL" "$TRAIN_DATA"; do
     [[ -e "$path" ]] || { echo "Required path missing: $path"; exit 3; }
@@ -35,11 +35,16 @@ fi
 mkdir -p "$OUTPUT_ROOT" "$LOG_DIR" "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 : > "$STATUS_FILE"
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-toolweave_apply_topology learner
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1
@@ -101,7 +106,7 @@ trap - EXIT INT TERM
 
 if [[ "$TRAIN_STATUS" -ne 0 ]]; then
     echo "FAILED exit=$TRAIN_STATUS $(date -Is)" > "$STATUS_FILE"
-    toolweave_safe_rm_rf "$TEMP_EXPORT"
+    rm -rf "$TEMP_EXPORT"
     exit "$TRAIN_STATUS"
 fi
 
@@ -132,11 +137,11 @@ if [[ ! -f "$HF_DIR/model.safetensors" && ! -f "$HF_DIR/model.safetensors.index.
 fi
 
 STAGING_MODEL="$OUTPUT_ROOT/.final_model_staging"
-toolweave_safe_rm_rf "$STAGING_MODEL"
+rm -rf "$STAGING_MODEL"
 mv "$HF_DIR" "$STAGING_MODEL"
 GLOBAL_STEP="${STEP_DIR##*global_step_}"
 
-GLOBAL_STEP="$GLOBAL_STEP" FINAL_PATH="$STAGING_MODEL" "$TOOLWEAVE_PYTHON" - <<'PY'
+GLOBAL_STEP="$GLOBAL_STEP" FINAL_PATH="$STAGING_MODEL" /root/miniconda3/envs/rods/bin/python - <<'PY'
 import json
 import os
 from datetime import datetime, timezone
@@ -145,8 +150,8 @@ from pathlib import Path
 path = Path(os.environ["FINAL_PATH"])
 payload = {
     "stage": "stage1_format_rl",
-    "base_model": str(Path(os.environ["TOOLWEAVE_MODELS_ROOT"]) / "Qwen3-4B"),
-    "train_data": str(Path(os.environ["TOOLWEAVE_DATA_ROOT"]) / "bfcl_stage1_train_base_100.parquet"),
+    "base_model": "/root/autodl-tmp/rods-workspace/models/Qwen3-4B",
+    "train_data": "/root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_stage1_train_base_100.parquet",
     "algorithm": "GRPO",
     "rollout_n": 16,
     "prompt_batch": 4,
@@ -162,9 +167,9 @@ payload = {
 PY
 
 mv "$STAGING_MODEL" "$FINAL_MODEL"
-toolweave_safe_rm_rf "$TEMP_EXPORT"
+rm -rf "$TEMP_EXPORT"
 
-FINAL_MODEL="$FINAL_MODEL" "$TOOLWEAVE_PYTHON" - <<'PY'
+FINAL_MODEL="$FINAL_MODEL" /root/miniconda3/envs/rods/bin/python - <<'PY'
 import json
 import os
 from pathlib import Path

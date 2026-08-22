@@ -31,10 +31,8 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from machine_paths import project_roots
-
-AWORLD = project_roots().source_root / "code/AWorld-RL-stage1-worktree/EnvTuning"
-sys.path.insert(0, str(AWORLD))
+AWORLD = "/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning"
+sys.path.insert(0, AWORLD)
 from env_tuning.interaction.utils import parse_model_response  # official parser
 
 ACTION_RE = re.compile(

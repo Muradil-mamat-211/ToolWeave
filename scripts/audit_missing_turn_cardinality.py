@@ -8,13 +8,12 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-from project_paths import REPORTS_ROOT, SHARED_DATA_ROOT, SOURCE_ROOT
 
-
-RAW_ROOT = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
-ENV_DATA = SOURCE_ROOT / "code/AWorld-RL-stage1-worktree/EnvTuning/data"
-REPORT_JSON = REPORTS_ROOT / "missing_turn_cardinality_audit.json"
-REPORT_MD = REPORTS_ROOT / "missing_turn_cardinality_audit.md"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+RAW_ROOT = WORKSPACE / "data/Berkeley-Function-Calling-Leaderboard"
+ENV_DATA = WORKSPACE / "code/AWorld-RL-stage1-worktree/EnvTuning/data"
+REPORT_JSON = WORKSPACE / "reports/missing_turn_cardinality_audit.json"
+REPORT_MD = WORKSPACE / "reports/missing_turn_cardinality_audit.md"
 CATEGORIES = ["multi_turn_miss_func", "multi_turn_miss_param"]
 
 

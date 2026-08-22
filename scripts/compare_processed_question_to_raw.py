@@ -8,11 +8,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from project_paths import REPORTS_ROOT, SHARED_DATA_ROOT, SOURCE_ROOT
 
-
-ROOT = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
-ENV_DATA = SOURCE_ROOT / "code/AWorld-RL-stage1-worktree/EnvTuning/data"
+ROOT = Path("/root/autodl-tmp/rods-workspace/data/Berkeley-Function-Calling-Leaderboard")
+ENV_DATA = Path("/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/data")
 
 
 def normalize(value):
@@ -87,7 +85,7 @@ def main() -> None:
             if not row["all_nonempty_raw_followups_preserved_in_order"]:
                 print("missing_raw_followup_ids", row["id"])
 
-    output = REPORTS_ROOT / "processed_question_raw_comparison.json"
+    output = Path("/root/autodl-tmp/rods-workspace/reports/processed_question_raw_comparison.json")
     output.write_text(json.dumps({"records": results}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("report", output)
 

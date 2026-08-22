@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../stage1_format_rl/scripts" && pwd -P)/_machine.sh"
-MODEL_DIR="$TOOLWEAVE_MODELS_ROOT/gemma-4-31B-it"
-LOG_FILE="$TOOLWEAVE_LOGS_ROOT/gemma4_31b_download.log"
+MODEL_DIR="/root/autodl-tmp/rods-workspace/models/gemma-4-31B-it"
+LOG_FILE="/root/autodl-tmp/rods-workspace/logs/gemma4_31b_download.log"
 
 # Preserve the proxy inherited by the detached tmux child.  If the AutoDL
 # academic proxy is slow, restore this child-only proxy before HF transfer.
@@ -26,7 +25,10 @@ if [[ -f /etc/network_turbo ]]; then
     unset HTTP_PROXY HTTPS_PROXY ALL_PROXY all_proxy
 fi
 
-toolweave_activate_conda
+if [[ -f /root/miniconda3/etc/profile.d/conda.sh ]]; then
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate rods
+fi
 
 python -m pip install -U huggingface_hub hf_transfer
 export HF_HUB_ENABLE_HF_TRANSFER=1
@@ -112,12 +114,11 @@ PID_2=$!
 wait "$PID_1" "$PID_2"
 rmdir "$PART_ROOT"
 
-MODEL_DIR="$MODEL_DIR" "$TOOLWEAVE_PYTHON" - <<'PY'
+python - <<'PY'
 from pathlib import Path
-import os
 import json
 
-path = Path(os.environ["MODEL_DIR"])
+path = Path("/root/autodl-tmp/rods-workspace/models/gemma-4-31B-it")
 
 assert (path / "config.json").exists()
 assert (path / "tokenizer_config.json").exists()

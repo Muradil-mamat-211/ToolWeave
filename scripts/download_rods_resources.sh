@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../stage1_format_rl/scripts" && pwd -P)/_machine.sh"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT"
-DOWNLOAD_DIR="$TOOLWEAVE_CACHE_ROOT/downloads"
-mkdir -p "$LOG_DIR" "$DOWNLOAD_DIR" "$WORKSPACE/code" "$TOOLWEAVE_SHARED_DATA_ROOT" "$TOOLWEAVE_MODELS_ROOT" "$WORKSPACE/scripts" "$TOOLWEAVE_REPORTS_ROOT"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
+LOG_DIR="$WORKSPACE/logs"
+DOWNLOAD_DIR="$WORKSPACE/downloads"
+mkdir -p "$LOG_DIR" "$DOWNLOAD_DIR" "$WORKSPACE/code" "$WORKSPACE/data" "$WORKSPACE/models" "$WORKSPACE/scripts" "$WORKSPACE/reports"
 
 exec > >(tee -a "$LOG_DIR/resource_download.log") 2>&1
 
@@ -45,7 +45,8 @@ else
 fi
 
 echo "=== Hugging Face client ==="
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 python -m pip install -U huggingface_hub hf_transfer
 
 HF_CMD=""
@@ -58,8 +59,8 @@ else
     exit 1
 fi
 
-BFCL_DIR="$TOOLWEAVE_SHARED_DATA_ROOT/Berkeley-Function-Calling-Leaderboard"
-MODEL_DIR="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
+BFCL_DIR="$WORKSPACE/data/Berkeley-Function-Calling-Leaderboard"
+MODEL_DIR="$WORKSPACE/models/Qwen3-4B"
 mkdir -p "$BFCL_DIR" "$MODEL_DIR"
 export HF_HUB_ENABLE_HF_TRANSFER=1
 # The current unauthenticated route returns 401 for Xet CAS.  Force the

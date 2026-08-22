@@ -18,15 +18,7 @@ from pathlib import Path
 
 import torch
 
-from machine_paths import project_roots
-
-sys.path.insert(
-    0,
-    str(
-        project_roots().source_root
-        / "code/AWorld-RL-stage1-worktree/EnvTuning/verl"
-    ),
-)
+sys.path.insert(0, "/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/verl")
 from verl.model_merger.fsdp_model_merger import FSDPModelMerger
 from verl.model_merger.base_model_merger import ModelMergerConfig
 
@@ -37,7 +29,7 @@ def load_shard_state_dict(actor_dir: Path) -> dict[str, torch.Tensor]:
         operation="merge",
         backend="fsdp",
         local_dir=str(actor_dir),
-        target_dir=str(project_roots().temp_root / "placeholder_merge_target"),
+        target_dir="/tmp/placeholder_merge_target",
         hf_upload_path=None,
         private=False,
         test_hf_dir=None,

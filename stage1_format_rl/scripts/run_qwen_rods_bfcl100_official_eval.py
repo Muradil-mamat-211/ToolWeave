@@ -28,8 +28,6 @@ import time
 import uuid
 from collections import Counter, defaultdict
 from pathlib import Path
-
-from machine_paths import project_roots
 from typing import Any, Mapping, Sequence
 
 import aiohttp
@@ -39,7 +37,7 @@ import yaml
 from transformers import AutoConfig, AutoTokenizer
 
 
-WORKSPACE = project_roots().source_root
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
 ENVTUNING = WORKSPACE / "code/AWorld-RL-stage1-worktree/EnvTuning"
 SCRIPTS = WORKSPACE / "stage1_format_rl/scripts"
 sys.path.insert(0, str(ENVTUNING))

@@ -6,11 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from project_paths import SHARED_DATA_ROOT, SOURCE_ROOT
 
-
-ROOT = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
-ENV_DATA = SOURCE_ROOT / "code/AWorld-RL-stage1-worktree/EnvTuning/data"
+ROOT = Path("/root/autodl-tmp/rods-workspace/data/Berkeley-Function-Calling-Leaderboard")
+ENV_DATA = Path("/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/data")
 TARGETS = {
     "multi_turn_miss_func": ["multi_turn_miss_func_4", "multi_turn_miss_func_9"],
     "multi_turn_miss_param": ["multi_turn_miss_param_167", "multi_turn_miss_param_180"],

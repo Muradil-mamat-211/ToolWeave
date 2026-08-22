@@ -969,11 +969,6 @@ trainer:
   # Number of GPUs per node
   n_gpus_per_node: 8
 
-  # Runtime-only Ray placement settings. Project profiles derive these from a
-  # validated TopologyPlan; defaults preserve the historical veRL behavior.
-  ray_placement_strategy: STRICT_PACK
-  ray_cpus_per_worker: 1.0
-
   # Save frequency (by iteration) for model checkpoints
   save_freq: -1
 
@@ -1024,10 +1019,6 @@ ray_init:
 
   # Number of CPUs for Ray. Use a fixed number instead of null when using SLURM.
   num_cpus: null
-
-  # Null starts a local Ray runtime. A non-null address attaches to an existing
-  # cluster; num_cpus is then intentionally not passed to ray.init.
-  address: null
 
   # Path to save Ray timeline JSON for performance profiling
   timeline_json_file: null

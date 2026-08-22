@@ -6,23 +6,23 @@ if [[ "${ALLOW_STAGE1_TRAINING:-0}" != "1" ]]; then
     exit 2
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
 CONFIG_NAME="stage1_qwen3_4b_k16_formal_5epoch"
-MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
-TRAIN_DATA="$TOOLWEAVE_DATA_ROOT/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b"
+MODEL="$WORKSPACE/models/Qwen3-4B"
+TRAIN_DATA="$STAGE_ROOT/data/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b"
 CHECKPOINT_ROOT="$OUTPUT_ROOT/checkpoints"
 FINAL_MODEL="$OUTPUT_ROOT/final_model"
 STAGING_MODEL="$OUTPUT_ROOT/.final_model_staging"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/formal_5epoch"
+LOG_DIR="$STAGE_ROOT/logs/formal_5epoch"
 LOG_FILE="$LOG_DIR/stage1_qwen3_4b_k16_formal_5epoch.log"
 GPU_CSV="$LOG_DIR/stage1_qwen3_4b_k16_gpu.csv"
 CPU_CSV="$LOG_DIR/stage1_qwen3_4b_k16_cpu.csv"
 STATUS_FILE="$LOG_DIR/stage1_qwen3_4b_k16_status.txt"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-formal"
+TMP_ROOT="/tmp/r1f"
 
 for path in "$AWORLD/EnvTuning" "$AWORLD/EnvTuning/verl" "$MODEL" "$TRAIN_DATA"; do
     [[ -e "$path" ]] || { echo "Required path missing: $path"; exit 3; }
@@ -36,11 +36,16 @@ fi
 mkdir -p "$OUTPUT_ROOT" "$CHECKPOINT_ROOT" "$LOG_DIR" "$TMP_ROOT/ray" "$TMP_ROOT/triton"
 touch "$LOG_FILE" "$GPU_CSV" "$CPU_CSV"
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-toolweave_apply_topology learner
+export CUDA_VISIBLE_DEVICES=0,1
+export OMP_NUM_THREADS=24
+export MKL_NUM_THREADS=24
+export NUMEXPR_MAX_THREADS=48
 export TOKENIZERS_PARALLELISM=true
+export RAYON_NUM_THREADS=48
 export NCCL_P2P_DISABLE=1
 export NCCL_SHM_DISABLE=0
 export NCCL_IB_DISABLE=1
@@ -81,19 +86,14 @@ monitor_cpu() {
 }
 
 prune_checkpoint_shells_once() {
-    local tracker latest step_dir old_step
+    local tracker latest step_dir
     tracker="$CHECKPOINT_ROOT/latest_checkpointed_iteration.txt"
     [[ -s "$tracker" ]] || return 0
     latest="$(tr -dc '0-9' < "$tracker")"
     [[ -n "$latest" ]] || return 0
     step_dir="$CHECKPOINT_ROOT/global_step_$latest"
     [[ -f "$step_dir/data.pt" && -d "$step_dir/actor" ]] || return 0
-    while IFS= read -r -d '' old_step; do
-        toolweave_safe_rm_rf "$old_step"
-    done < <(
-        find "$CHECKPOINT_ROOT" -mindepth 1 -maxdepth 1 -type d \
-            -name 'global_step_*' ! -name "global_step_$latest" -print0
-    )
+    find "$CHECKPOINT_ROOT" -mindepth 1 -maxdepth 1 -type d -name 'global_step_*' ! -name "global_step_$latest" -exec rm -rf {} +
 }
 
 monitor_checkpoint_retention() {
@@ -151,22 +151,21 @@ if [[ "${#STEP_DIRS[@]}" -ne 1 || "${STEP_DIRS[0]}" != "$LATEST_DIR" ]]; then
     exit 21
 fi
 
-for ((rank=0; rank<TOOLWEAVE_LEARNER_WORLD_SIZE; rank++)); do
-    for prefix in model optim extra_state; do
-        pattern="${prefix}_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt"
-        [[ -f "$ACTOR_DIR/$pattern" ]] || { echo "Missing resumable state: $pattern"; exit 22; }
-    done
+for pattern in 'model_world_size_2_rank_0.pt' 'model_world_size_2_rank_1.pt' \
+               'optim_world_size_2_rank_0.pt' 'optim_world_size_2_rank_1.pt' \
+               'extra_state_world_size_2_rank_0.pt' 'extra_state_world_size_2_rank_1.pt'; do
+    [[ -f "$ACTOR_DIR/$pattern" ]] || { echo "Missing resumable state: $pattern"; exit 22; }
 done
 [[ -f "$LATEST_DIR/data.pt" ]] || { echo "Missing dataloader state"; exit 23; }
 
-toolweave_safe_rm_rf "$STAGING_MODEL"
+rm -rf "$STAGING_MODEL"
 python -m verl.model_merger merge \
     --backend fsdp \
     --local_dir "$ACTOR_DIR" \
     --target_dir "$STAGING_MODEL" \
     --use_cpu_initialization
 
-GLOBAL_STEP="$LATEST_STEP" FINAL_PATH="$STAGING_MODEL" CHECKPOINT_PATH="$LATEST_DIR" "$TOOLWEAVE_PYTHON" - <<'PY'
+GLOBAL_STEP="$LATEST_STEP" FINAL_PATH="$STAGING_MODEL" CHECKPOINT_PATH="$LATEST_DIR" /root/miniconda3/envs/rods/bin/python - <<'PY'
 import json
 import os
 from datetime import datetime, timezone
@@ -175,8 +174,8 @@ from pathlib import Path
 path = Path(os.environ["FINAL_PATH"])
 payload = {
     "stage": "stage1_format_rl",
-    "base_model": str(Path(os.environ["TOOLWEAVE_MODELS_ROOT"]) / "Qwen3-4B"),
-    "train_data": str(Path(os.environ["TOOLWEAVE_DATA_ROOT"]) / "bfcl_stage1_train_base_100_shuffled_seed42.parquet"),
+    "base_model": "/root/autodl-tmp/rods-workspace/models/Qwen3-4B",
+    "train_data": "/root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_stage1_train_base_100_shuffled_seed42.parquet",
     "algorithm": "GRPO",
     "rollout_n": 16,
     "prompt_batch": 4,
@@ -197,7 +196,7 @@ payload = {
 )
 PY
 
-FINAL_PATH="$STAGING_MODEL" "$TOOLWEAVE_PYTHON" - <<'PY'
+FINAL_PATH="$STAGING_MODEL" /root/miniconda3/envs/rods/bin/python - <<'PY'
 import json
 import os
 from pathlib import Path

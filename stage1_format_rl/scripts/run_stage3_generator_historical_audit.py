@@ -30,9 +30,6 @@ from contextlib import AbstractContextManager
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-
-from machine_paths import project_roots
-from stage1_format_rl.infrastructure.inventory import discover_local_inventory
 from typing import Any, Iterable, Iterator, Mapping
 
 from env_tuning.rods_data_generation_v1.candidate_builder import FUNCTION_MARKER
@@ -72,10 +69,12 @@ from env_tuning.rods_data_generation_v1.validation.vm_reverify import (
 from env_tuning.rods_matchtir_v1.lifecycle import validate_candidate_record
 
 
-ROOTS = project_roots()
-WORKSPACE = ROOTS.source_root
-ARTIFACTS = ROOTS.artifacts_root
-CATALOG_PARQUET = ROOTS.stage_data_root / "bfcl_stage3_train_all_400_shuffled_seed42.parquet"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+ARTIFACTS = WORKSPACE / "stage1_format_rl" / "artifacts"
+CATALOG_PARQUET = (
+    WORKSPACE
+    / "stage1_format_rl/data/bfcl_stage3_train_all_400_shuffled_seed42.parquet"
+)
 DATA_TYPES = (
     "multi_turn_base",
     "multi_turn_miss_func",
@@ -301,7 +300,7 @@ def discover(root: Path) -> dict[str, Any]:
         },
     }
     _write_json(manifest_path, manifest)
-    shutil.copy2(manifest_path, root / "DISCOVERED_BOUNDARY_MANIFEST.json")
+    shutil.copy2(manifest_path, WORKSPACE / "DISCOVERED_BOUNDARY_MANIFEST.json")
     shutil.copy2(all_path, root / "boundary_seeds_all.jsonl")
     return manifest
 
@@ -937,16 +936,19 @@ def environment_manifest(root: Path) -> dict[str, Any]:
         root / "00_manifest/code_hashes.json",
         {"created_at": _utc_now(), "sha256": hashes},
     )
-    inventory = discover_local_inventory()
     env = {
         "created_at": _utc_now(),
         "hostname": platform.node(),
         "platform": platform.platform(),
         "python": platform.python_version(),
         "cpu_count_visible": os.cpu_count(),
-        "observed_hardware": inventory,
+        "operational_resource_limit": {
+            "gpu": "1x NVIDIA RTX PRO 6000 96GB",
+            "cpu_cores": 25,
+            "ram_gb": 120,
+        },
         "catalog_parquet": str(CATALOG_PARQUET),
-        "model": str(ROOTS.models_root / "gemma-4-31B-it-manual"),
+        "model": str(WORKSPACE / "models/gemma-4-31B-it-manual"),
         "formal_training_launched": False,
     }
     _write_json(root / "00_manifest/environment.json", env)

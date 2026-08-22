@@ -10,17 +10,17 @@ if tmux has-session -t '=rods-stage1-recovery' 2>/dev/null; then
     exit 3
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b_recovery_from_step25"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b_recovery_from_step25"
 FULL_STEP50="$OUTPUT_ROOT/checkpoints/global_step_50"
 ARCHIVE_ROOT="$OUTPUT_ROOT/weight_checkpoints_repaired"
-EVAL_ROOT="$TOOLWEAVE_ARTIFACTS_ROOT/checkpoint_gate_eval"
+EVAL_ROOT="$STAGE_ROOT/artifacts/checkpoint_gate_eval"
 MERGED_ROOT="$EVAL_ROOT/merged"
-DATA_ROOT="$TOOLWEAVE_DATA_ROOT/checkpoint_gate_eval"
-LOG_ROOT="$TOOLWEAVE_LOGS_ROOT/checkpoint_gate_eval"
+DATA_ROOT="$STAGE_ROOT/data/checkpoint_gate_eval"
+LOG_ROOT="$STAGE_ROOT/logs/checkpoint_gate_eval"
 
-OLD_MODEL="$TOOLWEAVE_ARTIFACTS_ROOT/checkpoint_eval/merged/global_step_25"
+OLD_MODEL="$STAGE_ROOT/artifacts/checkpoint_eval/merged/global_step_25"
 RECOVERY25_MODEL="$MERGED_ROOT/recovery_run_step25_logical50"
 RECOVERY50_MODEL="$MERGED_ROOT/recovery_run_step50_logical75"
 
@@ -45,7 +45,8 @@ run_model_wave() {
         "$model" "$label" "$DATA_ROOT/val_400_combined.parquet" \
         > "$LOG_ROOT/${label}.driver.log" 2>&1
     local status=$?
-    toolweave_activate_conda
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate rods
     ray stop --force >/dev/null 2>&1 || true
     if [[ "$status" -ne 0 ]]; then
         echo "FAILED wave=$label status=$status"
@@ -58,7 +59,8 @@ run_model_wave "$OLD_MODEL" old_run_step25
 run_model_wave "$RECOVERY25_MODEL" recovery_run_step25_logical50
 run_model_wave "$RECOVERY50_MODEL" recovery_run_step50_logical75
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 python "$STAGE_ROOT/scripts/summarize_stage1_gate_eval.py" \
     --eval-root "$EVAL_ROOT" \
     --manifest-dir "$DATA_ROOT"

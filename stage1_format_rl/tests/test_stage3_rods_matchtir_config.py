@@ -1,38 +1,27 @@
 from __future__ import annotations
 
-import os
 from collections import Counter
 from pathlib import Path
 
 import pandas as pd
 import pytest
+import yaml
 
 from env_tuning.rods_matchtir_v1.lifecycle import LifecycleConfig
-from stage1_format_rl.infrastructure.resolver import resolve_profile
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
-ASSET_ROOT = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", SOURCE_ROOT)).expanduser().resolve()
-PROFILE = (
-    SOURCE_ROOT
-    / "stage1_format_rl/configs/layers/profiles/stage3_reference.yaml"
+CONFIG = Path(
+    "/root/autodl-tmp/rods-workspace/stage1_format_rl/configs/"
+    "stage3_rods_matchtir_v1_training_branch.yaml"
 )
-FSDP_WORKERS = (
-    SOURCE_ROOT
-    / "code/AWorld-RL-stage1-worktree/EnvTuning/verl/verl/workers/fsdp_workers.py"
+FSDP_WORKERS = Path(
+    "/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/"
+    "EnvTuning/verl/verl/workers/fsdp_workers.py"
 )
 
 
-def _resolved():
-    return resolve_profile(
-        PROFILE,
-        environ={"TOOLWEAVE_ASSET_ROOT": str(ASSET_ROOT)},
-    )
-
-
-def test_stage3_config_preserves_rods_runtime_and_enables_runtime_interaction_credit():
-    resolved = _resolved()
-    config = resolved.effective_verl
+def test_stage3_config_preserves_rods_runtime_and_enables_v1():
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
     assert config["actor_rollout_ref"]["rollout"]["n"] == 16
     assert config["actor_rollout_ref"]["actor"]["optim"]["lr"] == 1.0e-6
     assert config["actor_rollout_ref"]["actor"]["kl_loss_coef"] == 0.01
@@ -40,8 +29,8 @@ def test_stage3_config_preserves_rods_runtime_and_enables_runtime_interaction_cr
     assert config["data"]["train_batch_size"] == 20
     assert config["trainer"]["total_epochs"] == 5
     assert config["algorithm"]["use_kl_in_reward"] is False
-    assert config["algorithm"]["matchtir_local"] == {
-        "mode": "runtime_interaction_final",
+    local = config["algorithm"]["matchtir_local"]
+    assert local == {
         "enabled": True,
         "weight": 1.0,
         "gamma": 0.9,
@@ -50,7 +39,9 @@ def test_stage3_config_preserves_rods_runtime_and_enables_runtime_interaction_cr
         "min_group_size": 2,
         "epsilon": 1.0e-6,
     }
-    assert resolved.assets["stage2_step25_model"].path.name == "global_step_25"
+    model_path = Path(config["actor_rollout_ref"]["model"]["path"])
+    assert model_path.name == "global_step_25"
+    assert (model_path / "model.safetensors.index.json").is_file()
     lifecycle = config["trainer"]["rods_stage3_lifecycle"]
     assert lifecycle["require_seed_selection_config"] is True
     assert lifecycle["max_seeds_per_selection"] is None
@@ -74,7 +65,8 @@ def test_stage3_config_preserves_rods_runtime_and_enables_runtime_interaction_cr
 
 
 def test_stage3_training_data_has_four_original_types_and_current_protocol():
-    path = _resolved().assets["stage3_train_400"].path
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    path = Path(config["data"]["train_files"])
     frame = pd.read_parquet(path)
     assert len(frame) == 400
     assert Counter(frame["data_source"]) == {
@@ -92,7 +84,8 @@ def test_stage3_training_data_has_four_original_types_and_current_protocol():
 
 
 def test_stage3_uses_fixed_denominator_progress_reward():
-    reward_path = _resolved().assets["progress_reward"].path
+    config = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    reward_path = Path(config["custom_reward_function"]["path"])
     namespace: dict = {}
     exec(compile(reward_path.read_text(encoding="utf-8"), str(reward_path), "exec"), namespace)
     score = namespace["compute_score"](

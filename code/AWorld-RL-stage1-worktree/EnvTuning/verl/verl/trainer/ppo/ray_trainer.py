@@ -84,8 +84,6 @@ class ResourcePoolManager:
 
     resource_pool_spec: dict[str, list[int]]
     mapping: dict[Role, str]
-    placement_strategy: str = "STRICT_PACK"
-    cpus_per_worker: float = 1.0
     resource_pool_dict: dict[str, RayResourcePool] = field(default_factory=dict)
 
     def create_resource_pool(self):
@@ -94,14 +92,7 @@ class ResourcePoolManager:
             # For FSDP backend, we recommend using max_colocate_count=1 that merge all WorkerGroups into one.
             # For Megatron backend, we recommend using max_colocate_count>1
             # that can utilize different WorkerGroup for differnt models
-            resource_pool = RayResourcePool(
-                process_on_nodes=process_on_nodes,
-                use_gpu=True,
-                max_colocate_count=1,
-                name_prefix=resource_pool_name,
-                placement_strategy=self.placement_strategy,
-                cpus_per_worker=self.cpus_per_worker,
-            )
+            resource_pool = RayResourcePool(process_on_nodes=process_on_nodes, use_gpu=True, max_colocate_count=1, name_prefix=resource_pool_name)
             self.resource_pool_dict[resource_pool_name] = resource_pool
 
         self._check_resource_available()
@@ -264,10 +255,10 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         data.batch["advantages"] = advantages
         data.batch["returns"] = returns
 
-        # ToolWeave runtime-interaction local credit is a residual construction
-        # layered after the unchanged pure-Progress GRPO estimator above.
-        # Configs without this section (all existing Stage1/Stage2 profiles)
-        # take the original path byte-for-byte.
+        # ToolWeave interaction-aware local credit is a residual construction layered after
+        # the unchanged pure-Progress GRPO estimator above.  Configs without
+        # this section (all existing Stage1/Stage2 profiles) take the original
+        # path byte-for-byte.
         matchtir_config = config.get("matchtir_local", None) if config is not None else None
         if matchtir_config is not None:
             from env_tuning.rods_matchtir_v1.advantage import (
@@ -278,8 +269,8 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             local_config = LocalCreditConfig.from_mapping(matchtir_config)
             if local_config.enabled and local_config.weight != 0.0 and config.get("use_kl_in_reward", False):
                 raise ValueError(
-                    "ToolWeave runtime-interaction local credit requires "
-                    "use_kl_in_reward=false so A_RODS is pure Progress Reward"
+                    "ToolWeave interaction-aware local credit requires use_kl_in_reward=false "
+                    "so A_RODS is pure Progress Reward"
                 )
             if os.environ.get("RODS_SMOKE_ARTIFACT_DIR"):
                 # Smoke-only observability: preserve the pure global branch

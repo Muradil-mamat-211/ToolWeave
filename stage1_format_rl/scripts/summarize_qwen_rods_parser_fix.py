@@ -9,14 +9,12 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
-
-from machine_paths import project_roots
 from typing import Any
 
 from run_qwen_rods_bfcl100_official_eval import atomic_text
 
 
-WORKSPACE = project_roots().source_root
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
 
 
 def sha256_text(text: str) -> str:

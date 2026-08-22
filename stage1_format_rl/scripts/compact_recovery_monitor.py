@@ -9,14 +9,15 @@ import re
 from pathlib import Path
 from statistics import fmean
 
-from machine_paths import project_roots
 
-ROOTS = project_roots()
-LOG_ROOT = ROOTS.short_temp_root / "stage1-recovery/ray/ray/session_latest/logs"
-STATUS = ROOTS.logs_root / "recovery_from_step25/status.txt"
-ARCHIVE_STATUS = (
-    ROOTS.logs_root
-    / "recovery_from_step25/weight_checkpoint_archive_status.txt"
+LOG_ROOT = Path("/tmp/r1r/ray/ray/session_latest/logs")
+STATUS = Path(
+    "/root/autodl-tmp/rods-workspace/stage1_format_rl/logs/"
+    "recovery_from_step25/status.txt"
+)
+ARCHIVE_STATUS = Path(
+    "/root/autodl-tmp/rods-workspace/stage1_format_rl/logs/"
+    "recovery_from_step25/weight_checkpoint_archive_status.txt"
 )
 STEP_RE = re.compile(r"^step:(\d+)\s+-\s+(.*)$")
 

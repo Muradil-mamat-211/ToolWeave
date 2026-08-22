@@ -39,24 +39,10 @@ def run_ppo(config) -> None:
         # Set environment variables in the runtime environment to control tokenizer parallelism,
         # NCCL debug level, VLLM logging level, and allow runtime LoRA updating
         # `num_cpus` specifies the number of CPU cores Ray can use, obtained from the configuration
-        ray_kwargs = {
-            "runtime_env": {
-                "env_vars": {
-                    "TOKENIZERS_PARALLELISM": "true",
-                    "NCCL_DEBUG": "WARN",
-                    "VLLM_LOGGING_LEVEL": "WARN",
-                    "VLLM_ALLOW_RUNTIME_LORA_UPDATING": "true",
-                }
-            }
-        }
-        ray_address = config.ray_init.get("address", None)
-        if ray_address:
-            # An existing cluster owns its CPU inventory; passing num_cpus with
-            # address is invalid in Ray.
-            ray_kwargs["address"] = ray_address
-        elif config.ray_init.num_cpus is not None:
-            ray_kwargs["num_cpus"] = config.ray_init.num_cpus
-        ray.init(**ray_kwargs)
+        ray.init(
+            runtime_env={"env_vars": {"TOKENIZERS_PARALLELISM": "true", "NCCL_DEBUG": "WARN", "VLLM_LOGGING_LEVEL": "WARN", "VLLM_ALLOW_RUNTIME_LORA_UPDATING": "true"}},
+            num_cpus=config.ray_init.num_cpus,
+        )
 
     # Create a remote instance of the TaskRunner class, and
     # Execute the `run` method of the TaskRunner instance remotely and wait for it to complete
@@ -173,14 +159,7 @@ class TaskRunner:
         # Load the reward manager for training and validation.
         reward_fn = load_reward_manager(config, tokenizer, num_examine=0, **config.reward_model.get("reward_kwargs", {}))
         val_reward_fn = load_reward_manager(config, tokenizer, num_examine=1, **config.reward_model.get("reward_kwargs", {}))
-        resource_pool_manager = ResourcePoolManager(
-            resource_pool_spec=resource_pool_spec,
-            mapping=mapping,
-            placement_strategy=config.trainer.get(
-                "ray_placement_strategy", "STRICT_PACK"
-            ),
-            cpus_per_worker=config.trainer.get("ray_cpus_per_worker", 1.0),
-        )
+        resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
 
         from verl.utils.dataset.rl_dataset import collate_fn
 

@@ -11,21 +11,18 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from machine_paths import project_roots
-
 import numpy as np
 import pandas as pd
 from transformers import AutoTokenizer
 
 
-ROOTS = project_roots()
-WORKSPACE = ROOTS.source_root
-ROOT = ROOTS.source_root / "stage1_format_rl"
-ARTIFACT_ROOT = ROOTS.artifacts_root / "gpu_smoke"
-LOG_ROOT = ROOTS.logs_root / "gpu_smoke"
-DATA_ROOT = ROOTS.stage_data_root / "smoke"
-MODEL = ROOTS.models_root / "Qwen3-4B"
-OUTPUT = ROOTS.artifacts_root / "gpu_smoke_summary.json"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+ROOT = WORKSPACE / "stage1_format_rl"
+ARTIFACT_ROOT = ROOT / "artifacts/gpu_smoke"
+LOG_ROOT = ROOT / "logs/gpu_smoke"
+DATA_ROOT = ROOT / "data/smoke"
+MODEL = WORKSPACE / "models/Qwen3-4B"
+OUTPUT = ROOT / "artifacts/gpu_smoke_summary.json"
 
 RUNS = {
     "smoke1": ("smoke1", "smoke1_functional.parquet", 2, 10000, "0.jsonl"),

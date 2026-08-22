@@ -17,10 +17,10 @@ def nested(config, *keys):
     return value
 
 
-def test_resolved_configs_have_required_contract(asset_stage_root):
+def test_resolved_configs_have_required_contract(stage_root):
     for profile in ("repo_aligned", "paper_aligned"):
         path = (
-            asset_stage_root
+            stage_root
             / "artifacts"
             / f"resolved_stage1_qwen3_4b_k16_{profile}.yaml"
         )
@@ -70,14 +70,14 @@ def test_resolved_configs_have_required_contract(asset_stage_root):
             assert Path(nested(config, *key_path)).exists()
 
 
-def test_repo_and_paper_differences_are_explicit(asset_stage_root):
+def test_repo_and_paper_differences_are_explicit(stage_root):
     repo = load(
-        asset_stage_root
+        stage_root
         / "artifacts"
         / "resolved_stage1_qwen3_4b_k16_repo_aligned.yaml"
     )
     paper = load(
-        asset_stage_root
+        stage_root
         / "artifacts"
         / "resolved_stage1_qwen3_4b_k16_paper_aligned.yaml"
     )
@@ -87,9 +87,9 @@ def test_repo_and_paper_differences_are_explicit(asset_stage_root):
     assert nested(paper, "trainer", "total_epochs") == 5
 
 
-def test_official_reward_and_interaction_import(asset_stage_root):
+def test_official_reward_and_interaction_import(stage_root):
     config = load(
-        asset_stage_root
+        stage_root
         / "artifacts"
         / "resolved_stage1_qwen3_4b_k16_repo_aligned.yaml"
     )
@@ -105,3 +105,4 @@ def test_official_reward_and_interaction_import(asset_stage_root):
     )
 
     assert MultiTurnFunctionCallInteraction.__name__ == "MultiTurnFunctionCallInteraction"
+

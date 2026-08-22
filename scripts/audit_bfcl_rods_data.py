@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -11,13 +12,10 @@ from pathlib import Path
 from typing import Any
 
 
-from project_paths import ASSET_ROOT, REPORTS_ROOT, SHARED_DATA_ROOT, SOURCE_ROOT
-
-
-WORKSPACE = SOURCE_ROOT
-BFCL_DIR = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
-AWORLD = SOURCE_ROOT / "code" / "AWorld-RL"
-REPORT_DIR = REPORTS_ROOT
+WORKSPACE = Path(os.environ.get("WORKSPACE", "/root/autodl-tmp/rods-workspace"))
+BFCL_DIR = WORKSPACE / "data" / "Berkeley-Function-Calling-Leaderboard"
+AWORLD = WORKSPACE / "code" / "AWorld-RL"
+REPORT_DIR = WORKSPACE / "reports"
 JSON_REPORT = REPORT_DIR / "bfcl_rods_data_audit.json"
 MD_REPORT = REPORT_DIR / "bfcl_rods_data_audit.md"
 
@@ -137,7 +135,7 @@ def main() -> None:
         AWORLD / "EnvTuning" / "data" / "bfcl_train_base.parquet",
         AWORLD / "EnvTuning" / "data" / "bfcl_train.parquet",
         AWORLD / "EnvTuning" / "data" / "bfcl_val.parquet",
-        SHARED_DATA_ROOT / "stage2_official" / "bfcl_v3_multiturn_base_official.parquet",
+        WORKSPACE / "data" / "stage2_official" / "bfcl_v3_multiturn_base_official.parquet",
     ]
     parquet = [parquet_summary(path) for path in parquet_paths]
 

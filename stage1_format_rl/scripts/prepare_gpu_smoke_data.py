@@ -6,16 +6,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from machine_paths import project_roots
-
 import pandas as pd
 from transformers import AutoTokenizer
 
 
-ROOTS = project_roots()
-SOURCE = ROOTS.stage_data_root / "bfcl_stage1_train_base_100.parquet"
-OUTPUT_DIR = ROOTS.stage_data_root / "smoke"
-MODEL = ROOTS.models_root / "Qwen3-4B"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+SOURCE = WORKSPACE / "stage1_format_rl/data/bfcl_stage1_train_base_100.parquet"
+OUTPUT_DIR = WORKSPACE / "stage1_format_rl/data/smoke"
+MODEL = WORKSPACE / "models/Qwen3-4B"
 
 
 def to_list(value):

@@ -14,14 +14,11 @@ from env_tuning.interaction.new_multi_turn_fc import MultiTurnFunctionCallIntera
 from env_tuning.interaction.response_handler import ResponseHandler
 from env_tuning.interaction.utils import parse_tool_calls
 from stage1_contract import json_dump, normalize_nested, reference_stage1_reward
-from machine_paths import project_roots
 
 
-ROOTS = project_roots()
-DATA_ROOT = ROOTS.stage_data_root
-ARTIFACTS_ROOT = ROOTS.artifacts_root
-REPORTS_ROOT = ROOTS.reports_root
-ENVTUNING = ROOTS.source_root / "code" / "AWorld-RL-stage1-worktree" / "EnvTuning"
+ROOT = Path("/root/autodl-tmp/rods-workspace")
+STAGE = ROOT / "stage1_format_rl"
+ENVTUNING = ROOT / "code" / "AWorld-RL-stage1-worktree" / "EnvTuning"
 
 
 REWARD_CASES = [
@@ -200,17 +197,17 @@ def main() -> None:
         )
 
     row = normalize_nested(
-        pd.read_parquet(DATA_ROOT / "bfcl_stage1_train_base_100.parquet")
+        pd.read_parquet(STAGE / "data" / "bfcl_stage1_train_base_100.parquet")
         .iloc[0]
         .to_dict()
     )
     execution_results = asyncio.run(execution_cases(row))
 
     json_dump(
-        ARTIFACTS_ROOT / "stage1_reward_unit_results.json", reward_results
+        STAGE / "artifacts" / "stage1_reward_unit_results.json", reward_results
     )
     json_dump(
-        ARTIFACTS_ROOT / "stage1_parser_execution_results.json",
+        STAGE / "artifacts" / "stage1_parser_execution_results.json",
         {"parser": parser_results, "execution": execution_results},
     )
 
@@ -277,8 +274,7 @@ invalid JSON is `-3`, execution failure is `-2`, and successful execution is
 `-1`. Stage 1 configuration preserves executable behavior, while reports retain
 the paper wording as a documented conflict.
 """
-    report_path = REPORTS_ROOT / "STAGE1_REWARD_AND_CODE_TEST_REPORT.md"
-    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path = STAGE / "reports" / "STAGE1_REWARD_AND_CODE_TEST_REPORT.md"
     report_path.write_text(report, encoding="utf-8")
     print(
         json.dumps(

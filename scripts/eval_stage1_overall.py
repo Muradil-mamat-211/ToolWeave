@@ -50,18 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch_size", type=int, default=64)
     parser.add_argument("--max_prompt_length", type=int, default=2048)
     parser.add_argument("--max_new_tokens", type=int, default=128)
-    parser.add_argument(
-        "--tensor_parallel_size",
-        type=int,
-        default=int(os.environ.get("TOOLWEAVE_ROLLOUT_TP", "1")),
-    )
-    parser.add_argument(
-        "--gpu_memory_utilization",
-        type=float,
-        default=float(
-            os.environ.get("TOOLWEAVE_ROLLOUT_GPU_MEMORY_UTILIZATION", "0.94")
-        ),
-    )
+    parser.add_argument("--gpu_memory_utilization", type=float, default=0.94)
     parser.add_argument("--model_to_run", choices=("all", "base", "stage1"), default="all")
     parser.add_argument("--run_tag", choices=("smoke", "full"), default="full")
     parser.add_argument("--summarize_only", action="store_true")
@@ -377,7 +366,7 @@ def evaluate_one_model(args: argparse.Namespace, model_label: str, datasets: dic
         model=str(model_path),
         tokenizer=str(model_path),
         distributed_executor_backend="mp",
-        tensor_parallel_size=args.tensor_parallel_size,
+        tensor_parallel_size=2,
         dtype="bfloat16",
         max_model_len=4096,
         max_num_batched_tokens=8192,
@@ -632,8 +621,6 @@ def child_command(args: argparse.Namespace, model_label: str) -> list[str]:
         str(args.max_prompt_length),
         "--max_new_tokens",
         str(args.max_new_tokens),
-        "--tensor_parallel_size",
-        str(args.tensor_parallel_size),
         "--gpu_memory_utilization",
         str(args.gpu_memory_utilization),
         "--model_to_run",

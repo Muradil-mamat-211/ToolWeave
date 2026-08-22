@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
-# Thin Generator server launcher; GPU role and vLLM settings come from profile.
-set -Eeuo pipefail
+set -euo pipefail
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-SOURCE_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
-if [[ -f "$SOURCE_ROOT/environment/env.local.sh" ]]; then
-    # shellcheck source=/dev/null
-    source "$SOURCE_ROOT/environment/env.local.sh"
-else
-    # shellcheck source=/dev/null
-    source "$SOURCE_ROOT/environment/env.template.sh"
+# This launcher is an implemented deployment interface, not a tested runtime.
+# It was not executed during the no-GPU implementation/audit.
+if [[ "${RODS_ALLOW_VLLM_SERVER:-0}" != "1" ]]; then
+  echo "Refusing to launch vLLM. Set RODS_ALLOW_VLLM_SERVER=1 explicitly." >&2
+  exit 2
 fi
 
-PROFILE="${TOOLWEAVE_STAGE3_ONLINE_PROFILE:-$SOURCE_ROOT/stage1_format_rl/configs/layers/profiles/stage3_online_2gpu.yaml}"
-ARGS=("$TOOLWEAVE_PYTHON" -m stage1_format_rl.infrastructure.cli --profile "$PROFILE" generator-server)
-if [[ "${1:---dry-run}" == "--execute" ]]; then
-    ARGS+=(--execute)
-elif [[ "${1:---dry-run}" != "--dry-run" ]]; then
-    echo "usage: $0 [--dry-run|--execute]" >&2
-    exit 2
+RODS_GEMMA_MODEL="${RODS_GEMMA_MODEL:-/root/autodl-tmp/rods-workspace/models/gemma-4-31B-it-manual}"
+RODS_VLLM_HOST="${RODS_VLLM_HOST:-127.0.0.1}"
+RODS_VLLM_PORT="${RODS_VLLM_PORT:-8000}"
+RODS_TENSOR_PARALLEL_SIZE="${RODS_TENSOR_PARALLEL_SIZE:-2}"
+RODS_SERVED_MODEL_NAME="${RODS_SERVED_MODEL_NAME:-${RODS_GEMMA_MODEL}}"
+
+RODS_VLLM_ARGS=(
+  serve "${RODS_GEMMA_MODEL}"
+  --host "${RODS_VLLM_HOST}"
+  --port "${RODS_VLLM_PORT}"
+  --tensor-parallel-size "${RODS_TENSOR_PARALLEL_SIZE}"
+  --served-model-name "${RODS_SERVED_MODEL_NAME}"
+)
+if [[ -n "${RODS_MAX_MODEL_LEN:-}" ]]; then
+  RODS_VLLM_ARGS+=(--max-model-len "${RODS_MAX_MODEL_LEN}")
 fi
-exec "${ARGS[@]}"
+if [[ -n "${RODS_GPU_MEMORY_UTILIZATION:-}" ]]; then
+  RODS_VLLM_ARGS+=(--gpu-memory-utilization "${RODS_GPU_MEMORY_UTILIZATION}")
+fi
+
+exec vllm "${RODS_VLLM_ARGS[@]}"

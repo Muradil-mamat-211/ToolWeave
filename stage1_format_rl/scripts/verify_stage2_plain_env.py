@@ -10,10 +10,8 @@ Fails (exit 1) if any assertion is violated.
 """
 import importlib, inspect, sys
 
-from machine_paths import project_roots
-
-AWORLD = project_roots().source_root / "code/AWorld-RL-stage1-worktree/EnvTuning"
-sys.path.insert(0, str(AWORLD))
+AWORLD = "/root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning"
+sys.path.insert(0, AWORLD)
 
 from bfcl_env.multi_turn_utils import (
     execute_multi_turn_func_call,

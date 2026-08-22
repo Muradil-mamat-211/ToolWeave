@@ -9,11 +9,10 @@ if [[ "${RODS_ALLOW_QWEN_EVAL_AFTER_GENERATOR:-0}" != "1" ]]; then
   exit 2
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
-export TOOLWEAVE_PROFILE="${TOOLWEAVE_SINGLE_GPU_PROFILE:-$STAGE_ROOT/configs/layers/profiles/single_gpu_eval.yaml}"
-MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B-RODS"
-PORT="${TOOLWEAVE_EVAL_PORT:-31000}"
-HOST="${TOOLWEAVE_EVAL_HOST:-127.0.0.1}"
+WORKSPACE=/root/autodl-tmp/rods-workspace
+MODEL="$WORKSPACE/models/Qwen3-4B-RODS"
+PORT="${RODS_EVAL_PORT:-31000}"
+ENV_ROOT=/root/autodl-tmp/conda/envs/rods-synth
 MAX_MODEL_LEN="${RODS_EVAL_MAX_MODEL_LEN:-262144}"
 GPU_MEMORY_UTILIZATION="${RODS_EVAL_GPU_MEMORY_UTILIZATION:-0.90}"
 MAX_NUM_SEQS="${RODS_EVAL_MAX_NUM_SEQS:-32}"
@@ -31,13 +30,17 @@ if [[ ! "$used_mib" =~ ^[0-9]+$ ]] || (( used_mib > 2048 )); then
   exit 4
 fi
 
-toolweave_apply_topology learner
+export CUDA_VISIBLE_DEVICES=0
+export OMP_NUM_THREADS=8
+export MKL_NUM_THREADS=8
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
 # The completed Gemma run established this Blackwell-safe transport setting.
 # Eval decoding is greedy, so this changes only the sampler implementation.
 export VLLM_USE_FLASHINFER_SAMPLER=0
-exec "$(dirname "$TOOLWEAVE_SYNTH_PYTHON")/vllm" serve "$MODEL" \
-  --host "$HOST" \
+export LD_LIBRARY_PATH="$ENV_ROOT/lib/python3.12/site-packages/nvidia/cu13/lib:${LD_LIBRARY_PATH:-}"
+
+exec "$ENV_ROOT/bin/vllm" serve "$MODEL" \
+  --host 127.0.0.1 \
   --port "$PORT" \
   --api-key EMPTY \
   --served-model-name Qwen3-4B-RODS \

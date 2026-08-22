@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 set -u
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
-
 ROOT_PID="${1:-858226}"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/checkpoint_gate_eval"
+LOG_DIR="/root/autodl-tmp/rods-workspace/stage1_format_rl/logs/checkpoint_gate_eval"
 LOG_FILE="$LOG_DIR/monitor_6min_tmux.log"
 
 mkdir -p "$LOG_DIR"

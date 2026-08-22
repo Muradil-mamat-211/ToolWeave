@@ -26,6 +26,9 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 > [!IMPORTANT]
 > ToolWeave is a project-level framework. It is **not** the official RODS or MatchTIR implementation. This README distinguishes public EnvTuning/RODS concepts, MatchTIR-derived local credit, reused BFCL infrastructure, and ToolWeave-specific adaptations and semantic hardening.
 
+> [!WARNING]
+> You are viewing the **`undecoupled-original`** branch. It preserves the original machine-bound source layout and legacy entrypoints from before infrastructure decoupling, while carrying the same final `runtime_interaction_final` Stage-3 credit implementation. Use [`main`](https://github.com/Muradil-mamat-211/ToolWeave/tree/main) for the supported, infrastructure-decoupled release. See [Undecoupled Source Notice](UNDECOUPLED_ORIGINAL.md).
+
 ## Table of Contents
 
 - [News and Open Resources](#news-and-open-resources)
@@ -1026,7 +1029,7 @@ The local Stage 1/2 membership matches upstream `bfcl_train_base.parquet`; the p
 
 ## Quick Start
 
-This public release includes the infrastructure-decoupled ToolWeave training, interaction, evaluation, and verified-generation code together with the audited method documentation. Machine-local roots, model weights, checkpoints, runtime outputs, and private credentials are intentionally excluded.
+This branch publishes the pre-decoupling, machine-bound ToolWeave training, interaction, evaluation, and verified-generation layout together with the final runtime-interaction credit functions. Model weights, checkpoints, runtime outputs, datasets, and credentials are intentionally excluded.
 
 1. Read the [Overview](#overview) and [Method](#method).
 2. Follow the full [Stage 3 derivation](#stage-3-toolweave) before interpreting local-credit metrics.
@@ -1034,20 +1037,19 @@ This public release includes the infrastructure-decoupled ToolWeave training, in
 4. Use [Models](#models) with the documented release status.
 5. Consult upstream [EnvTuning](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning), [RODS](https://github.com/inclusionAI/AWorld-RL/tree/main/RODS), and [BFCL](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard) resources.
 
-The default Stage-3 recipe resolves through the layered `stage3_reference.yaml` profile. It targets the audited 2×96 GiB reference topology; alternate portable profiles are explicit qualification fixtures and never replace the default implicitly.
+The legacy launchers and YAML files on this branch retain fixed workspace/topology assumptions. They are historical source, not the portable public entrypoint. Use the `main` branch's layered `stage3_reference.yaml` profile for the supported 2×96 GiB reference topology.
 
 ## Repository Layout
 
 ```text
 ToolWeave/
 ├── README.md
+├── UNDECOUPLED_ORIGINAL.md
 ├── ALGORITHM_REPORT_STAGE3_RUNTIME_INTERACTION_CREDIT_FINAL.md
 ├── code/AWorld-RL-stage1-worktree/EnvTuning/
 ├── stage1_format_rl/
-├── environment/
 ├── docs/
-│   ├── data-and-trajectories.md
-│   └── infrastructure-decoupling.md
+│   └── data-and-trajectories.md
 └── assets/
     ├── toolweave-data-anatomy.svg
     ├── toolweave-mark.svg

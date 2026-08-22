@@ -3,20 +3,20 @@
 # all with the identical Stage-2 config (same wrapper/env/decoding/lengths).
 # Serial on 2 GPUs; each run is skipped if its SUCCESS marker exists.
 set -Eeuo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 EVAL_SCRIPT="$STAGE_ROOT/scripts/eval_stage2_gate_dual_gpu.sh"
-EVAL_ROOT="$TOOLWEAVE_ARTIFACTS_ROOT/stage2_eval"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/stage2_eval"
+EVAL_ROOT="$STAGE_ROOT/artifacts/stage2_eval"
+LOG_DIR="$STAGE_ROOT/logs/stage2_eval"
 
-BASE_MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
-STAGE1_MODEL="$TOOLWEAVE_ARTIFACTS_ROOT/gate_vs_base/merged/global_step_25"
-STAGE2_STEP25_MODEL="$TOOLWEAVE_ARTIFACTS_ROOT/stage2_eval/merged/global_step_25"
+BASE_MODEL="$WORKSPACE/models/Qwen3-4B"
+STAGE1_MODEL="$STAGE_ROOT/artifacts/gate_vs_base/merged/global_step_25"
+STAGE2_STEP25_MODEL="$STAGE_ROOT/artifacts/stage2_eval/merged/global_step_25"
 # Stage-2 update-20 weights were deleted by the trainer (max_actor_ckpt_to_keep=1);
 # set STAGE2_STEP20_MODEL here if a backup appears.
 STAGE2_STEP20_MODEL="${STAGE2_STEP20_MODEL:-}"
 
-VAL_400="$TOOLWEAVE_DATA_ROOT/checkpoint_gate_eval/val_400_combined.parquet"
+VAL_400="$STAGE_ROOT/data/checkpoint_gate_eval/val_400_combined.parquet"
 
 mkdir -p "$LOG_DIR"
 
@@ -30,7 +30,7 @@ run_one() {
     ALLOW_STAGE2_GATE_EVAL=1 bash "$EVAL_SCRIPT" "$model" "$label" "$VAL_400" \
         > "$LOG_DIR/${label}.driver.log" 2>&1
     local status=$?
-    toolweave_activate_conda
+    source /root/miniconda3/etc/profile.d/conda.sh; conda activate rods
     ray stop --force >/dev/null 2>&1 || true
     if [[ "$status" -ne 0 ]]; then
         echo "== EVAL $label FAILED status=$status =="; return 1

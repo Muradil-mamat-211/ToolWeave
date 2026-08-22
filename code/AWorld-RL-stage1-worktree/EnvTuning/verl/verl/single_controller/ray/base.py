@@ -91,8 +91,6 @@ class RayResourcePool(ResourcePool):
         max_colocate_count: int = 10,
         detached=False,
         accelerator_type: Optional[str] = None,
-        placement_strategy: Optional[str] = None,
-        cpus_per_worker: Optional[float] = None,
     ) -> None:
         super().__init__(process_on_nodes, max_colocate_count)
         self.use_gpu = use_gpu
@@ -101,12 +99,6 @@ class RayResourcePool(ResourcePool):
         self.pgs = None
         self.detached = detached
         self.accelerator_type = accelerator_type
-        self.placement_strategy = placement_strategy
-        self.cpus_per_worker = (
-            float(cpus_per_worker)
-            if cpus_per_worker is not None
-            else float(max_colocate_count)
-        )
 
     def get_placement_groups(self, strategy="STRICT_PACK", name=None, device_name="cuda"):
         if self.pgs is not None:
@@ -119,7 +111,7 @@ class RayResourcePool(ResourcePool):
         elif device_name == "cuda":
             device_name = "GPU"
 
-        bundle = {"CPU": self.cpus_per_worker}
+        bundle = {"CPU": self.max_colocate_count}
         if self.use_gpu:
             bundle[device_name] = 1
             if self.accelerator_type is not None:
@@ -128,7 +120,6 @@ class RayResourcePool(ResourcePool):
 
         lifetime = "detached" if self.detached else None
 
-        strategy = self.placement_strategy or strategy
         pgs = [placement_group(bundles=bundles, strategy=strategy, name=pg_name_prefix + str(idx), lifetime=lifetime) for idx, bundles in enumerate(pg_scheme)]
 
         ray.get([pg.ready() for pg in pgs])
@@ -160,17 +151,9 @@ def merge_resource_pool(rp1: RayResourcePool, rp2: RayResourcePool) -> RayResour
     assert rp1.n_gpus_per_node == rp2.n_gpus_per_node, "Both RayResourcePool must has the same n_gpus_per_node"
     assert rp1.detached == rp2.detached, "Detached ResourcePool cannot be merged with non-detached ResourcePool"
 
-    assert rp1.placement_strategy == rp2.placement_strategy, "Resource pools must use the same placement strategy"
-    assert rp1.cpus_per_worker == rp2.cpus_per_worker, "Resource pools must use the same CPU bundle size"
     new_store = rp1.store + rp2.store
 
-    merged = type(rp1)(
-        new_store,
-        rp1.use_gpu,
-        f"{rp1.name_prefix}_{rp2.name_prefix}",
-        placement_strategy=rp1.placement_strategy,
-        cpus_per_worker=rp1.cpus_per_worker,
-    )
+    merged = type(rp1)(new_store, rp1.use_gpu, f"{rp1.name_prefix}_{rp2.name_prefix}")
     merged.pgs = rp1.get_placement_groups() + rp2.get_placement_groups()
 
     return merged
@@ -341,8 +324,6 @@ class RayWorkerGroup(WorkerGroup):
         strategy = "PACK"
         if bin_pack:
             strategy = "STRICT_PACK"
-        if resource_pool.placement_strategy:
-            strategy = resource_pool.placement_strategy
         pgs = resource_pool.get_placement_groups(strategy=strategy, device_name=self.device_name)
         world_size = resource_pool.world_size
         self._world_size = world_size

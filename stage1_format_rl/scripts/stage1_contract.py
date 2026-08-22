@@ -3,21 +3,18 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-
-from machine_paths import project_roots
 from typing import Any, Iterable
 
 import numpy as np
 
 
-ROOTS = project_roots()
-WORKSPACE = ROOTS.source_root
-STAGE_ROOT = ROOTS.source_root / "stage1_format_rl"
-AWORLD_WORKTREE = ROOTS.source_root / "code" / "AWorld-RL-stage1-worktree"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+STAGE_ROOT = WORKSPACE / "stage1_format_rl"
+AWORLD_WORKTREE = WORKSPACE / "code" / "AWorld-RL-stage1-worktree"
 ENVTUNING_ROOT = AWORLD_WORKTREE / "EnvTuning"
 ADAPTED_VERL_ROOT = ENVTUNING_ROOT / "verl"
-MODEL_PATH = ROOTS.models_root / "Qwen3-4B"
-RAW_BFCL_ROOT = ROOTS.shared_data_root / "Berkeley-Function-Calling-Leaderboard"
+MODEL_PATH = WORKSPACE / "models" / "Qwen3-4B"
+RAW_BFCL_ROOT = WORKSPACE / "data" / "Berkeley-Function-Calling-Leaderboard"
 
 # The user's authoritative experiment setting. Several copied sections in the
 # request still say K=8; those stale values are intentionally not used.
@@ -109,3 +106,4 @@ def json_dump(path: Path, value: Any) -> None:
         json.dumps(normalize_nested(value), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+

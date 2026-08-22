@@ -3,10 +3,7 @@
 import json
 from pathlib import Path
 
-from machine_paths import project_roots
-
-ROOTS = project_roots()
-M = ROOTS.artifacts_root / "gate_vs_base/metrics"
+M = Path("/root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/gate_vs_base/metrics")
 def L(name): return json.loads((M/f"{name}.json").read_text())
 base100 = L("base_qwen3_4b_valbase")
 base400 = L("base_qwen3_4b_val400")
@@ -106,7 +103,6 @@ out.append("4. **无灾难性退化**：val-400 各类 format 降幅均 <5pp，L
 out.append("5. **结论**：Stage 1 门禁通过，进入 Stage 2。")
 out.append("")
 
-target = ROOTS.reports_root / "stage1_final_gate_step25_vs_step20_vs_base.md"
-target.parent.mkdir(parents=True, exist_ok=True)
+target = Path("/root/autodl-tmp/rods-workspace/stage1_format_rl/reports/stage1_final_gate_step25_vs_step20_vs_base.md")
 target.write_text("\n".join(out))
 print("report written:", target)

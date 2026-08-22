@@ -8,11 +8,9 @@ if [[ "${RODS_ALLOW_QWEN_EVAL_AFTER_GENERATOR:-0}" != "1" ]]; then
   exit 2
 fi
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
-export TOOLWEAVE_PROFILE="${TOOLWEAVE_SINGLE_GPU_PROFILE:-$STAGE_ROOT/configs/layers/profiles/single_gpu_eval.yaml}"
-MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B-RODS"
-PORT="${TOOLWEAVE_EVAL_PORT:-31000}"
-HOST="${TOOLWEAVE_EVAL_HOST:-127.0.0.1}"
+WORKSPACE=/root/autodl-tmp/rods-workspace
+MODEL="$WORKSPACE/models/Qwen3-4B-RODS"
+PORT="${RODS_EVAL_PORT:-31000}"
 
 if pgrep -af 'gemma-4-31B|vllm.entrypoints.openai.api_server' >/dev/null; then
   echo "Refusing to start Qwen eval while Gemma/vLLM is still present." >&2
@@ -26,14 +24,15 @@ if [[ ! "$used_mib" =~ ^[0-9]+$ ]] || (( used_mib > 2048 )); then
   exit 4
 fi
 
-toolweave_activate_conda
-toolweave_apply_topology learner
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=true
 
 exec python -m sglang.launch_server \
   --model-path "$MODEL" \
   --served-model-name Qwen3-4B-RODS \
-  --host "$HOST" \
+  --host 127.0.0.1 \
   --port "$PORT" \
   --tp-size 1 \
   --dtype bfloat16 \

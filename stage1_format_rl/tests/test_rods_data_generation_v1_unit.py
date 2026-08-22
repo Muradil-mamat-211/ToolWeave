@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 import multiprocessing
 from pathlib import Path
 
@@ -790,10 +789,9 @@ def test_catalog_validates_real_math_schema_and_arguments():
 
 
 def test_training_parquet_catalog_matches_active_envtuning_contract_and_fails_closed():
-    asset_root = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", Path(__file__).resolve().parents[2]))
     active_catalog = FunctionCatalog.from_training_parquet(
-        asset_root
-        / "stage1_format_rl/data/bfcl_stage3_train_all_400_shuffled_seed42.parquet"
+        "/root/autodl-tmp/rods-workspace/stage1_format_rl/data/"
+        "bfcl_stage3_train_all_400_shuffled_seed42.parquet"
     )
 
     # Regression for the online smoke failure: the separately downloaded

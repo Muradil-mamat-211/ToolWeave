@@ -19,18 +19,11 @@ import numpy as np
 import pandas as pd
 import torch
 
-from project_paths import (
-    EVALS_ROOT,
-    MODELS_ROOT,
-    OUTPUTS_ROOT,
-    REPORTS_ROOT,
-    SHARED_DATA_ROOT,
-    SOURCE_ROOT,
-)
-
-WORKSPACE = SOURCE_ROOT
-AWORLD = SOURCE_ROOT / "code" / "AWorld-RL" / "EnvTuning"
-VERL = SOURCE_ROOT / "code" / "verl"
+WORKSPACE = Path(os.environ.get("WORKSPACE", "/root/autodl-tmp/rods-workspace"))
+if not WORKSPACE.is_dir():
+    WORKSPACE = Path("/root/rods-workspace")
+AWORLD = WORKSPACE / "code" / "AWorld-RL" / "EnvTuning"
+VERL = WORKSPACE / "code" / "verl"
 sys.path.insert(0, str(AWORLD))
 sys.path.insert(0, str(VERL))
 
@@ -66,9 +59,9 @@ except Exception:
     pass
 
 MODEL_PATHS = {
-    "base_model": MODELS_ROOT / "Qwen3-1.7B",
-    "stage1_model": OUTPUTS_ROOT / "stage1_format_qwen3_1p7b" / "final_model",
-    "stage2_model": OUTPUTS_ROOT / "stage2_base_reasoning_qwen3_1p7b" / "final_model",
+    "base_model": WORKSPACE / "models" / "Qwen3-1.7B",
+    "stage1_model": WORKSPACE / "outputs" / "stage1_format_qwen3_1p7b" / "final_model",
+    "stage2_model": WORKSPACE / "outputs" / "stage2_base_reasoning_qwen3_1p7b" / "final_model",
 }
 
 
@@ -143,7 +136,7 @@ def official_system_with_tools(template: str, tools: list[dict[str, Any]]) -> st
 
 def possible_answers() -> dict[str, list[list[str]]]:
     out: dict[str, list[list[str]]] = {}
-    root = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard" / "possible_answer"
+    root = WORKSPACE / "data" / "Berkeley-Function-Calling-Leaderboard" / "possible_answer"
     for path in root.glob("BFCL_v3_multi_turn_*.json"):
         with path.open(encoding="utf-8") as f:
             for line in f:
@@ -208,8 +201,8 @@ def datasets() -> dict[str, list[dict[str, Any]]]:
     train = make_train_samples()
     template = str(train[0]["messages"][0]["content"])
     answers = possible_answers()
-    base = make_heldout_samples(EVALS_ROOT / "stage1_overall/heldout_base_eval.jsonl", answers, template)
-    mixed = make_heldout_samples(EVALS_ROOT / "stage1_overall/heldout_mixed_harder_eval.jsonl", answers, template)
+    base = make_heldout_samples(WORKSPACE / "evals/stage1_overall/heldout_base_eval.jsonl", answers, template)
+    mixed = make_heldout_samples(WORKSPACE / "evals/stage1_overall/heldout_mixed_harder_eval.jsonl", answers, template)
     return {"train_base_100": train, "heldout_base_100": base, "heldout_mixed_150": mixed}
 
 
@@ -259,30 +252,12 @@ def score_status(score: float) -> str:
 
 
 class Evaluator:
-    def __init__(
-        self,
-        name: str,
-        path: Path,
-        max_new_tokens: int,
-        max_actions: int,
-        backend: str = "vllm",
-        tensor_parallel_size: int = 1,
-        gpu_memory_utilization: float = 0.9,
-        max_model_len: int = 32768,
-    ):
+    def __init__(self, name: str, path: Path, max_new_tokens: int, max_actions: int, backend: str = "vllm"):
         self.name, self.path = name, path
         self.max_new_tokens, self.max_actions = max_new_tokens, max_actions
         self.backend = backend
         if backend == "vllm":
-            self.llm = LLM(
-                model=str(path),
-                tensor_parallel_size=tensor_parallel_size,
-                gpu_memory_utilization=gpu_memory_utilization,
-                max_model_len=max_model_len,
-                dtype="bfloat16",
-                enforce_eager=True,
-                trust_remote_code=True,
-            )
+            self.llm = LLM(model=str(path), tensor_parallel_size=2, gpu_memory_utilization=0.90, max_model_len=32768, dtype="bfloat16", enforce_eager=True, trust_remote_code=True)
             self.tokenizer = self.llm.get_tokenizer()
             self.model = None
         else:
@@ -493,7 +468,7 @@ def report(root: Path, by_model: dict[str, list[dict[str, Any]]], comparison: li
         "- Current models still require stronger multi-turn reasoning and state-completion ability; format success alone is insufficient.",
         "", "Official reward codes: -3 parse error, -2 execution error, -1 successful execution before a completed turn, 0 incorrect completed turn, 1 correct completed turn. Main progress is the mean of valid 0/1 values.",
         "", "## Artifacts", "", f"- Evaluation root: `{root}`", f"- Base full outputs: `{root / 'base_model/base_model_eval_outputs.jsonl'}`", f"- Stage1 full outputs: `{root / 'stage1_model/stage1_model_eval_outputs.jsonl'}`", f"- Stage2 full outputs: `{root / 'stage2_model/stage2_model_eval_outputs.jsonl'}`", f"- Unified summary: `{root / 'summary/three_model_comparison_summary.json'}` and `{root / 'summary/three_model_comparison_summary.csv'}`", f"- Case studies: `{root / 'summary/case_studies.jsonl'}` and `{root / 'summary/case_studies.md'}`"]
-    (REPORTS_ROOT / "stage2_three_model_eval_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (WORKSPACE / "reports/stage2_three_model_eval_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 async def run(args):
@@ -506,16 +481,7 @@ async def run(args):
         output_path = out / f"{model_name}_eval_outputs.jsonl"
         if output_path.exists(): output_path.unlink()
         print(f"[model-start] {model_name}", flush=True)
-        evaluator = Evaluator(
-            model_name,
-            model_path,
-            args.max_new_tokens,
-            args.max_actions,
-            args.backend,
-            tensor_parallel_size=args.tensor_parallel_size,
-            gpu_memory_utilization=args.gpu_memory_utilization,
-            max_model_len=args.max_model_len,
-        )
+        evaluator = Evaluator(model_name, model_path, args.max_new_tokens, args.max_actions, args.backend)
         with output_path.open("w", encoding="utf-8") as f:
             for di, dataset in enumerate(order):
                 samples = data[dataset][:args.max_per_dataset]
@@ -537,29 +503,12 @@ async def run(args):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--mode", choices=["smoke", "formal"], required=True)
-    p.add_argument("--eval_root", default=str(EVALS_ROOT / "stage2_three_model_comparison"))
+    p.add_argument("--eval_root", default=str(WORKSPACE / "evals/stage2_three_model_comparison"))
     p.add_argument("--max_per_dataset", type=int, default=5)
     p.add_argument("--stochastic_n", type=int, default=2)
     p.add_argument("--max_new_tokens", type=int, default=1024)
     p.add_argument("--max_actions", type=int, default=100)
     p.add_argument("--backend", choices=["vllm", "transformers"], default="vllm")
-    p.add_argument(
-        "--tensor_parallel_size",
-        type=int,
-        default=int(os.environ.get("TOOLWEAVE_ROLLOUT_TP", "1")),
-    )
-    p.add_argument(
-        "--gpu_memory_utilization",
-        type=float,
-        default=float(
-            os.environ.get("TOOLWEAVE_ROLLOUT_GPU_MEMORY_UTILIZATION", "0.90")
-        ),
-    )
-    p.add_argument(
-        "--max_model_len",
-        type=int,
-        default=int(os.environ.get("TOOLWEAVE_ROLLOUT_MAX_MODEL_LEN", "32768")),
-    )
     args = p.parse_args(); asyncio.run(run(args))
 
 

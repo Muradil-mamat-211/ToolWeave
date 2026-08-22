@@ -3,46 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import os
 from pathlib import Path
 from typing import Any, Mapping
 
 
-def _discover_source_root() -> Path:
-    configured = os.environ.get("TOOLWEAVE_SOURCE_ROOT") or os.environ.get("TOOLWEAVE_ROOT")
-    if configured:
-        return Path(configured).expanduser().resolve()
-    for candidate in Path(__file__).resolve().parents:
-        if (candidate / "stage1_format_rl").is_dir() and (candidate / "code").is_dir():
-            return candidate
-    raise RuntimeError(
-        "Cannot discover ToolWeave source root; set TOOLWEAVE_SOURCE_ROOT"
-    )
-
-
-# Compatibility name retained for schema-source imports.  It is now discovered
-# from the checkout or supplied by machine-local environment, never hard-coded.
-WORKSPACE = _discover_source_root()
-ASSET_ROOT = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", WORKSPACE)).expanduser().resolve()
-MODELS_ROOT = Path(os.environ.get("TOOLWEAVE_MODELS_ROOT", ASSET_ROOT / "models")).expanduser().resolve()
-DATA_ROOT = Path(
-    os.environ.get("TOOLWEAVE_DATA_ROOT", ASSET_ROOT / "stage1_format_rl" / "data")
-).expanduser().resolve()
-ARTIFACTS_ROOT = Path(
-    os.environ.get(
-        "TOOLWEAVE_ARTIFACTS_ROOT", ASSET_ROOT / "stage1_format_rl" / "artifacts"
-    )
-).expanduser().resolve()
-GENERATOR_ENDPOINT = os.environ.get(
-    "TOOLWEAVE_GENERATOR_ENDPOINT", "http://127.0.0.1:8000/v1"
-)
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
 
 
 @dataclass(frozen=True)
 class LLMConfig:
     backend: str = "replay"
-    model: str = str(MODELS_ROOT / "gemma-4-31B-it-manual")
-    endpoint: str = GENERATOR_ENDPOINT
+    model: str = str(WORKSPACE / "models" / "gemma-4-31B-it-manual")
+    endpoint: str = "http://127.0.0.1:8000/v1"
     api_key: str = "EMPTY"
     temperature: float = 1.0  # RODS Appendix J
     top_p: float = 0.7  # RODS Appendix J
@@ -77,16 +49,16 @@ class LLMConfig:
 
 @dataclass(frozen=True)
 class QueueConfig:
-    seed_path: str = str(ARTIFACTS_ROOT / "stage3_queues/boundary_seeds.jsonl")
+    seed_path: str = str(WORKSPACE / "stage1_format_rl/artifacts/stage3_queues/boundary_seeds.jsonl")
     # Safe default: production queue requires an explicit config override plus
     # the launch guard.  Dry runs never target the Training ingestion queue.
     candidate_path: str = str(
-        ARTIFACTS_ROOT / "stage3_generator/dry_run/validated_candidates.jsonl"
+        WORKSPACE / "stage1_format_rl/artifacts/stage3_generator/dry_run/validated_candidates.jsonl"
     )
-    tracker_path: str = str(ARTIFACTS_ROOT / "stage3_generator/tracker.json")
-    event_log_path: str = str(ARTIFACTS_ROOT / "stage3_generator/events.jsonl")
-    expanded_log_dir: str = str(ARTIFACTS_ROOT / "stage3_generator/expanded")
-    production_candidate_path: str = str(ARTIFACTS_ROOT / "stage3_queues/validated_candidates.jsonl")
+    tracker_path: str = str(WORKSPACE / "stage1_format_rl/artifacts/stage3_generator/tracker.json")
+    event_log_path: str = str(WORKSPACE / "stage1_format_rl/artifacts/stage3_generator/events.jsonl")
+    expanded_log_dir: str = str(WORKSPACE / "stage1_format_rl/artifacts/stage3_generator/expanded")
+    production_candidate_path: str = str(WORKSPACE / "stage1_format_rl/artifacts/stage3_queues/validated_candidates.jsonl")
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any] | None) -> "QueueConfig":
@@ -100,13 +72,14 @@ class GeneratorConfig:
     llm: LLMConfig = field(default_factory=LLMConfig)
     queues: QueueConfig = field(default_factory=QueueConfig)
     function_catalog_dir: str = str(
-        ASSET_ROOT / "data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc"
+        WORKSPACE / "data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc"
     )
     # PROJECT integration source of truth.  The schemas embedded in this
     # active Training dataset match EnvTuning's bfcl_env implementation; the
     # separately downloaded public function-doc checkout is version-skewed.
     function_schema_parquet: str = str(
-        DATA_ROOT / "bfcl_stage3_train_all_400_shuffled_seed42.parquet"
+        WORKSPACE
+        / "stage1_format_rl/data/bfcl_stage3_train_all_400_shuffled_seed42.parquet"
     )
     max_pipeline_attempts: int = 3  # RODS Appendix J
     planner_retries: int = 3  # RODS Appendix J

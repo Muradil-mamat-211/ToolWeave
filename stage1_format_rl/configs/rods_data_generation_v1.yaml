@@ -3,8 +3,8 @@
 # candidate queue. Change dry_run and candidate_path only for an authorized run.
 llm:
   backend: vllm_openai
-  model: ${TOOLWEAVE_MODELS_ROOT}/gemma-4-31B-it-manual
-  endpoint: ${TOOLWEAVE_GENERATOR_ENDPOINT}
+  model: /root/autodl-tmp/rods-workspace/models/gemma-4-31B-it-manual
+  endpoint: http://127.0.0.1:8000/v1
   api_key: EMPTY
   temperature: 1.0        # RODS Appendix J
   top_p: 0.7              # RODS Appendix J
@@ -13,19 +13,19 @@ llm:
   transport_retries: 2    # transport only, separate from algorithm retries
   concurrency: 1          # benchmark before production on 2x48GB
   disable_native_thinking: true
-  raw_response_log_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator/raw_responses.jsonl
+  raw_response_log_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_generator/raw_responses.jsonl
   replay_path: ""
 
 queues:
-  seed_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/boundary_seeds.jsonl
-  candidate_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator/dry_run/validated_candidates.jsonl
-  production_candidate_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/validated_candidates.jsonl
-  tracker_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator/dry_run/tracker.json
-  event_log_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator/dry_run/events.jsonl
-  expanded_log_dir: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator/dry_run/expanded
+  seed_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_queues/boundary_seeds.jsonl
+  candidate_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_generator/dry_run/validated_candidates.jsonl
+  production_candidate_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_queues/validated_candidates.jsonl
+  tracker_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_generator/dry_run/tracker.json
+  event_log_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_generator/dry_run/events.jsonl
+  expanded_log_dir: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_generator/dry_run/expanded
 
-function_catalog_dir: ${TOOLWEAVE_ASSET_ROOT}/data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc
-function_schema_parquet: ${TOOLWEAVE_DATA_ROOT}/bfcl_stage3_train_all_400_shuffled_seed42.parquet
+function_catalog_dir: /root/autodl-tmp/rods-workspace/data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc
+function_schema_parquet: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_stage3_train_all_400_shuffled_seed42.parquet
 max_pipeline_attempts: 3  # RODS Appendix J
 planner_retries: 3        # RODS Appendix J
 agent_parse_retries: 1    # PROJECT / RECONSTRUCTED default

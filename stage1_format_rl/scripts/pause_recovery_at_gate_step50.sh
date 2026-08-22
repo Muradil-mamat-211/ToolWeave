@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
-toolweave_apply_topology learner
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
-OUTPUT_ROOT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_format_qwen3_4b_recovery_from_step25"
+OUTPUT_ROOT="$WORKSPACE/outputs/stage1_format_qwen3_4b_recovery_from_step25"
 CHECKPOINT="$OUTPUT_ROOT/checkpoints/global_step_50"
 ARCHIVE="$OUTPUT_ROOT/weight_checkpoints_repaired/global_step_75"
 LATEST="$OUTPUT_ROOT/checkpoints/latest_checkpointed_iteration.txt"
-LOG_DIR="$TOOLWEAVE_LOGS_ROOT/checkpoint_gate_eval"
+LOG_DIR="$STAGE_ROOT/logs/checkpoint_gate_eval"
 LOG_FILE="$LOG_DIR/gate_boundary_pause.log"
 STATUS_FILE="$LOG_DIR/gate_boundary_pause.status"
 
@@ -21,20 +20,20 @@ checkpoint_complete() {
     [[ -f "$LATEST" ]] || return 1
     [[ "$(tr -dc '0-9' < "$LATEST")" == "50" ]] || return 1
     [[ -s "$CHECKPOINT/data.pt" ]] || return 1
-    for ((rank=0; rank<TOOLWEAVE_LEARNER_WORLD_SIZE; rank++)); do
-        [[ -s "$CHECKPOINT/actor/model_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt" ]] || return 1
-        [[ -s "$CHECKPOINT/actor/optim_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt" ]] || return 1
-        [[ -s "$CHECKPOINT/actor/extra_state_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt" ]] || return 1
+    for rank in 0 1; do
+        [[ -s "$CHECKPOINT/actor/model_world_size_2_rank_${rank}.pt" ]] || return 1
+        [[ -s "$CHECKPOINT/actor/optim_world_size_2_rank_${rank}.pt" ]] || return 1
+        [[ -s "$CHECKPOINT/actor/extra_state_world_size_2_rank_${rank}.pt" ]] || return 1
     done
 }
 
 archive_complete() {
     [[ -s "$ARCHIVE/checkpoint_manifest.json" ]] || return 1
-    for ((rank=0; rank<TOOLWEAVE_LEARNER_WORLD_SIZE; rank++)); do
-        [[ -s "$ARCHIVE/actor/model_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt" ]] || return 1
+    for rank in 0 1; do
+        [[ -s "$ARCHIVE/actor/model_world_size_2_rank_${rank}.pt" ]] || return 1
         local source_stat archive_stat
-        source_stat="$(stat -c '%d:%i:%s' "$CHECKPOINT/actor/model_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt")"
-        archive_stat="$(stat -c '%d:%i:%s' "$ARCHIVE/actor/model_world_size_${TOOLWEAVE_LEARNER_WORLD_SIZE}_rank_${rank}.pt")"
+        source_stat="$(stat -c '%d:%i:%s' "$CHECKPOINT/actor/model_world_size_2_rank_${rank}.pt")"
+        archive_stat="$(stat -c '%d:%i:%s' "$ARCHIVE/actor/model_world_size_2_rank_${rank}.pt")"
         [[ "$source_stat" == "$archive_stat" ]] || return 1
     done
 }

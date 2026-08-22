@@ -8,12 +8,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from project_paths import REPORTS_ROOT, STAGE_DATA_ROOT
 
-
-SOURCE = STAGE_DATA_ROOT / "bfcl_val_400.parquet"
-OUT_JSON = REPORTS_ROOT / "bfcl_four_class_eval_samples_full.json"
-OUT_MD = REPORTS_ROOT / "bfcl_four_class_eval_samples_full.md"
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
+SOURCE = WORKSPACE / "stage1_format_rl/data/bfcl_val_400.parquet"
+OUT_JSON = WORKSPACE / "reports/bfcl_four_class_eval_samples_full.json"
+OUT_MD = WORKSPACE / "reports/bfcl_four_class_eval_samples_full.md"
 CATEGORIES = [
     "multi_turn_base",
     "multi_turn_miss_func",

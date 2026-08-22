@@ -1,9 +1,0 @@
-schema_version: toolweave.profile.v1
-mode: reference
-machine: ../../../../environment/machine.template.yaml
-experiment: ../experiment/stage3_rods_matchtir_v1.yaml
-generator: ../experiment/rods_data_generation_v1.yaml
-assets: ../assets/stage3_online_reference.yaml
-hardware: ../hardware/reference_2x_rtx_pro_6000.yaml
-runtime: ../runtime/stage3_online_2gpu_isolated.yaml
-qualification: ../qualification/reference_online_2gpu.yaml

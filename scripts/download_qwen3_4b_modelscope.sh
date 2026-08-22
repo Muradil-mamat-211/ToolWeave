@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../stage1_format_rl/scripts" && pwd -P)/_machine.sh"
-LOG="$TOOLWEAVE_LOGS_ROOT/modelscope_qwen3_4b_download.log"
-TEMP="$TOOLWEAVE_CACHE_ROOT/downloads/modelscope-Qwen3-4B"
-mkdir -p "$TOOLWEAVE_LOGS_ROOT" "$(dirname "$TEMP")" "$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
+LOG="$WORKSPACE/logs/modelscope_qwen3_4b_download.log"
+TEMP="$WORKSPACE/downloads/modelscope-Qwen3-4B"
+mkdir -p "$WORKSPACE/logs" "$WORKSPACE/downloads" "$WORKSPACE/models/Qwen3-4B"
 exec > >(tee -a "$LOG") 2>&1
 
 echo "=== ModelScope Qwen3-4B download started: $(date -Is) ==="
@@ -19,7 +19,8 @@ if [[ -n "${HTTPS_PROXY:-}" ]]; then export https_proxy="$HTTPS_PROXY"; fi
 echo "Proxy variables in download child:"
 env | grep -Ei '^(http|https|all)_proxy=' || true
 
-toolweave_activate_conda
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 mkdir -p "$TEMP"
 
 modelscope download Qwen/Qwen3-4B \

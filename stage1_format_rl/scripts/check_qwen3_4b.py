@@ -5,11 +5,7 @@ import argparse
 import json
 from pathlib import Path
 
-from machine_paths import project_roots
 from transformers import AutoConfig, AutoTokenizer
-
-
-ROOTS = project_roots()
 
 
 def estimate_qwen3_dense_parameters(config) -> int:
@@ -176,12 +172,15 @@ def main() -> None:
     parser.add_argument(
         "--model-path",
         type=Path,
-        default=ROOTS.models_root / "Qwen3-4B",
+        default=Path("/root/autodl-tmp/rods-workspace/models/Qwen3-4B"),
     )
     parser.add_argument(
         "--report",
         type=Path,
-        default=ROOTS.reports_root / "qwen3_4b_model_report.md",
+        default=Path(
+            "/root/autodl-tmp/rods-workspace/stage1_format_rl/reports/"
+            "qwen3_4b_model_report.md"
+        ),
     )
     args = parser.parse_args()
     report = inspect_model(args.model_path)
@@ -191,3 +190,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

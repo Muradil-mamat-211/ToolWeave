@@ -10,17 +10,17 @@
 # 从 default_local_dir 里最新的、经完整性校验的 checkpoint 无缝续跑。
 set -Eeuo pipefail
 
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/_machine.sh"
+WORKSPACE="/root/autodl-tmp/rods-workspace"
 AWORLD="$WORKSPACE/code/AWorld-RL-stage1-worktree"
 STAGE_ROOT="$WORKSPACE/stage1_format_rl"
 CONFIG_DIR="$STAGE_ROOT/configs"
 CONFIG_NAME="stage1_qwen3_4b_k16_retrain_batch20"
-CKPT_DIR="$TOOLWEAVE_OUTPUTS_ROOT/stage1_qwen3_4b_k16_retrain_batch20/checkpoints"
-SMOKE_DIR="$TOOLWEAVE_ARTIFACTS_ROOT/gpu_smoke/retrain_smoke"
-BASE_MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-4B"
-TRAIN_FILE="$TOOLWEAVE_DATA_ROOT/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
-VAL_FILE="$TOOLWEAVE_DATA_ROOT/val_100_stratified_seed42.parquet"
-TMP_ROOT="$TOOLWEAVE_SHORT_TEMP_ROOT/stage1-retrain"
+CKPT_DIR="$WORKSPACE/outputs/stage1_qwen3_4b_k16_retrain_batch20/checkpoints"
+SMOKE_DIR="$STAGE_ROOT/artifacts/gpu_smoke/retrain_smoke"
+BASE_MODEL="$WORKSPACE/models/Qwen3-4B"
+TRAIN_FILE="$STAGE_ROOT/data/bfcl_stage1_train_base_100_shuffled_seed42.parquet"
+VAL_FILE="$STAGE_ROOT/data/val_100_stratified_seed42.parquet"
+TMP_ROOT="/tmp/r1g"
 SESSION="rods-stage1-retrain"
 
 require_ok() {
@@ -29,17 +29,18 @@ require_ok() {
 }
 
 setup_env() {
-    toolweave_activate_conda
+    source /root/miniconda3/etc/profile.d/conda.sh
+    conda activate rods
     export PYTHONPATH="$AWORLD/EnvTuning:$AWORLD/EnvTuning/verl${PYTHONPATH:+:$PYTHONPATH}"
-    toolweave_apply_topology learner
-    export TOKENIZERS_PARALLELISM=true
+    export CUDA_VISIBLE_DEVICES=0,1
+    export OMP_NUM_THREADS=48 MKL_NUM_THREADS=48 NUMEXPR_MAX_THREADS=48
+    export TOKENIZERS_PARALLELISM=true RAYON_NUM_THREADS=48
     export NCCL_P2P_DISABLE=1 NCCL_SHM_DISABLE=0 NCCL_IB_DISABLE=1 NCCL_DEBUG=WARN NCCL_TIMEOUT=3600
     export PYTHONUNBUFFERED=1
     # MUST remain unset: expandable_segments breaks TorchMemorySaver, which the
     # hybrid engine needs to swap weights between SGLang and FSDP on one GPU.
     unset PYTORCH_CUDA_ALLOC_CONF
-    toolweave_safe_rm_rf "$TMP_ROOT" 2>/dev/null
-    mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
+    rm -rf "$TMP_ROOT" /tmp/ray 2>/dev/null; mkdir -p "$TMP_ROOT/ray" "$TMP_ROOT/triton"
     export TRITON_CACHE_DIR="$TMP_ROOT/triton"
     export RAY_TMPDIR="$TMP_ROOT/ray"
     export TMPDIR="$TMP_ROOT"
@@ -47,12 +48,11 @@ setup_env() {
 
 checkpoint_complete() {
     local dir="$1"
-    local world_size="${TOOLWEAVE_LEARNER_WORLD_SIZE:?topology plan was not applied}"
     [[ -s "$dir/data.pt" ]] || return 1
-    for ((rank=0; rank<world_size; rank++)); do
-        [[ -s "$dir/actor/model_world_size_${world_size}_rank_${rank}.pt" ]] || return 1
-        [[ -s "$dir/actor/optim_world_size_${world_size}_rank_${rank}.pt" ]] || return 1
-        [[ -s "$dir/actor/extra_state_world_size_${world_size}_rank_${rank}.pt" ]] || return 1
+    for rank in 0 1; do
+        [[ -s "$dir/actor/model_world_size_2_rank_${rank}.pt" ]] || return 1
+        [[ -s "$dir/actor/optim_world_size_2_rank_${rank}.pt" ]] || return 1
+        [[ -s "$dir/actor/extra_state_world_size_2_rank_${rank}.pt" ]] || return 1
     done
     return 0
 }
@@ -79,8 +79,6 @@ report_resume() {
 
 preflight() {
     echo "== Preflight (no GPU) =="
-    toolweave_activate_conda
-    toolweave_apply_topology learner
     local fail=0
     require_ok "base model"   "$BASE_MODEL"            || fail=1
     require_ok "config"       "$CONFIG_DIR/$CONFIG_NAME.yaml" || fail=1
@@ -89,7 +87,7 @@ preflight() {
     require_ok "reward"       "$AWORLD/EnvTuning/env_tuning/format_reward.py" || fail=1
     require_ok "interaction"  "$AWORLD/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml" || fail=1
     local avail
-    avail="$(df -P "$TOOLWEAVE_ASSET_ROOT" | tail -1 | awk '{print $4}')"
+    avail="$(df -P /root/autodl-tmp | tail -1 | awk '{print $4}')"
     echo "  disk free: ${avail} KB (建议 ≥ 60GB)"
     if (( avail < 60*1024*1024 )); then echo "  [FAIL] disk low"; fail=1; fi
     nvidia-smi --query-gpu=index,memory.used,memory.total --format=csv,noheader 2>/dev/null \
@@ -125,7 +123,7 @@ run_smoke() {
         trainer.default_local_dir="$SMOKE_DIR/checkpoints" \
         trainer.rollout_data_dir=null \
         trainer.validation_data_dir="$SMOKE_DIR/rollouts" \
-    ) 2>&1 | tee "$TOOLWEAVE_LOGS_ROOT/retrain_smoke.log"
+    ) 2>&1 | tee "$STAGE_ROOT/logs/retrain_smoke.log"
     local status=${PIPESTATUS[0]}
     echo "== Smoke exit=$status =="
     echo "  检查: 1) 无 OOM/Traceback  2) critic/score 有限  3) response_length/clip_ratio 低"
@@ -145,7 +143,7 @@ run_full() {
       python -m verl.trainer.main_ppo \
         --config-path="$CONFIG_DIR" \
         --config-name="$CONFIG_NAME" \
-    ) 2>&1 | tee "$TOOLWEAVE_LOGS_ROOT/retrain_train.log"
+    ) 2>&1 | tee "$STAGE_ROOT/logs/retrain_train.log"
     exit "${PIPESTATUS[0]}"
 }
 

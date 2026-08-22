@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from machine_paths import project_roots
 from stage1_contract import json_dump, normalize_nested, protocol_aligned_system_prompt
 
 
@@ -46,19 +45,22 @@ def patch_row(raw_row: dict) -> dict:
 
 
 def main() -> None:
-    roots = project_roots()
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--source",
         type=Path,
-        default=roots.asset_root
-        / "code/AWorld-RL-stage1-worktree/EnvTuning/data/bfcl_train.parquet",
+        default=Path(
+            "/root/autodl-tmp/rods-workspace/code/"
+            "AWorld-RL-stage1-worktree/EnvTuning/data/bfcl_train.parquet"
+        ),
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=roots.stage_data_root
-        / "bfcl_stage3_train_all_400_shuffled_seed42.parquet",
+        default=Path(
+            "/root/autodl-tmp/rods-workspace/stage1_format_rl/data/"
+            "bfcl_stage3_train_all_400_shuffled_seed42.parquet"
+        ),
     )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()

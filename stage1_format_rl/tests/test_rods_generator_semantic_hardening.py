@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import copy
 import json
-import os
 from pathlib import Path
 
 from env_tuning.rods_data_generation_v1.daemon import GeneratorDaemon
@@ -46,8 +45,7 @@ from rods_data_generation_v1_fixtures import (
 )
 
 
-SOURCE_ROOT = Path(__file__).resolve().parents[2]
-WORKSPACE = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", SOURCE_ROOT)).expanduser().resolve()
+WORKSPACE = Path("/root/autodl-tmp/rods-workspace")
 RECOVERY_CANDIDATES = (
     WORKSPACE
     / "stage1_format_rl/artifacts/"

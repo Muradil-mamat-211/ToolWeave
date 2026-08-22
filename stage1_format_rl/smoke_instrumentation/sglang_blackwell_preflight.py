@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import time
-from pathlib import Path
 
 from sglang.srt.entrypoints.engine import Engine
 
@@ -16,13 +15,11 @@ def main() -> None:
     sampling_backend = os.environ.get("RODS_SGLANG_SAMPLING_BACKEND", "pytorch")
     max_prefill_tokens = int(os.environ.get("RODS_SGLANG_MAX_PREFILL_TOKENS", "16384"))
     chunked_prefill_size = int(os.environ.get("RODS_SGLANG_CHUNKED_PREFILL_SIZE", "8192"))
-    asset_root = Path(
-        os.environ.get(
-            "TOOLWEAVE_ASSET_ROOT", Path(__file__).resolve().parents[2]
-        )
-    ).expanduser().resolve()
     engine = Engine(
-        model_path=str(asset_root / "stage1_format_rl/artifacts/stage2_eval/merged/global_step_25"),
+        model_path=(
+            "/root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/"
+            "stage2_eval/merged/global_step_25"
+        ),
         dtype="bfloat16",
         mem_fraction_static=0.50,
         tp_size=1,

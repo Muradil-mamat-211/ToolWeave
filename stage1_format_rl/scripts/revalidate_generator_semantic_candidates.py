@@ -7,7 +7,6 @@ import argparse
 import asyncio
 import copy
 import json
-import os
 from dataclasses import asdict
 from pathlib import Path
 
@@ -29,7 +28,6 @@ from env_tuning.rods_data_generation_v1.validation.relational_resolution import 
     relational_resolution_gate,
 )
 from env_tuning.rods_matchtir_v1.lifecycle import validate_candidate_record
-from machine_paths import project_roots
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -233,7 +231,6 @@ async def main_async(args: argparse.Namespace) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    roots = project_roots()
     parser = argparse.ArgumentParser()
     parser.add_argument("--candidates", type=Path, nargs="+", required=True)
     parser.add_argument("--catalog", type=Path, required=True)
@@ -242,13 +239,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pass-name", default="revalidated_candidates.jsonl")
     parser.add_argument("--quarantine-name", default="quarantined_candidates.jsonl")
     parser.add_argument("--details-name", default="semantic_gate_details.jsonl")
-    parser.add_argument(
-        "--endpoint",
-        default=os.environ.get("TOOLWEAVE_GENERATOR_ENDPOINT", "http://127.0.0.1:8000/v1"),
-    )
+    parser.add_argument("--endpoint", default="http://127.0.0.1:8000/v1")
     parser.add_argument(
         "--model",
-        default=str(roots.models_root / "gemma-4-31B-it-manual"),
+        default="/root/autodl-tmp/rods-workspace/models/gemma-4-31B-it-manual",
     )
     parser.add_argument("--max-tokens", type=int, default=2048)
     parser.add_argument("--timeout", type=float, default=600.0)

@@ -4,27 +4,20 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from project_paths import (
-    LOGS_ROOT,
-    MODELS_ROOT,
-    REPORTS_ROOT,
-    SHARED_DATA_ROOT,
-    SOURCE_ROOT,
-)
 
-
-WORKSPACE = SOURCE_ROOT
-REPORT = REPORTS_ROOT / "rods_resource_audit.md"
-MODEL = MODELS_ROOT / "Qwen3-4B"
-BFCL = SHARED_DATA_ROOT / "Berkeley-Function-Calling-Leaderboard"
-AWORLD = SOURCE_ROOT / "code" / "AWorld-RL"
-GORILLA = SOURCE_ROOT / "code" / "gorilla"
-VERL = SOURCE_ROOT / "code" / "verl"
+WORKSPACE = Path(os.environ.get("WORKSPACE", "/root/autodl-tmp/rods-workspace"))
+REPORT = WORKSPACE / "reports" / "rods_resource_audit.md"
+MODEL = WORKSPACE / "models" / "Qwen3-4B"
+BFCL = WORKSPACE / "data" / "Berkeley-Function-Calling-Leaderboard"
+AWORLD = WORKSPACE / "code" / "AWorld-RL"
+GORILLA = WORKSPACE / "code" / "gorilla"
+VERL = WORKSPACE / "code" / "verl"
 
 
 def run(cmd: list[str], cwd: Path | None = None) -> str:
@@ -83,7 +76,7 @@ def model_audit() -> dict:
 
 def main() -> None:
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    audit_path = REPORTS_ROOT / "bfcl_rods_data_audit.json"
+    audit_path = WORKSPACE / "reports" / "bfcl_rods_data_audit.json"
     bfcl_audit = json.loads(audit_path.read_text(encoding="utf-8")) if audit_path.exists() else {}
     model = model_audit()
     repositories = {name: git_info(path) for name, path in {"AWorld-RL": AWORLD, "Gorilla": GORILLA, "veRL": VERL}.items()}
@@ -168,10 +161,10 @@ def main() -> None:
         "- tmux session: `rods-download`.",
         "- Academic acceleration was sourced only inside the detached download child; the current Codex shell did not source `/etc/network_turbo`.",
         f"- Current session at report generation: `{'RUNNING' if tmux_running else 'STOPPED'}`.",
-        f"- Main download log: `{LOGS_ROOT / 'resource_download.log'}`.",
-        f"- ModelScope download log: `{LOGS_ROOT / 'modelscope_qwen3_4b_download.log'}`.",
-        f"- HF partial/failed-attempt log: `{LOGS_ROOT / 'resource_download.log'}`; HF Xet returned 401 and standard HF retry was superseded by the exact-repo ModelScope mirror.",
-        "- No permanent proxy file was changed; user shell profiles and the system environment were left untouched.",
+        f"- Main download log: `{WORKSPACE / 'logs' / 'resource_download.log'}`.",
+        f"- ModelScope download log: `{WORKSPACE / 'logs' / 'modelscope_qwen3_4b_download.log'}`.",
+        f"- HF partial/failed-attempt log: `{WORKSPACE / 'logs' / 'resource_download.log'}`; HF Xet returned 401 and standard HF retry was superseded by the exact-repo ModelScope mirror.",
+        "- No permanent proxy file was changed; `/root/.bashrc`, `/root/.profile`, and `/etc/environment` contain no AutoDL proxy additions.",
         "",
         "## Final Status",
         f"- Stage 1 data preparation: **{'PASS' if train_base.get('rows') == 100 else 'PARTIAL/FAIL'}**",

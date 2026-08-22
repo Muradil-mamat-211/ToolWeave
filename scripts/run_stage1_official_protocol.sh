@@ -2,18 +2,19 @@
 set -euo pipefail
 
 MODE="${1:-smoke}"
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../stage1_format_rl/scripts" && pwd -P)/_machine.sh"
-toolweave_activate_conda
-toolweave_apply_topology learner
+WORKSPACE=/root/autodl-tmp/rods-workspace
+
+source /root/miniconda3/etc/profile.d/conda.sh
+conda activate rods
 
 AWORLD="$WORKSPACE/code/AWorld-RL"
 ENV_ROOT="$AWORLD/EnvTuning"
-DATA="$TOOLWEAVE_SHARED_DATA_ROOT/stage2_official/bfcl_v3_multiturn_base_official.parquet"
-VAL="$TOOLWEAVE_SHARED_DATA_ROOT/stage2_official/bfcl_val_official.parquet"
-MODEL="$TOOLWEAVE_MODELS_ROOT/Qwen3-1.7B"
+DATA="$WORKSPACE/data/stage2_official/bfcl_v3_multiturn_base_official.parquet"
+VAL="$WORKSPACE/data/stage2_official/bfcl_val_official.parquet"
+MODEL="$WORKSPACE/models/Qwen3-1.7B"
 
 if [[ "$MODE" == "smoke" ]]; then
-  OUT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_official_protocol_qwen3_1p7b_smoke"
+  OUT="$WORKSPACE/outputs/stage1_official_protocol_qwen3_1p7b_smoke"
   K=4
   BATCH=1
   MINI=4
@@ -24,7 +25,7 @@ if [[ "$MODE" == "smoke" ]]; then
   LOGGER="[console]"
   EXPERIMENT="stage1_official_protocol_qwen3_1p7b_smoke"
 else
-  OUT="$TOOLWEAVE_OUTPUTS_ROOT/stage1_official_protocol_qwen3_1p7b"
+  OUT="$WORKSPACE/outputs/stage1_official_protocol_qwen3_1p7b"
   K=8
   BATCH=2
   MINI=8
@@ -37,14 +38,17 @@ else
 fi
 
 mkdir -p "$OUT" "$OUT/logs" "$OUT/training_rollouts" "$OUT/checkpoints"
+export CUDA_VISIBLE_DEVICES="0,1"
+export NVIDIA_VISIBLE_DEVICES="all"
 export PYTHONPATH="$ENV_ROOT:$ENV_ROOT/verl:$WORKSPACE/code/verl:${PYTHONPATH:-}"
 export NCCL_IB_TIMEOUT=22
 export NCCL_TIMEOUT=9999999999
-export TRITON_CACHE_DIR="$TOOLWEAVE_CACHE_ROOT/triton/stage1-official"
+export TRITON_CACHE_DIR="/tmp/triton_cache_$(id -u)"
+export OMP_NUM_THREADS=1
 
 cd "$ENV_ROOT"
 
-CMD=("$TOOLWEAVE_PYTHON" -m verl.trainer.main_ppo
+CMD=(python -m verl.trainer.main_ppo
   --config-path="$ENV_ROOT/env_tuning/config"
   --config-name=multi_turn_fc_grpo_stage1
   algorithm.adv_estimator=grpo
@@ -68,7 +72,7 @@ CMD=("$TOOLWEAVE_PYTHON" -m verl.trainer.main_ppo
   actor_rollout_ref.actor.ppo_max_token_len_per_gpu=8192
   actor_rollout_ref.rollout.log_prob_use_dynamic_bsz=True
   actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=8192
-  actor_rollout_ref.rollout.tensor_model_parallel_size="$TOOLWEAVE_ROLLOUT_TP"
+  actor_rollout_ref.rollout.tensor_model_parallel_size=1
   actor_rollout_ref.rollout.gpu_memory_utilization=0.80
   actor_rollout_ref.rollout.n="$K"
   actor_rollout_ref.rollout.max_num_batched_tokens=8192
@@ -91,9 +95,8 @@ CMD=("$TOOLWEAVE_PYTHON" -m verl.trainer.main_ppo
   trainer.experiment_name="$EXPERIMENT"
   trainer.rollout_data_dir="$OUT/training_rollouts"
   trainer.default_local_dir="$OUT/checkpoints"
-  trainer.n_gpus_per_node="$TOOLWEAVE_LEARNER_GPUS_PER_NODE"
-  trainer.nnodes="$TOOLWEAVE_NNODES"
-  ray_init.num_cpus="$TOOLWEAVE_RAY_NUM_CPUS"
+  trainer.n_gpus_per_node=2
+  trainer.nnodes=1
   trainer.save_freq="$SAVE_FREQ"
   trainer.test_freq="$TEST_FREQ"
   trainer.val_before_train=False

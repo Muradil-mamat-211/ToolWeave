@@ -9,12 +9,12 @@ defaults:
   - _self_
 
 custom_reward_function:
-  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/stage1_format_rl/rewards/rods_stage2_progress_reward.py
+  path: /root/autodl-tmp/rods-workspace/stage1_format_rl/rewards/rods_stage2_progress_reward.py
   name: compute_score
 
 data:
-  train_files: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/configs/train_64_balanced.parquet
-  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_val_400.parquet
+  train_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/configs/train_64_balanced.parquet
+  val_files: /root/autodl-tmp/rods-workspace/stage1_format_rl/data/bfcl_val_400.parquet
   train_batch_size: 32
   max_prompt_length: 8192
   max_response_length: 10000
@@ -29,7 +29,7 @@ data:
 
 actor_rollout_ref:
   model:
-    path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage2_eval/merged/global_step_25
+    path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage2_eval/merged/global_step_25
     enable_gradient_checkpointing: true
     enable_activation_offload: false
     trust_remote_code: true
@@ -116,7 +116,7 @@ actor_rollout_ref:
       enable: true
       max_assistant_turns: 100
       max_user_turns: 100
-      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config_stage2.yaml
+      interaction_config_path: /root/autodl-tmp/rods-workspace/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config_stage2.yaml
       format: qwen
       use_inference_chat_template: false
       tokenization_sanity_check_mode: "off"
@@ -188,8 +188,8 @@ trainer:
   test_freq: -1
   val_before_train: false
   resume_mode: disable
-  default_local_dir: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/checkpoint/SMOKE_ONLY_step2
-  validation_data_dir: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/training/validation_disabled
+  default_local_dir: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/checkpoint/SMOKE_ONLY_step2
+  validation_data_dir: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/training/validation_disabled
   rollout_data_dir: null
   default_hdfs_dir: null
   max_actor_ckpt_to_keep: 1
@@ -202,9 +202,9 @@ trainer:
   rods_stage3_lifecycle:
     enabled: true
     require_seed_selection_config: true
-    seed_output_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/boundary_seeds.jsonl
-    candidate_input_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/validated_candidates.jsonl
-    state_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/training_lifecycle_state.json
+    seed_output_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/boundary_seeds.jsonl
+    candidate_input_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/validated_candidates.jsonl
+    state_path: /root/autodl-tmp/rods-workspace/stage1_format_rl/artifacts/stage3_online_smoke_2x_rtxpro6000_20260811T081412Z/queues/training_lifecycle_state.json
     max_seeds_per_selection: 16
     seed_type_quotas:
       multi_turn_base: 4

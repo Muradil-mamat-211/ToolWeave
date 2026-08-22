@@ -180,10 +180,12 @@ $$
 
 $$
 Q_i=
-\begin{cases}
+\left\{
+\begin{aligned}
 \dfrac{n_{i,-1}}{n_{i,-1}+n_{i,-2}}, & I_i^{\mathrm{tool}}=1,\\
 0, & \text{otherwise},
-\end{cases}
+\end{aligned}
+\right.
 \qquad
 S_i^{\mathrm{Stage1}}=I_i^{\mathrm{tool}}(F_i+Q_i).
 $$
@@ -248,10 +250,12 @@ For predicted call $p$ and GT call $g$, first define a tool-name score:
 
 $$
 S_{\mathrm{tn}}(p,g)=
-\begin{cases}
+\left\{
+\begin{aligned}
 1, & p,g\text{ are valid and their function names match case-insensitively},\\
 0, & \text{otherwise}.
-\end{cases}
+\end{aligned}
+\right.
 $$
 
 Let $N_p$ and $N_g$ be the predicted and GT argument-name collections. MatchTIR's paper defines the parameter-name component with ordinary set Jaccard:
@@ -325,10 +329,12 @@ The call reward is
 
 $$
 r_{p_a}=
-\begin{cases}
+\left\{
+\begin{aligned}
 \mathbf{S}_{ab}, & x_{ab}=1\text{ and }\mathbf{S}_{ab}>0,\\
 0, & \text{otherwise}.
-\end{cases}
+\end{aligned}
+\right.
 $$
 
 The implementation uses `unmatched_penalty = 0.0`. One-to-one assignment prevents duplicate predicted calls from repeatedly claiming the same GT call, which independent per-call maxima would allow.
@@ -339,11 +345,13 @@ A single runtime interaction may contain more than one parsed call. Individual-c
 
 $$
 r_{i,u,j}=
-\begin{cases}
+\left\{
+\begin{aligned}
 \dfrac{1}{|P_{i,u,j}|}\displaystyle\sum_{p\in P_{i,u,j}}r_p,
 & |P_{i,u,j}|>0,\\
 0, & |P_{i,u,j}|=0.
-\end{cases}
+\end{aligned}
+\right.
 $$
 
 Only successfully parsed calls participate in matching. Any unparsed non-answer runtime interaction therefore remains one temporal step with $P_{i,u,j}=\varnothing$ and $r_{i,u,j}=0$. A successfully parsed call remains in matching even if its later environment execution fails: the local branch measures tool-call semantic correctness, while the global Progress Reward measures stateful task success. Multiple calls inside one action are never converted into multiple temporal steps.
@@ -436,12 +444,14 @@ The local advantage is defined for every support size by
 
 $$
 A_{i,u,j}^{\ell}=
-\begin{cases}
+\left\{
+\begin{aligned}
 \dfrac{R_{i,u,j}^{\ell}-\mu_{q,u,j}^{\ell}}
 {s_{q,u,j}^{\ell}+\epsilon},
 & n_{q,u,j}\ge 2\text{ and }0<s_{q,u,j}^{\ell}<\infty,\\
 0, & \text{otherwise},
-\end{cases}
+\end{aligned}
+\right.
 \qquad \epsilon=10^{-6}.
 $$
 

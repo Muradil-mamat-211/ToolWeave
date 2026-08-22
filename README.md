@@ -28,7 +28,6 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 
 ## Table of Contents
 
-- [News and Open Resources](#news-and-open-resources)
 - [Overview](#overview)
 - [Method](#method)
   - [1. Problem Formulation](#1-problem-formulation)
@@ -50,13 +49,6 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
 - [Repository Layout](#repository-layout)
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
-
-## News and Open Resources
-
-- **2026-08:** The public method description was aligned with the audited Stage 1, Stage 2, Stage 3, and verified-synthesis implementations.
-- **Stage 1 and Stage 2 checkpoints:** [Stage 1](https://huggingface.co/muradil211/ToolWeave_stage1) and [Stage 2](https://huggingface.co/muradil211/ToolWeave_stage2).
-- **Public upstream data:** [AWorld-RL / EnvTuning data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data).
-- **Stage 3 status:** formal ToolWeave Stage 3 training is complete, and the final Stage 3 checkpoint is publicly available.
 
 ## Overview
 

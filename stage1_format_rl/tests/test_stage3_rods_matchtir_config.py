@@ -5,7 +5,6 @@ from collections import Counter
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 from env_tuning.rods_matchtir_v1.lifecycle import LifecycleConfig
 from stage1_format_rl.infrastructure.resolver import resolve_profile
@@ -53,24 +52,21 @@ def test_stage3_config_preserves_rods_runtime_and_enables_runtime_interaction_cr
     assert resolved.assets["stage2_step25_model"].path.name == "global_step_25"
     lifecycle = config["trainer"]["rods_stage3_lifecycle"]
     assert lifecycle["require_seed_selection_config"] is True
-    assert lifecycle["max_seeds_per_selection"] is None
+    assert lifecycle["max_seeds_per_selection"] == 16
     assert lifecycle["seed_type_quotas"] == {
-        "multi_turn_base": None,
-        "multi_turn_miss_func": None,
-        "multi_turn_miss_param": None,
-        "multi_turn_long_context": None,
+        "multi_turn_base": 4,
+        "multi_turn_miss_func": 4,
+        "multi_turn_miss_param": 4,
+        "multi_turn_long_context": 4,
     }
-    assert lifecycle["seed_cooldown_steps"] is None
+    assert lifecycle["seed_cooldown_steps"] == 13
     assert lifecycle["injection_ratio"] == 0.20
     assert lifecycle["generated_pool_cap"] == 400
     assert lifecycle["stale_after_steps"] is None
-    with pytest.raises(ValueError, match="paper-unspecified project hyperparameters"):
-        LifecycleConfig.from_mapping(lifecycle)
-    disabled = dict(lifecycle)
-    disabled["enabled"] = False
-    resolved_lifecycle = LifecycleConfig.from_mapping(disabled)
-    assert resolved_lifecycle.enabled is False
-    assert resolved_lifecycle.seed_selection_configured is False
+    resolved_lifecycle = LifecycleConfig.from_mapping(lifecycle)
+    assert resolved_lifecycle.enabled is True
+    assert resolved_lifecycle.require_seed_selection_config is True
+    assert resolved_lifecycle.seed_selection_configured is True
 
 
 def test_stage3_training_data_has_four_original_types_and_current_protocol():

@@ -50,16 +50,16 @@
       "enabled": true,
       "generated_pool_cap": 400,
       "injection_ratio": 0.2,
-      "max_seeds_per_selection": null,
+      "max_seeds_per_selection": 16,
       "require_seed_selection_config": true,
       "retire_mastered_threshold": 0.95,
       "retire_too_hard_threshold": 0.2,
-      "seed_cooldown_steps": null,
+      "seed_cooldown_steps": 13,
       "seed_type_quotas": {
-        "multi_turn_base": null,
-        "multi_turn_long_context": null,
-        "multi_turn_miss_func": null,
-        "multi_turn_miss_param": null
+        "multi_turn_base": 4,
+        "multi_turn_long_context": 4,
+        "multi_turn_miss_func": 4,
+        "multi_turn_miss_param": 4
       },
       "stale_after_steps": null,
       "trial_eviction_threshold": 0.2,

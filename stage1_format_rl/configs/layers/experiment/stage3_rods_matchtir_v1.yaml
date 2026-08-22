@@ -119,13 +119,16 @@ verl:
       require_seed_selection_config: true
       boundary_low: 0.20
       boundary_high: 0.85
-      max_seeds_per_selection: null
+      # RODS specifies the mechanisms but does not publish one unique numeric
+      # default for M, M_tau, or cooldown c. ToolWeave formal training fixes
+      # the project choices to M=16, M_tau=4 for each BFCL type, and c=13.
+      max_seeds_per_selection: 16
       seed_type_quotas:
-        multi_turn_base: null
-        multi_turn_miss_func: null
-        multi_turn_miss_param: null
-        multi_turn_long_context: null
-      seed_cooldown_steps: null
+        multi_turn_base: 4
+        multi_turn_miss_func: 4
+        multi_turn_miss_param: 4
+        multi_turn_long_context: 4
+      seed_cooldown_steps: 13
       injection_ratio: 0.20
       generated_pool_cap: 400
       trial_observation_count: 1

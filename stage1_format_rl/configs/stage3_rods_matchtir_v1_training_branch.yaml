@@ -1,5 +1,9 @@
-# Formal Stage 3 profile: pure RODS global GRPO plus ToolWeave's implemented
-# non-answer runtime-interaction local credit.
+# Retained monolithic formal Stage 3 compatibility/reference configuration.
+# The layered stage3_reference.yaml profile is the current portable formal
+# launch contract.
+#
+# Pure RODS global GRPO plus ToolWeave's implemented non-answer
+# runtime-interaction local credit.
 hydra:
   searchpath:
     - pkg://verl.trainer.config
@@ -159,24 +163,22 @@ trainer:
   log_val_generations: 0
   rods_stage3_lifecycle:
     enabled: true
-    # This production Stage3 profile must refuse to launch synthesis until the
-    # paper-unspecified project choices M, all M_tau, and c are supplied.
     require_seed_selection_config: true
     seed_output_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/boundary_seeds.jsonl
     candidate_input_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/validated_candidates.jsonl
     state_path: ${oc.env:TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/training_lifecycle_state.json
     boundary_low: 0.20
     boundary_high: 0.85
-    # RODS specifies M, per-type M_tau, and cooldown c, but the paper does not
-    # publish unique numeric defaults. Keep all three explicitly unset until an
-    # experiment supplies them together; seed dispatch then fails closed.
-    max_seeds_per_selection: null
+    # RODS specifies the mechanisms but does not publish one unique numeric
+    # default for M, M_tau, or cooldown c. ToolWeave formal training fixes
+    # the project choices to M=16, M_tau=4 for each BFCL type, and c=13.
+    max_seeds_per_selection: 16
     seed_type_quotas:
-      multi_turn_base: null
-      multi_turn_miss_func: null
-      multi_turn_miss_param: null
-      multi_turn_long_context: null
-    seed_cooldown_steps: null
+      multi_turn_base: 4
+      multi_turn_miss_func: 4
+      multi_turn_miss_param: 4
+      multi_turn_long_context: 4
+    seed_cooldown_steps: 13
     # Appendix B.1: at most 20% of the active pool immediately before injection.
     injection_ratio: 0.20
     generated_pool_cap: 400

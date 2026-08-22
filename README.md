@@ -717,6 +717,22 @@ $$
 
 There is no quota redistribution when one type has too few eligible samples. The paper specifies the mechanism but does not publish one unique numeric default for $M$, $M_{\tau}$, or cooldown $c$; ToolWeave's formal training configuration supplies these project hyperparameters explicitly, and validation fails fast if they are omitted.
 
+ToolWeave formal training fixes these project choices to
+
+$$
+M=16,
+\qquad
+M_{\tau}=4
+\quad \forall \tau\in
+\lbrace
+\mathrm{Base},\mathrm{MF},\mathrm{MP},\mathrm{LC}
+\rbrace,
+\qquad
+c=13.
+$$
+
+These are ToolWeave project hyperparameters and are not attributed to RODS. The four per-type quotas sum exactly to the total selection budget.
+
 This branch consumes only $R_P$. It never consumes $A^{\ell}$, call similarities, or the fused advantage. Seed dispatch occurs after a successful optimizer update, and the separate generator proceeds asynchronously while policy learning can continue.
 
 Validated candidates generated in epoch `n` are staged and become eligible only at epoch `n+1`. ToolWeave implements a reproducible adaptation of RODS-style lifecycle management, not a claim of a verbatim unpublished RODS lifecycle. It protects all original rows, limits new admission to at most `floor(0.20 × active_pool_before)`, caps the generated sub-pool at 400, supports trial eviction and drift retirement for generated rows, and persists deferred validated candidates for later epochs.
@@ -749,7 +765,7 @@ For each training update:
   8. Normalize over ragged (prompt, user turn, runtime depth) peers to obtain A_local.
   9. Form A_ToolWeave = A_global + A_local on reliable non-answer actor spans.
  10. Run the unchanged PPO/GRPO actor update.
- 11. Asynchronously select boundary seeds from grouped R_P only.
+ 11. Select up to M=16 boundary seeds from grouped R_P only (4/type, cooldown c=13).
  12. Synthesize and validate executable candidate trajectories.
  13. Admit eligible candidates from the next epoch onward.
 ```
@@ -832,7 +848,7 @@ Structural complexity profiles are used only as synthesis guidance and diagnosti
 
 ## Experiments and Results
 
-Stage 1/2 results below come from deterministic one-rollout evaluation artifacts and report internal EnvTuning/RODS reward and protocol metrics. Stage 3 is reported separately under a local BFCL complete-entry protocol and the strict EnvTuning protocol. None of these tables is presented as an official BFCL leaderboard submission.
+Stage 1/2 results below come from deterministic one-rollout evaluation artifacts and report internal EnvTuning/RODS reward and protocol metrics. Stage 3 is documented through implementation validation and the real K=16 formal-training replay, not a model benchmark table. None of these results is presented as an official BFCL leaderboard submission.
 
 ### Evaluation Protocol
 
@@ -989,30 +1005,39 @@ To compare task progress on one scale, Stage 1 update 25 was re-evaluated with t
 
 The paired overall improvement is `+0.0839`, with a paired 95% bootstrap interval of `[+0.0536, +0.1146]` over the same 400 sample IDs.
 
-### Stage 3 Model Evaluation
-
-Formal ToolWeave Stage 3 training is complete, and the final checkpoint is public. The evaluated model files were hash-matched to the released [`ToolWeave_stage3`](https://huggingface.co/muradil211/ToolWeave_stage3) weights. Both protocols below independently evaluated the same balanced 100-sample set (25 examples per BFCL multi-turn category; dataset SHA256 `479f28404af7a878a637ae71b1f83911c614b38e00c8aa42217db975f88492cc`).
-
-| Evaluation protocol | Overall | Base | Missing Function | Missing Parameter | Long Context |
-|---|---:|---:|---:|---:|---:|
-| BFCL complete-entry multi-turn accuracy | 23.00% (23/100) | 36.00% | 0.00% | 20.00% | 36.00% |
-| Strict EnvTuning Progress Reward | 0.00% | 0.00% | 0.00% | 0.00% | 0.00% |
-
-The BFCL row uses the public Qwen function-calling handler with the stateful BFCL environment and complete-entry checking. The strict EnvTuning row uses ToolWeave's exact `<think>` plus single-action-block contract; the model emitted Qwen-style natural language outside that grammar, so the strict parser recorded zero terminal successes across 422 expected user turns. These protocols measure different compatibility contracts and must not be conflated. The table is a reproducible local evaluation, not an official leaderboard submission.
-
-<details>
-<summary><b>Stage 3 evaluation provenance</b></summary>
-
-- Evaluated-model selected-file manifest SHA256: `5d1431302c164830132e16ca7abf5e353a0530f23b65d990ff014d3216f6bdf1`.
-- Dataset: balanced 100-row subset with 25 Base, 25 Missing Function, 25 Missing Parameter, and 25 Long Context samples.
-- BFCL result: 23 complete entries out of 100; one entry reached the public 20-step limit and remained incorrect in the denominator.
-- Strict EnvTuning result: fixed-denominator $R_P=0$, complete-episode accuracy `0/100`, terminal user-turn successes `0/422`, and no runtime failures.
-
-</details>
-
 ### Stage 3 Implementation Validation
 
-The runtime-interaction credit implementation separately passes the complete 319-test public CPU suite, deterministic parser/provenance and trainer tensor-contract checks, and the real K=16 formal-training replay documented above. These checks validate algorithm implementation and integration; they are not substitutes for the policy-performance evaluation reported in the preceding table.
+The runtime-interaction credit implementation passes the complete public CPU suite, deterministic parser/provenance and trainer tensor-contract checks, and the real K=16 formal-training replay documented above. These checks validate implementation and integration.
+
+<details>
+<summary>Audited Stage 3 formal-training configuration</summary>
+
+The current portable formal launch contract is the layered [`stage3_reference.yaml`](stage1_format_rl/configs/layers/profiles/stage3_reference.yaml) profile. The public [monolithic configuration](stage1_format_rl/configs/stage3_rods_matchtir_v1_training_branch.yaml) is retained only as a compatibility/reference artifact.
+
+| Setting | Stage 3 |
+|---|---|
+| Starting model | Stage 2 update 25 |
+| Original training pool | 400 BFCL rows (100 per type) |
+| Prompt groups / update | 20 |
+| Rollouts / prompt | 16 |
+| Learning rate | `1e-6` |
+| PPO epochs | 1 |
+| Local discount $\gamma$ | `0.9` |
+| Local weight $\lambda_{\mathrm{local}}$ | `1.0` |
+| Matching | True maximum-weight Hungarian (`hard`) |
+| Unmatched penalty | `0.0` |
+| Minimum peer support | 2 |
+| PPO clip low / high | `0.20 / 0.28` |
+| Dual clip | `10` |
+| Loss-side KL | `low_var_kl`, coefficient `0.01` |
+| Boundary low / high | `0.20 / 0.85` |
+| Selection budget $M$ | 16 |
+| Per-type quota $M_{\tau}$ | 4 per BFCL type |
+| Sample-identity cooldown $c$ | 13 steps |
+| Next-epoch admission | Yes |
+| Generated-pool cap | 400 |
+
+</details>
 
 <details>
 <summary>Audited Stage 1/2 training configuration</summary>

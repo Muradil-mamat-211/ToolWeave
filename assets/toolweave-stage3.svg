@@ -129,7 +129,7 @@
   <text class="tiny" x="512.5" y="759" text-anchor="middle">discounted return</text>
   <rect class="local" x="610" y="710" rx="13" ry="13" width="155" height="68"/>
   <text class="label" x="687.5" y="737" text-anchor="middle">Ragged (q,u,j)</text>
-  <text class="tiny" x="687.5" y="759" text-anchor="middle">same-index peers</text>
+  <text class="tiny" x="687.5" y="759" text-anchor="middle">same runtime depth</text>
   <path class="orangeArrow" d="M265 744 H285"/>
   <path class="orangeArrow" d="M415 744 H435"/>
   <path class="orangeArrow" d="M580 744 H600"/>

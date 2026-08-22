@@ -1,0 +1,15 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix P example; transform prompt/code not published
+---PROMPT---
+Choose one turn whose requested action becomes impossible when one required tool is withheld. Preserve the user's natural request, identify exactly one withheld function, and defer the complete executable turn to a following recovery turn where that tool is restored.
+
+Conversation:
+{conversation}
+
+Eligible functions:
+{eligible_functions}
+
+Return exactly:
+<reason>brief structural analysis</reason>
+<affected_turn>zero-based integer</affected_turn>
+<missing_function>exact function name</missing_function>

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rods_validated_candidate.v1",
+  "title": "Validated Generator to RODS Training Candidate V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "validated",
+    "validation",
+    "sample"
+  ],
+  "properties": {
+    "schema_version": {"const": "rods_validated_candidate.v1"},
+    "candidate_id": {"type": "string", "minLength": 1},
+    "validated": {"const": true},
+    "validation": {
+      "type": "object",
+      "required": ["passed"],
+      "properties": {"passed": {"const": true}}
+    },
+    "generation_metadata": {"type": "object"},
+    "sample": {
+      "type": "object",
+      "required": ["data_source", "prompt", "ability", "reward_model", "extra_info"],
+      "properties": {
+        "data_source": {"type": "string", "minLength": 1},
+        "prompt": {"type": "array", "minItems": 1},
+        "ability": {},
+        "reward_model": {"type": "object"},
+        "extra_info": {"type": "object"}
+      }
+    }
+  }
+}

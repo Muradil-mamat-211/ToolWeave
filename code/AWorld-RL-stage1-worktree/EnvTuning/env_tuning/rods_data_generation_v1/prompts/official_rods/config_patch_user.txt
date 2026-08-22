@@ -1,0 +1,37 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.2 Config Patch Agent
+---PROMPT---
+Input:
+A data generation pipeline failed with this error:
+  Error type: {error_type}
+  Failed function: {error_function}
+  Detail: {error_detail}
+
+The initial_config used was:
+{config_str}
+
+Task:
+Analyze WHY this function failed with this config, and suggest the MINIMUM config change(s) to fix the issue.
+
+Common Fixes:
+- market_status "Closed" -> "Open" for trading functions
+- authenticated: false -> true for functions requiring login
+- Add pending orders for cancel_order
+- Ensure sufficient balance for transactions
+- fuelLevel too low -> increase for driving functions
+
+# Output Format
+First, analyze the error inside <reason></reason> tags.
+Then output each field change as a <patch> block:
+
+<reason> Your analysis... </reason>
+<patch>
+  <class>ClassName</class>
+  <field>field_name</field>
+  <value>new_value</value>
+</patch>
+
+For nested fields, use dot notation: e.g., orders.12345.status
+
+Now analyze the error above and output the necessary patches.

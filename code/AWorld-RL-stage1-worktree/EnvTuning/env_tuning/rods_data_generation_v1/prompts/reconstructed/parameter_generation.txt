@@ -1,0 +1,25 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix D responsibility; complete prompt not published
+---PROMPT---
+You instantiate one already-selected BFCL function call. Use <reason> only for structured analysis.
+
+Function schema:
+{function_schema}
+
+Current environment state:
+{environment_state}
+
+Previous successful execution outputs:
+{execution_history}
+
+Planner narrative and current turn intent:
+{turn_intent}
+
+Ground every argument in the function schema, the current state, the previous
+successful outputs, or the stated turn intent. Reuse exact IDs/paths/symbols,
+enum spelling, and case from those sources. Do not invent a resource merely to
+make the call look executable.
+
+Return only this structure. Do not change the function name and do not add schema-external fields:
+<reason>brief grounding analysis</reason>
+<arguments>{arguments_example}</arguments>

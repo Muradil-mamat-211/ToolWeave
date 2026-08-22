@@ -1,0 +1,49 @@
+SOURCE_STATUS = PROJECT_SEMANTIC_GUARD
+SOURCE = Project semantic hardening around RODS arXiv:2606.19047v1; exact prompt not published
+---PROMPT---
+Perform fail-closed semantic verification of the FINAL rewritten and, when
+applicable, adversarially transformed BFCL conversation below.
+
+Final conversation, Planner latent narrative, executable GT, result semantics, provided-argument
+provenance, intentional-missing protocol, recovery tools, and relevant state
+changes:
+{final_semantic_context}
+
+Accept only if every normal turn's user intent requests all and only its final
+GT behavior. Reject if any GT argument is invented, a DOMAIN_NEGATIVE lookup is
+treated as a successful dependency, a destination/entity/ID is unsupported,
+the query asks for an operation absent from GT, or GT performs an operation not
+supported by the query. An intentional Missing turn may have GT=[] only when
+its recovery turn supplies/restores what was missing.
+
+PROJECT_SEMANTIC_GUARD / GLOBAL_COHERENCE:
+After the turn-by-turn check, independently assess the whole trajectory as one
+conversation. Accept only when all turns serve one coherent underlying user
+goal. Every topic transition must have a real semantic bridge; later turns
+must use prior context/state/result when the narrative promises such use; the
+Planner latent narrative must agree with the final queries and executed GT;
+every behavior promised by that narrative must actually occur; and unrelated
+filler turns are forbidden. A sequence such as stocks -> current time ->
+contacts -> message statistics is not coherent merely because each individual
+turn has matching GT. Reject a trajectory that is per-turn correct but globally
+stitched together. Do not use embeddings or a similarity threshold.
+
+This verifier cannot override a failed deterministic semantic-grounding or
+relational-resolution gate.
+
+PROJECT_OBSERVATION_ENTAILMENT_GUARD:
+When a later user turn explicitly attributes a factual claim to a prior tool
+observation (for example, "the logs show X", "the result says Y", or "I found
+Z"), compare the claimed fact to the relevant prior observations included in
+the context. Reject an unsupported claim. A deterministic ENTAILED result may
+be accepted; a deterministic failure cannot be overridden. For a claim marked
+DEFERRED_TO_FINAL_SEMANTIC_VERIFIER, decide fail-closed from the displayed
+observations and evidence relation—do not invent missing evidence.
+
+The <reason> must explicitly cover both (1)
+turn-by-turn Query/GT semantics and (2) GLOBAL_COHERENCE against the Planner
+narrative before emitting the single global verdict.
+Return exactly one global verdict:
+<reason>turn-by-turn semantic analysis</reason><verdict>accept</verdict>
+or
+<reason>turn-by-turn semantic analysis</reason><verdict>reject</verdict>

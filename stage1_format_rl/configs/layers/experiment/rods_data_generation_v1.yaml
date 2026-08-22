@@ -1,0 +1,33 @@
+schema_version: toolweave.generator-experiment.v1
+generator:
+  llm:
+    backend: vllm_openai
+    temperature: 1.0
+    top_p: 0.7
+    max_tokens: 4096
+    timeout_seconds: 120.0
+    transport_retries: 2
+    disable_native_thinking: true
+    replay_path: ""
+  max_pipeline_attempts: 3
+  planner_retries: 3
+  agent_parse_retries: 1
+  max_refinement_cycles: 1
+  queue_poll_seconds: 5.0
+  use_augmented_environment: false
+  dry_run: true
+  test_mode: false
+
+asset_bindings:
+  llm.model: gemma_4_31b
+  function_catalog_dir: bfcl_function_catalog
+  function_schema_parquet: stage3_train_400
+
+output_bindings:
+  llm.raw_response_log_path: ${machine.artifacts_root}/stage3_generator/raw_responses.jsonl
+  queues.seed_path: ${machine.artifacts_root}/stage3_queues/boundary_seeds.jsonl
+  queues.candidate_path: ${machine.artifacts_root}/stage3_generator/dry_run/validated_candidates.jsonl
+  queues.production_candidate_path: ${machine.artifacts_root}/stage3_queues/validated_candidates.jsonl
+  queues.tracker_path: ${machine.artifacts_root}/stage3_generator/dry_run/tracker.json
+  queues.event_log_path: ${machine.artifacts_root}/stage3_generator/dry_run/events.jsonl
+  queues.expanded_log_dir: ${machine.artifacts_root}/stage3_generator/dry_run/expanded

@@ -1,0 +1,186 @@
+# RODS Stage 1 retrain from scratch (Qwen3-4B, 2 x 48 GB).
+# Objectives vs the collapsed/recovered lineage:
+#   - train_batch_size 20  -> 320 trajectories per update (was 64)
+#   - ppo_max_token_len_per_gpu 28672 (bigger dynamic-bsz micro-batch, smoke-verified)
+#   - adaptive reward-side KL (use_kl_in_reward=true) instead of fixed 0.01 loss KL
+#   - max_response_length 10000 (official EnvTuning value)
+#   - test_freq 5 (validate every epoch) so drift is caught early
+#   - resume_mode auto + shuffle false/seed 42 -> Ctrl-C then re-run the same
+#     command resumes from the latest verified checkpoint (seamless resume).
+hydra:
+  searchpath:
+    - pkg://verl.trainer.config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+custom_reward_function:
+  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/format_reward.py
+  name: compute_score
+
+data:
+  train_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_stage1_train_base_100_shuffled_seed42.parquet
+  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/val_100_stratified_seed42.parquet
+  train_batch_size: 20
+  max_prompt_length: 8192
+  max_response_length: 10000
+  return_raw_chat: true
+  filter_overlong_prompts: false
+  truncation: error
+  trust_remote_code: true
+  # Deterministic order + fixed seed make resume continue at the exact data
+  # position recorded in data.pt (seamless resume).
+  shuffle: false
+  seed: 42
+  validation_shuffle: false
+
+actor_rollout_ref:
+  hybrid_engine: true
+  model:
+    path: ${oc.env:TOOLWEAVE_MODELS_ROOT}/Qwen3-4B
+    trust_remote_code: true
+    use_remove_padding: true
+    enable_gradient_checkpointing: true
+    use_fused_kernels: true
+  actor:
+    optim:
+      # Official value; warmup avoids the initial drift spike that preceded
+      # the old run's KL explosion.
+      lr: 1.0e-6
+      lr_warmup_steps_ratio: 0.03
+    ppo_epochs: 1
+    # = train_batch_size -> one optimizer update per step over all 320
+    # trajectories. Do NOT raise ppo_epochs (re-using the same trajectories
+    # only aggravates overfitting on the 100-prompt pool).
+    ppo_mini_batch_size: 20
+    ppo_micro_batch_size_per_gpu: 2
+    use_dynamic_bsz: true
+    # Token budget per micro-batch. Batch-20 (320 trajectories) OOM'd during
+    # backward at 28672 and 24576 as response lengths grew. 20480 = the value
+    # the stable recovery run used; combined with expandable_segments allocator.
+    ppo_max_token_len_per_gpu: 20480
+    ulysses_sequence_parallel_size: 2
+    entropy_checkpointing: true
+    entropy_from_logits_with_chunking: true
+    # Loss-side KL is DISABLED because the adaptive controller lives on the
+    # reward side (see algorithm.use_kl_in_reward=true).
+    use_kl_loss: false
+    kl_loss_coef: 0.1
+    kl_loss_type: low_var_kl
+    clip_ratio_low: 0.2
+    clip_ratio_high: 0.28
+    clip_ratio_c: 10.0
+    grad_clip: 1.0
+    entropy_coeff: 0.001
+    loss_agg_mode: seq-mean-token-mean
+    checkpoint:
+      save_contents:
+        - model
+        - optimizer
+        - extra
+      load_contents:
+        - model
+        - optimizer
+        - extra
+    fsdp_config:
+      param_offload: false
+      # Adam states returned to CPU after each update so they never overlap
+      # with the next single-stage SGLang weights+KV wake.
+      optimizer_offload: true
+  rollout:
+    name: sglang
+    # Training sampling temperature. Must stay > 0 (GRPO needs intra-group
+    # variance); temperature=0 is only for validation (val_kwargs below).
+    temperature: 1.0
+    top_p: 1.0
+    top_k: -1
+    n: 16
+    tensor_model_parallel_size: 1
+    # 0.55: lowered from 0.72 so the resume's checkpoint restore (model 8GB +
+    # optimizer 15GB per rank) has GPU headroom while SGLang is resident.
+    # Small rollout throughput cost; re-raise only after a clean resume is verified.
+    gpu_memory_utilization: 0.55
+    multi_stage_wake_up: false
+    max_num_batched_tokens: 131072
+    max_model_len: 32768
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    val_kwargs:
+      # Deterministic validation / eval decoding.
+      do_sample: false
+      temperature: 0
+      top_p: 1.0
+      top_k: -1
+      n: 1
+    multi_turn:
+      enable: true
+      max_assistant_turns: 100
+      max_user_turns: 100
+      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml
+      format: qwen
+      use_inference_chat_template: false
+      tokenization_sanity_check_mode: "off"
+  ref:
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    entropy_from_logits_with_chunking: true
+    fsdp_config:
+      # Reference policy is only resident for reward-side KL log-probs.
+      param_offload: true
+
+algorithm:
+  gamma: 1.0
+  lam: 1.0
+  adv_estimator: grpo
+  norm_adv_by_std_in_grpo: true
+  # MUST be true for the adaptive kl_ctrl below to actually run (in this veRL
+  # the adaptive controller only applies on the reward side).
+  use_kl_in_reward: true
+  loss_agg_mode: seq-mean-token-mean
+  kl_penalty: kl
+  kl_ctrl:
+    type: adaptive
+    kl_coef: 0.1
+    target_kl: 0.1
+    horizon: 10000
+
+reward_model:
+  enable: false
+  reward_manager: bfcl
+
+trainer:
+  critic_warmup: 0
+  logger:
+    - console
+  project_name: rods_stage1_format_rl
+  experiment_name: stage1_qwen3_4b_k16_retrain_batch20
+  rollout_data_dir: null
+  # Per-sample validation outputs (score/format/tool/is_tool/progress per sample)
+  # are dumped here each test_freq validation. Takes effect on next launch
+  # (resume from step-5 checkpoint); step 10/15/... validations will write files.
+  validation_data_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage1_qwen3_4b_k16_retrain_batch20/validation_outputs
+  default_local_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage1_qwen3_4b_k16_retrain_batch20/checkpoints
+  default_hdfs_dir: null
+  n_gpus_per_node: 2
+  nnodes: 1
+  # 5 steps per epoch (100 prompts / batch 20); save + validate once per epoch.
+  save_freq: 5
+  max_actor_ckpt_to_keep: 1
+  max_critic_ckpt_to_keep: 1
+  # auto + fresh dir: first launch starts from step 0; a later Ctrl-C and re-run
+  # of the SAME command resumes from the latest checkpoint (seamless resume).
+  resume_mode: auto
+  resume_from_path: null
+  del_local_ckpt_after_load: false
+  val_before_train: false
+  val_only: false
+  # Validate every epoch (official EnvTuning runs test_freq=1). Stop early on
+  # plateau (validation change <1% over an epoch + grad norm convergence) --
+  # do not blindly run all 20 epochs.
+  test_freq: 5
+  total_epochs: 20
+  total_training_steps: null
+  log_val_generations: 0

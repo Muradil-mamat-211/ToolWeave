@@ -1,0 +1,5 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.5 Refine Classify Agent
+---PROMPT---
+You are a precise diagnostic assistant. Analyze the root cause of data quality issues.

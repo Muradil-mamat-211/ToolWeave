@@ -1,0 +1,7 @@
+schema_version: toolweave.profile.v1
+mode: portable
+machine: ../../../../environment/machine.template.yaml
+experiment: ../experiment/stage3_rods_matchtir_v1.yaml
+assets: ../assets/stage3_reference.yaml
+hardware: ../hardware/single_rtx_pro_6000_96gb.yaml
+runtime: ../runtime/single_gpu_eval.yaml

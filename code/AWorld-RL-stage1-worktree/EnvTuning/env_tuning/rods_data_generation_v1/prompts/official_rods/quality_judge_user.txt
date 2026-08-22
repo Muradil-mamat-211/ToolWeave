@@ -1,0 +1,30 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.4 Quality Judge Agent
+---PROMPT---
+Input:
+Evaluate this multi-turn function-calling sample against quality criteria.
+
+# Sample Data
+{sample_summary}
+
+# Quality Criteria
+1. Query-GT Alignment: Does each user query accurately describe what the GT function calls do?
+2. State Consistency: Do parameter values reflect the actual environment config?
+3. Cross-Turn Coherence: Is there logical state progression across turns?
+4. Query Naturalness: Do queries sound like real user requests?
+5. Structural Correctness: Are deliberate ambiguities (e.g., missing parameters) properly reflected?
+
+# Automatic Rejection Patterns
+If the query contains any of these patterns, REJECT immediately:
+- "Thought Process", "Construct Query", "Step 1:", "Step 2:"
+- Function names or parameter names mentioned explicitly
+- Technical jargon that a real user wouldn't say
+
+# Output Format
+First explain your reasoning inside <reason></reason> tags.
+Then output your decision:
+
+<reason> Your detailed analysis... </reason>
+<decision>accept</decision> or <decision>reject</decision>
+<fail_reason>Specific reason for rejection (if rejected)</fail_reason>

@@ -1,0 +1,9 @@
+schema_version: toolweave.hardware.v1
+hardware:
+  nodes:
+    - name: node-0
+      gpu_ids: [0, 1, 2, 3, 4, 5, 6, 7]
+      gpu_model: Portable 80GiB Accelerator
+      gpu_memory_gib: 80
+      cpu_cores: 96
+      ram_gib: 512

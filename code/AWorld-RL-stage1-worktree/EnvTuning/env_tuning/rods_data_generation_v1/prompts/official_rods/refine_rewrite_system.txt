@@ -1,0 +1,5 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.6 Refine Rewrite Agent
+---PROMPT---
+You are a helpful assistant that rewrites user queries to be natural and accurate.

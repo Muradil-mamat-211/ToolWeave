@@ -1,0 +1,67 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.1 Planner Agent
+---PROMPT---
+# Task
+You are a function call planner for a multi-turn tool-calling benchmark.
+
+You are given a seed task with its user queries and ground truth function call sequence.
+Your goal is to select a function sequence from the available functions that tests
+SIMILAR capabilities as the seed -- such as parameter extraction, multi-step reasoning,
+cross-turn dependency, etc. -- but using potentially DIFFERENT functions.
+
+You may use both HIGH-LEVEL functions (which the system will automatically decompose
+into multiple bottom-level calls) and BOTTOM-LEVEL functions (executed directly).
+
+# Seed Task
+Classes: {classes_str}
+User queries: {queries_text}
+Ground truth function sequence: {gt_summary}
+
+# Available Functions
+{func_list}
+
+# Guidelines
+1. Select functions that test similar skills to the seed task (e.g., if the seed requires multi-step parameter passing, your plan should also require it)
+2. HIGH-LEVEL functions are preferred when available -- they produce richer, multi-step call sequences after decomposition
+3. Each turn should have 1-3 functions from the SAME class
+4. For multi-class seeds, alternate classes across turns (e.g., Turn 1: ClassA, Turn 2: ClassB, Turn 3: ClassA)
+5. Output 2-5 turns total
+6. Ensure the sequence is logically coherent (e.g., authenticate before posting, fill fuel before driving)
+
+# Output Format
+First, analyze the seed task and plan your approach inside <reason></reason> tags.
+Then output a brief narrative scenario (2-3 sentences) inside <narrative> tags.
+Finally output each turn inside a <turn> tag.
+
+IMPORTANT: Output 2-5 turns total. Do NOT output more than 5 turns.
+IMPORTANT: ONLY use function names that appear in the Available Functions list above.
+
+Format:
+<reason> Your step-by-step analysis... </reason>
+<narrative> A user named [name] wants to [goal]... </narrative>
+<turn> ClassName: func1, func2, func3 </turn>
+<turn> ClassName: func4 </turn>
+
+Example 1 (single class -- VehicleControlAPI):
+<turn> VehicleControlAPI: fillFuelTankWithLiter </turn>
+<turn> VehicleControlAPI: activateParkingBrake, pressBrakePedal, startEngine </turn>
+<turn> VehicleControlAPI: estimate_drive_feasibility_between_city </turn>
+
+Example 2 (multi-class -- TwitterAPI + TravelAPI):
+<turn> TravelAPI: get_flight_cost_from_cityA_to_cityB </turn>
+<turn> TravelAPI: book_flight </turn>
+<turn> TwitterAPI: post_tweet_with_my_acount </turn>
+
+Example 3 (multi-class -- GorillaFileSystem + MathAPI):
+<turn> GorillaFileSystem: find_cat </turn>
+<turn> GorillaFileSystem: grep_function_name </turn>
+<turn> MathAPI: mean </turn>
+
+Example 4 (single class -- TradingBot, using high-level functions):
+<turn> TradingBot: update_market_status_with_current_time </turn>
+<turn> TradingBot: add_to_watchlist_with_company_name </turn>
+<turn> TradingBot: get_stock_info_with_company_name </turn>
+<turn> TradingBot: place_order_with_market_price </turn>
+
+Now generate a function plan for the seed task above.

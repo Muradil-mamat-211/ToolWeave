@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rods_boundary_seed.v1",
+  "title": "RODS Training to Generator Boundary Seed V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "sample_id",
+    "data_type",
+    "Q_old",
+    "GT_old",
+    "available_functions",
+    "initial_config",
+    "mean_progress",
+    "boundary_score_phi",
+    "training_epoch_or_step",
+    "generation_metadata"
+  ],
+  "properties": {
+    "schema_version": {"const": "rods_boundary_seed.v1"},
+    "sample_id": {"type": "string", "minLength": 1},
+    "data_type": {"type": "string", "minLength": 1},
+    "Q_old": {"type": "array"},
+    "GT_old": {"type": "array"},
+    "available_functions": {"type": "array", "items": {"type": "object"}},
+    "initial_config": {"type": "object"},
+    "mean_progress": {"type": "number", "minimum": 0, "maximum": 1},
+    "boundary_score_phi": {"type": "number", "minimum": 0, "maximum": 1},
+    "training_epoch_or_step": {
+      "type": "object",
+      "required": ["epoch", "global_step"],
+      "properties": {
+        "epoch": {"type": "integer", "minimum": 0},
+        "global_step": {"type": "integer", "minimum": 0}
+      }
+    },
+    "generation_metadata": {"type": "object"}
+  }
+}

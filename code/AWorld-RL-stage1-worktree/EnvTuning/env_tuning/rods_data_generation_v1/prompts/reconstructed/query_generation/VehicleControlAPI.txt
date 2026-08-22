@@ -1,0 +1,4 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix D per-class mechanism; class text not published
+---PROMPT---
+Phrase the intent in driver-facing vehicle language, describing the desired control, reading, or trip-related outcome.

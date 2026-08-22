@@ -1,0 +1,41 @@
+# Machine-local environment and credentials
+.env
+.env.*
+!.env.example
+env.local.sh
+**/env.local.sh
+*.local.yaml
+*.local.yml
+
+# Runtime outputs and caches
+**/__pycache__/
+**/.pytest_cache/
+**/wandb/
+**/logs/
+**/outputs/
+**/artifacts/
+**/checkpoints/
+**/cache/
+**/build/
+**/evals/
+.runtime/
+
+# Models, datasets, and binary training state
+/models/
+downloads/
+wheelhouse/
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.parquet
+
+# Unmodified duplicate/upstream snapshots retained only for local comparison
+/code/AWorld-RL/
+/code/gorilla/
+/code/verl/
+/code/AWorld-RL-stage1-worktree/RAG-R1/
+/code/AWorld-RL-stage1-worktree/FunReason/
+/code/AWorld-RL-stage1-worktree/FunReason-MT/
+/code/AWorld-RL-stage1-worktree/StressWeb/
+/code/AWorld-RL-stage1-worktree/V2P/

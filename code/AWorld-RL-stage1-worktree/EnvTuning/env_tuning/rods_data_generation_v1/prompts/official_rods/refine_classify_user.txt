@@ -1,0 +1,22 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.5 Refine Classify Agent
+---PROMPT---
+Input:
+A Quality Judge rejected this multi-turn function-calling data sample.
+
+Rejection reason: {fail_reason}
+
+Data summary:
+{data_summary}
+
+Task:
+Analyze the rejection reason and determine:
+- Is the problem in the USER QUERY (wrong wording, mentions wrong values, unnatural phrasing, format issues)? -> These can be fixed by rewriting the query.
+- Is the problem in the GT function calls (wrong parameters, wrong function, wrong cross-turn state, calling non-existent resources)? -> These CANNOT be fixed by rewriting the query.
+
+# Output Format
+First explain your reasoning inside <reason></reason> tags, then output your answer.
+
+<reason> Your analysis of where the root cause is... </reason>
+<answer>query_fixable</answer> or <answer>gt_unfixable</answer>

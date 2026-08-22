@@ -1,0 +1,19 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix D responsibility; complete prompt not published
+---PROMPT---
+Verify semantic equivalence between the user query and the actual executable GT behavior.
+
+Query:
+{query}
+
+Actual GT calls and execution results:
+{ground_truth_context}
+
+Relevant environment/dependency context:
+{execution_context}
+
+Accept only when the query requests all and only the represented behavior without function/schema leakage.
+Return exactly:
+<reason>verification analysis</reason><verdict>accept</verdict>
+or
+<reason>verification analysis</reason><verdict>reject</verdict>

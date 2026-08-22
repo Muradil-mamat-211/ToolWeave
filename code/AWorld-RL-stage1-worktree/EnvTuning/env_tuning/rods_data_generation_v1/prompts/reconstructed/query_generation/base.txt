@@ -1,0 +1,30 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix D per-class mechanism; template text not published
+---PROMPT---
+Convert the actually executed calls below into one natural human request.
+
+BFCL class:
+{class_name}
+
+Class-conditioned wording guidance:
+{class_guidance}
+
+Whole-conversation narrative (background/style context only; it may contain
+actions planned for other turns):
+{narrative}
+
+Executed calls and results:
+{executed_calls}
+
+Relevant prior context:
+{prior_context}
+
+The query must request exactly all calls listed under "Executed calls and
+results" for THIS TURN and no action that is merely planned elsewhere in the
+narrative. Do not pull future or past operations into the current query. Do not
+say "all" or "every" unless the executed calls really cover every referenced
+item. The query must not name functions or raw parameter schema and must not
+mention data generation. Preserve compatibility with prior conversational
+context.
+Return exactly:
+<reason>brief semantic mapping</reason><query>one natural user request</query>

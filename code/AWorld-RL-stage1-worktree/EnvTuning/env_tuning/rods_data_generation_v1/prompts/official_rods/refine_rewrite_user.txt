@@ -1,0 +1,23 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.6 Refine Rewrite Agent
+---PROMPT---
+Input:
+A quality check found an issue with this user query in a function-calling dataset.
+
+Issue: {fail_reason}
+
+Original query: "{old_query}"
+Ground truth function calls for this turn: {gt_str}
+
+Task:
+Rewrite the user query so that:
+1. It naturally and accurately describes what the GT function calls actually do
+2. It sounds like a real user talking to an AI assistant
+3. It does NOT mention function names, parameter names, or technical details
+4. It does NOT contain special characters that could cause parsing issues
+5. It fixes the specific issue described above
+
+# Output Format
+Output ONLY the rewritten query inside <answer> tags:
+<answer>your rewritten query here</answer>

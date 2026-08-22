@@ -1,0 +1,92 @@
+{
+  "algorithm_fields": {
+    "actor": {
+      "clip_ratio_c": 10.0,
+      "clip_ratio_high": 0.28,
+      "clip_ratio_low": 0.2,
+      "entropy_coeff": 0.001,
+      "grad_clip": 1.0,
+      "kl_loss_coef": 0.01,
+      "kl_loss_type": "low_var_kl",
+      "loss_agg_mode": "seq-mean-token-mean",
+      "lr": 1e-06,
+      "ppo_epochs": 1,
+      "ppo_mini_batch_size": 20,
+      "use_kl_loss": true
+    },
+    "algorithm": {
+      "adv_estimator": "grpo",
+      "gamma": 1.0,
+      "kl_ctrl": {
+        "horizon": 10000,
+        "kl_coef": 0.0,
+        "target_kl": 0.1,
+        "type": "fixed"
+      },
+      "kl_penalty": "kl",
+      "lam": 1.0,
+      "loss_agg_mode": "seq-mean-token-mean",
+      "matchtir_local": {
+        "enabled": true,
+        "epsilon": 1e-06,
+        "gamma": 0.9,
+        "matching": "hard",
+        "min_group_size": 2,
+        "mode": "runtime_interaction_final",
+        "unmatched_penalty": 0.0,
+        "weight": 1.0
+      },
+      "norm_adv_by_std_in_grpo": true,
+      "use_kl_in_reward": false
+    },
+    "data": {
+      "max_prompt_length": 8192,
+      "max_response_length": 10000,
+      "train_batch_size": 20
+    },
+    "lifecycle": {
+      "boundary_high": 0.85,
+      "boundary_low": 0.2,
+      "enabled": true,
+      "generated_pool_cap": 400,
+      "injection_ratio": 0.2,
+      "max_seeds_per_selection": null,
+      "require_seed_selection_config": true,
+      "retire_mastered_threshold": 0.95,
+      "retire_too_hard_threshold": 0.2,
+      "seed_cooldown_steps": null,
+      "seed_type_quotas": {
+        "multi_turn_base": null,
+        "multi_turn_long_context": null,
+        "multi_turn_miss_func": null,
+        "multi_turn_miss_param": null
+      },
+      "stale_after_steps": null,
+      "trial_eviction_threshold": 0.2,
+      "trial_observation_count": 1
+    },
+    "rollout": {
+      "n": 16,
+      "temperature": 1.0,
+      "top_k": -1,
+      "top_p": 1.0
+    },
+    "trainer": {
+      "total_epochs": 5
+    }
+  },
+  "source_sha256": {
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/interaction/data_models.py": "4c10ccec07f44a1103221e2fc83f56dd5969dae6c6be900d1f727d7de9dabd6f",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/interaction/new_multi_turn_fc.py": "ff0d3e431b918241b6426290010806d993dd729faec25546131a88b6d1564562",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/interaction/response_handler.py": "7217fae47cf3123cf2a7e4debb2b61685a5e6a9998ba6c85db57a4b0d660c864",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/interaction/utils.py": "dbc7b2922dae76e6fda933b34cc1ae10f8ee48aa028481b9e5f845f8dbe7c361",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/rods_matchtir_v1/advantage.py": "d7b999a645bb8935511351d57b6cc814424d095f91fe1847966e5205ecd1e344",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/rods_matchtir_v1/lifecycle.py": "4d57152ea6a47861e301906a2fcd9a1d55caf95f76baa6ce87814ea83eb8920f",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/rods_matchtir_v1/matching.py": "e73cb69f3924e9b127517a54ca400f04bfaf9e592440ccadd73bf2090bae4877",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/rods_matchtir_v1/provenance.py": "f903150e177130a122acb2cae23e015d59cd464dbd7ef04ca16ecd149e82d660",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/verl/verl/trainer/ppo/core_algos.py": "32692646dc70018e33cc133919ae8c27858a7323d215b4fe43824afa2853791b",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/verl/verl/trainer/ppo/ray_trainer.py": "61d9dfc5d29af74129a813895007d4f1d5aa344145778f01ef03f64cd744ea3e",
+    "code/AWorld-RL-stage1-worktree/EnvTuning/verl/verl/workers/rollout/schemas.py": "3d264de1c2600b4388eebf3ed03ecbfee1c003447768fa31abd12f6a3cc25a79",
+    "stage1_format_rl/rewards/rods_stage2_progress_reward.py": "0c91a692b105e3c89bebe5e64f6d665e2f1f9af2ba678faeb45c5c19f8195f16"
+  }
+}

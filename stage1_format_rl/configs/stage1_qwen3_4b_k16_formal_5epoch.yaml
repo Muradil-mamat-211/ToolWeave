@@ -1,0 +1,164 @@
+# Formal RODS Stage 1 profile for Qwen3-4B on 2 x 48 GB.
+# Five outer epochs follow the paper. PPO epochs remain one so every sampled
+# rollout batch is consumed once. Checkpoints are resumable and rotate at each
+# 25-step epoch boundary; only the newest checkpoint is retained.
+hydra:
+  searchpath:
+    - pkg://verl.trainer.config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+custom_reward_function:
+  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/format_reward.py
+  name: compute_score
+
+data:
+  train_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_stage1_train_base_100_shuffled_seed42.parquet
+  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_val_400.parquet
+  max_prompt_length: 8192
+  max_response_length: 16384
+  train_batch_size: 4
+  return_raw_chat: true
+  filter_overlong_prompts: false
+  truncation: error
+  trust_remote_code: true
+  # The parquet is physically shuffled once with seed 42. Sequential sampling
+  # makes an epoch-boundary resume identical in data order.
+  shuffle: false
+  seed: 42
+  validation_shuffle: false
+
+actor_rollout_ref:
+  hybrid_engine: true
+  model:
+    path: ${oc.env:TOOLWEAVE_MODELS_ROOT}/Qwen3-4B
+    trust_remote_code: true
+    use_remove_padding: true
+    enable_gradient_checkpointing: true
+    use_fused_kernels: true
+  actor:
+    optim:
+      lr: 1.0e-6
+    ppo_epochs: 1
+    ppo_mini_batch_size: 4
+    ppo_micro_batch_size_per_gpu: 1
+    use_dynamic_bsz: true
+    # Packing budget only. With Ulysses SP=2 the effective full-sequence
+    # budget is 40,960 tokens, above the 24,576-token data contract. Complete
+    # trajectories are sequence-sharded and gradient-accumulated, not cut.
+    ppo_max_token_len_per_gpu: 20480
+    ulysses_sequence_parallel_size: 2
+    entropy_checkpointing: true
+    entropy_from_logits_with_chunking: true
+    use_kl_loss: true
+    kl_loss_coef: 0.01
+    kl_loss_type: low_var_kl
+    clip_ratio_low: 0.2
+    clip_ratio_high: 0.28
+    clip_ratio_c: 10.0
+    grad_clip: 1.0
+    entropy_coeff: 0.001
+    loss_agg_mode: seq-mean-token-mean
+    checkpoint:
+      save_contents:
+        - model
+        - optimizer
+        - extra
+      load_contents:
+        - model
+        - optimizer
+        - extra
+    fsdp_config:
+      param_offload: false
+      # Adam states are returned to CPU after each update. This avoids their
+      # overlap with the next single-stage SGLang weights+KV restore.
+      optimizer_offload: true
+  rollout:
+    name: sglang
+    temperature: 1.0
+    top_p: 1.0
+    top_k: -1
+    n: 16
+    tensor_model_parallel_size: 1
+    # 0.75 and 0.70 both completed update 1 but exhausted memory when the
+    # single-stage TorchMemorySaver wake restored weights and KV together.
+    gpu_memory_utilization: 0.70
+    # The installed SGLang request API does not support tagged wake requests,
+    # so the adapted veRL multi-stage path cannot be enabled in this runtime.
+    multi_stage_wake_up: false
+    max_num_batched_tokens: 131072
+    max_model_len: 32768
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    val_kwargs:
+      do_sample: false
+      temperature: 0
+      top_p: 1.0
+      top_k: -1
+      n: 1
+    multi_turn:
+      enable: true
+      max_assistant_turns: 100
+      max_user_turns: 100
+      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml
+      format: qwen
+      use_inference_chat_template: false
+      tokenization_sanity_check_mode: "off"
+  ref:
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    entropy_from_logits_with_chunking: true
+    fsdp_config:
+      # The reference policy is only resident for reference log-prob. Moving
+      # it back to CPU before actor backward preserves KL semantics and frees
+      # the headroom required by the longest complete 24,576-token sequence.
+      param_offload: true
+
+algorithm:
+  gamma: 1.0
+  lam: 1.0
+  adv_estimator: grpo
+  norm_adv_by_std_in_grpo: true
+  use_kl_in_reward: false
+  loss_agg_mode: seq-mean-token-mean
+  kl_penalty: kl
+  kl_ctrl:
+    type: fixed
+    kl_coef: 0.0
+
+reward_model:
+  enable: false
+  reward_manager: bfcl
+
+trainer:
+  critic_warmup: 0
+  logger:
+    - console
+  project_name: rods_stage1_format_rl
+  experiment_name: qwen3_4b_k16_stage1_format_5epoch
+  rollout_data_dir: null
+  validation_data_dir: null
+  default_local_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage1_format_qwen3_4b/checkpoints
+  default_hdfs_dir: null
+  n_gpus_per_node: 2
+  nnodes: 1
+  # 100 prompts / batch 4 = 25 trainer steps per outer epoch.
+  save_freq: 25
+  max_actor_ckpt_to_keep: 1
+  max_critic_ckpt_to_keep: 1
+  # A fresh directory starts from Qwen3-4B; rerunning resumes the newest epoch.
+  resume_mode: auto
+  resume_from_path: null
+  del_local_ckpt_after_load: false
+  val_before_train: false
+  val_only: false
+  # Any positive interval validates at is_last_step. This unreachable interval
+  # therefore produces exactly one validation at global step 125.
+  test_freq: 1000000000
+  total_epochs: 5
+  total_training_steps: null
+  log_val_generations: 0

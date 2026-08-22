@@ -1,0 +1,14 @@
+SOURCE_STATUS = RECONSTRUCTED_FROM_RODS_SPEC
+SOURCE = RODS arXiv:2606.19047v1 Appendix P example; transform prompt/code not published
+---PROMPT---
+Turn one executable request into a genuine missing-parameter clarification pattern. The affected query must omit one required value and the recovery query must naturally supply it. Do not change the GT call.
+
+Conversation:
+{conversation}
+
+Return exactly:
+<reason>brief structural analysis</reason>
+<affected_turn>zero-based integer</affected_turn>
+<missing_parameter>exact parameter name</missing_parameter>
+<affected_query>natural underspecified request</affected_query>
+<recovery_query>natural follow-up supplying the missing value</recovery_query>

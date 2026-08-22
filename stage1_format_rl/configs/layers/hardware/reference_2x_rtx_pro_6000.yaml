@@ -1,0 +1,9 @@
+schema_version: toolweave.hardware.v1
+hardware:
+  nodes:
+    - name: node-0
+      gpu_ids: [0, 1]
+      gpu_model: NVIDIA RTX PRO 6000 Blackwell
+      gpu_memory_gib: 96
+      cpu_cores: 50
+      ram_gib: 240

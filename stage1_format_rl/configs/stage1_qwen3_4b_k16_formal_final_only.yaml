@@ -1,0 +1,133 @@
+# Formal Stage 1 profile for Qwen3-4B on 2 x 48 GB.
+# Method parameters follow the paper-aligned profile except that this run uses
+# one outer data epoch. Hardware parameters are those validated by the GPU
+# smoke. No intermediate checkpoint is saved.
+hydra:
+  searchpath:
+    - pkg://verl.trainer.config
+
+defaults:
+  - ppo_trainer
+  - _self_
+
+custom_reward_function:
+  path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/format_reward.py
+  name: compute_score
+
+data:
+  train_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_stage1_train_base_100.parquet
+  val_files: ${oc.env:TOOLWEAVE_DATA_ROOT}/bfcl_val_400.parquet
+  max_prompt_length: 8192
+  max_response_length: 16384
+  train_batch_size: 4
+  return_raw_chat: true
+  filter_overlong_prompts: false
+  truncation: error
+  trust_remote_code: true
+
+actor_rollout_ref:
+  hybrid_engine: true
+  model:
+    path: ${oc.env:TOOLWEAVE_MODELS_ROOT}/Qwen3-4B
+    trust_remote_code: true
+    use_remove_padding: true
+    enable_gradient_checkpointing: true
+    use_fused_kernels: true
+  actor:
+    optim:
+      lr: 1.0e-6
+    ppo_mini_batch_size: 4
+    ppo_micro_batch_size_per_gpu: 1
+    use_dynamic_bsz: true
+    # Packing budget only; complete trajectories are gradient-accumulated.
+    ppo_max_token_len_per_gpu: 32768
+    entropy_checkpointing: true
+    entropy_from_logits_with_chunking: true
+    use_kl_loss: true
+    kl_loss_coef: 0.01
+    kl_loss_type: low_var_kl
+    clip_ratio_low: 0.2
+    clip_ratio_high: 0.28
+    clip_ratio_c: 10.0
+    grad_clip: 1.0
+    entropy_coeff: 0.001
+    loss_agg_mode: seq-mean-token-mean
+    checkpoint:
+      # The final step writes a complete Hugging Face model directly. No
+      # sharded model, optimizer, scheduler, or RNG state is persisted.
+      save_contents:
+        - hf_model
+      load_contents: []
+    fsdp_config:
+      param_offload: false
+      optimizer_offload: false
+  rollout:
+    name: sglang
+    temperature: 1.0
+    top_p: 1.0
+    top_k: -1
+    n: 16
+    tensor_model_parallel_size: 1
+    gpu_memory_utilization: 0.75
+    max_num_batched_tokens: 131072
+    max_model_len: 32768
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    multi_turn:
+      enable: true
+      max_assistant_turns: 100
+      max_user_turns: 100
+      interaction_config_path: ${oc.env:TOOLWEAVE_SOURCE_ROOT}/code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/config/multi_turn_fc_interaction_config.yaml
+      format: qwen
+      use_inference_chat_template: false
+      tokenization_sanity_check_mode: "off"
+  ref:
+    log_prob_micro_batch_size_per_gpu: 1
+    log_prob_use_dynamic_bsz: true
+    log_prob_max_token_len_per_gpu: 65536
+    entropy_from_logits_with_chunking: true
+    fsdp_config:
+      param_offload: false
+
+algorithm:
+  gamma: 1.0
+  lam: 1.0
+  adv_estimator: grpo
+  norm_adv_by_std_in_grpo: true
+  use_kl_in_reward: false
+  loss_agg_mode: seq-mean-token-mean
+  kl_penalty: kl
+  kl_ctrl:
+    type: fixed
+    kl_coef: 0.0
+
+reward_model:
+  enable: false
+  reward_manager: bfcl
+
+trainer:
+  critic_warmup: 0
+  logger:
+    - console
+    - tensorboard
+  project_name: rods_stage1_format_rl
+  experiment_name: qwen3_4b_k16_stage1_format_final_only
+  rollout_data_dir: null
+  validation_data_dir: null
+  default_local_dir: ${oc.env:TOOLWEAVE_OUTPUTS_ROOT}/stage1_format_qwen3_4b/.final_export_tmp
+  default_hdfs_dir: null
+  n_gpus_per_node: 2
+  nnodes: 1
+  # Positive enables the trainer's last-step save. It cannot be reached as a
+  # periodic interval during this 25-step run.
+  save_freq: 1000000000
+  max_actor_ckpt_to_keep: 1
+  resume_mode: disable
+  val_before_train: false
+  val_only: false
+  # The trainer evaluates when `is_last_step` for any positive test frequency.
+  # This interval is unreachable, so evaluation occurs exactly once at step 25.
+  test_freq: 1000000000
+  total_epochs: 1
+  log_val_generations: 0

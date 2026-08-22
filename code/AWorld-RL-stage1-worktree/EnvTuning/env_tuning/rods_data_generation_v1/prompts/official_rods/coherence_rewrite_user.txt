@@ -1,0 +1,28 @@
+SOURCE_STATUS = OFFICIAL_PAPER
+SOURCE = RODS arXiv:2606.19047v1
+SECTION = Appendix C.3 Coherence Rewrite Agent
+---PROMPT---
+# Task
+Rewrite user queries for a multi-turn function-calling conversation.
+
+# Scenario
+{narrative}
+
+# Ground Truth Function Calls Per Turn
+{turns_for_rewrite}
+
+# Instructions
+Generate one natural user query for EACH turn that:
+1. Accurately describes what the GT function calls do (without mentioning function names)
+2. Sounds like a real user talking to an AI assistant
+3. Is semantically coherent with the narrative scenario
+4. Does NOT contain special characters that could cause parsing issues
+5. For turns with multiple function calls, the query should naturally imply all of them
+
+# Output Format
+Output each query inside <query> tags, one per turn:
+<query>Turn 1 user query here</query>
+<query>Turn 2 user query here</query>
+...
+
+IMPORTANT: Output exactly {num_turns} queries, one for each turn.

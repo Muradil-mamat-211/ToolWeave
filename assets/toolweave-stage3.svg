@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1060" viewBox="0 0 1440 1060" role="img" aria-labelledby="title desc">
   <title id="title">ToolWeave Stage 3 method</title>
-  <desc id="desc">Four panels show multi-turn rollout progress, one-to-one call matching, interaction-aware dual-level advantage estimation, and asynchronous boundary-guided data evolution.</desc>
+  <desc id="desc">Four panels show multi-turn rollout progress, one-to-one call matching, runtime-interaction dual-level advantage estimation, and asynchronous boundary-guided data evolution. Unparsed non-answer interactions remain in the local chain at zero immediate reward; valid answers receive global credit only.</desc>
   <defs>
     <style>
       .bg { fill: #ffffff; }
@@ -60,7 +60,7 @@
   <text class="tiny" x="357" y="422" text-anchor="middle">÷ all expected turns</text>
   <path class="tealArrow" d="M580 279 V320 H357 V335"/>
 
-  <text class="small" x="357" y="470" text-anchor="middle">R_P feeds both policy learning and boundary statistics</text>
+  <text class="small" x="357" y="470" text-anchor="middle">R_P feeds global policy credit and boundary statistics</text>
 
   <!-- Panel B -->
   <rect class="panel" x="735" y="95" rx="20" ry="20" width="670" height="405"/>
@@ -121,22 +121,24 @@
   <rect class="local" x="145" y="710" rx="13" ry="13" width="120" height="68"/>
   <text class="label" x="205" y="737" text-anchor="middle">Call rewards</text>
   <text class="tiny" x="205" y="759" text-anchor="middle">parsed calls only</text>
-  <rect class="local" x="295" y="710" rx="13" ry="13" width="120" height="68"/>
-  <text class="label" x="355" y="737" text-anchor="middle">Interaction mean</text>
-  <text class="tiny" x="355" y="759" text-anchor="middle">parse error → 0</text>
+  <rect class="local" x="295" y="710" rx="13" ry="13" width="120" height="82"/>
+  <text class="label" x="355" y="735" text-anchor="middle">Interaction mean</text>
+  <text class="tiny" x="355" y="757" text-anchor="middle">unparsed: r_j = 0</text>
+  <text class="tiny" x="355" y="778" text-anchor="middle">retained</text>
   <rect class="local" x="445" y="710" rx="13" ry="13" width="135" height="68"/>
   <text class="label" x="512.5" y="737" text-anchor="middle">Turn-local</text>
   <text class="tiny" x="512.5" y="759" text-anchor="middle">discounted return</text>
-  <rect class="local" x="610" y="710" rx="13" ry="13" width="155" height="68"/>
-  <text class="label" x="687.5" y="737" text-anchor="middle">Ragged (q,u,j)</text>
-  <text class="tiny" x="687.5" y="759" text-anchor="middle">same runtime depth</text>
+  <rect class="local" x="605" y="710" rx="13" ry="13" width="165" height="82"/>
+  <text class="label" x="687.5" y="735" text-anchor="middle">Ragged (q,u,j)</text>
+  <text class="tiny" x="687.5" y="757" text-anchor="middle">same runtime depth</text>
+  <text class="tiny" x="687.5" y="778" text-anchor="middle">singleton → A_local=0</text>
   <path class="orangeArrow" d="M265 744 H285"/>
   <path class="orangeArrow" d="M415 744 H435"/>
-  <path class="orangeArrow" d="M580 744 H600"/>
+  <path class="orangeArrow" d="M580 744 H595"/>
 
   <rect class="local" x="615" y="820" rx="13" ry="13" width="145" height="62"/>
   <text class="label" x="687.5" y="857" text-anchor="middle">A_local</text>
-  <path class="orangeArrow" d="M687.5 778 V810"/>
+  <path class="orangeArrow" d="M687.5 792 V810"/>
 
   <rect class="policy" x="305" y="820" rx="15" ry="15" width="220" height="66"/>
   <text class="label" x="415" y="848" text-anchor="middle">A_global + A_local</text>
@@ -147,6 +149,8 @@
   <rect class="policy" x="335" y="920" rx="13" ry="13" width="160" height="46"/>
   <text class="label" x="415" y="949" text-anchor="middle">PPO / GRPO</text>
   <path class="blueArrow" d="M415 886 V910"/>
+  <text class="tiny" x="75" y="902">valid answer: excluded from local chain</text>
+  <text class="tiny" x="75" y="921">answer tokens: global-only</text>
 
   <!-- Panel D -->
   <rect class="panel" x="885" y="530" rx="20" ry="20" width="520" height="450"/>

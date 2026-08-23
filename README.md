@@ -9,8 +9,6 @@
 ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, then couples policy optimization with asynchronous, execution-verified data evolution around the current policy's capability boundary.
 
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20Model-Stage1%20%7C%20Stage2%20%7C%20Stage3-yellow)](#models)
-[![Training Data](https://img.shields.io/badge/%F0%9F%A4%97%20Training%20Data-RODS_EnvTuning-yellow)](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data)
-[![Eval Data](https://img.shields.io/badge/%F0%9F%A4%97%20Eval%20Data-RODS_BFCL_V3-yellow)](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data)
 [![Code](https://img.shields.io/badge/GitHub-Code-181717?logo=github&logoColor=white)](https://github.com/Muradil-mamat-211/ToolWeave)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Agentic RL](https://img.shields.io/badge/Agentic-RL-6D28D9)](#stage-3-toolweave)
@@ -37,11 +35,12 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
   - [3.1 Reward Modeling](#31-reward-modeling)
   - [3.2 Dual-Level Advantage Estimation](#32-dual-level-advantage-estimation)
   - [3.3 Policy Optimization](#33-policy-optimization)
+  - [3.4 Boundary-Guided Online Data Evolution](#34-boundary-guided-online-data-evolution)
+  - [3.5 Formal-Training Credit-Assignment Audit](#35-formal-training-credit-assignment-audit)
     - [Real Rollout Case Study](#real-rollout-case-study-interaction-level-credit-assignment)
       - [Why Dual-Level Credit Assignment](#why-dual-level-credit-assignment)
       - [Full K=16 User Turn 3 Interaction Audit](#full-k16-user-turn-3-interaction-audit)
       - [Four Credit-Assignment Regimes](#four-credit-assignment-regimes-in-one-real-k16-group)
-  - [3.4 Boundary-Guided Online Data Evolution](#34-boundary-guided-online-data-evolution)
 - [Verified Online Data Synthesis](#verified-online-data-synthesis)
 - [Experiments and Results](#experiments-and-results)
 - [Models](#models)
@@ -63,7 +62,7 @@ Multi-turn tool use has two coupled difficulties. A policy must learn *whether a
 <img src="assets/toolweave-pipeline.svg" alt="Overall ToolWeave three-stage curriculum with parallel policy-learning and asynchronous data-evolution lanes" width="100%">
 </div>
 
-Stage 3 deliberately has two non-blocking branches after the same rollout-derived Progress Reward. The policy branch performs the current optimizer update. The data branch selects boundary seeds, synthesizes and validates candidates asynchronously, and stages them for a later epoch. A candidate generated from epoch `n` is never fed back into the current update and is first eligible at epoch `n+1`.
+Stage 3 deliberately has two non-blocking branches over the same rollout group. The policy branch combines group-normalized $R_P$ with local interaction credit derived from runtime provenance and per-user-turn call matching. The data branch uses grouped $R_P$ only to select boundary seeds, then synthesizes and validates candidates asynchronously for a later epoch. A candidate generated from epoch `n` is never fed back into the current update and is first eligible at epoch `n+1`.
 
 ### Method provenance at a glance
 
@@ -105,7 +104,7 @@ The public repository separates portable source/configuration from machine-local
 
    python -m stage1_format_rl.infrastructure.cli \
      --profile stage1_format_rl/configs/layers/profiles/stage3_reference.yaml \
-     preflight --check-assets
+     preflight --check-assets --observe-hardware
    ```
 
 4. Inspect the generated launch without starting training:
@@ -170,7 +169,26 @@ A valid final answer/turn closure is excluded from $\mathcal{D}_{i,u}$ and recei
 
 #### Stage 1 — Tool-Use Cold Start
 
-Stage 1 starts from `Qwen/Qwen3-4B` and uses the public EnvTuning interaction path to establish strict response formatting and executable tool calls. For rollout $i$, let $C_i$ be its diagnostic-code sequence, $T_i=|C_i|$, and $n_{i,c}$ the count of code $c$. Define
+Stage 1 starts from `Qwen/Qwen3-4B` and uses the public EnvTuning interaction path to establish strict response formatting and executable tool calls.
+
+##### Diagnostic Event Semantics
+
+The runtime emits one diagnostic event for each assistant action or closed BFCL user turn:
+
+| Code | Runtime meaning | Terminal? | Stage 1 role | Stage 2/3 role |
+|---:|---|:---:|---|---|
+| `-3` | Response/action fails the required parser/format protocol before a valid tool execution | No | Format failure contributing to $F_i$ | Intermediate diagnostic only |
+| `-2` | A parsed tool call reaches execution but the BFCL VM reports an execution failure | No | Failed executed-call event contributing to the $Q_i$ denominator | Intermediate diagnostic only |
+| `-1` | A parsed tool call executes without an execution error | No | Successful executed-call event contributing to the $Q_i$ numerator | Intermediate diagnostic only; **not** terminal task success |
+| `0` | Current BFCL user turn closes unsuccessfully | Yes | Terminal diagnostic; not a successful tool-execution event | Terminal failure |
+| `1` | Current BFCL user turn closes successfully | Yes | Terminal diagnostic | Terminal success and $R_P$ numerator event |
+
+> [!IMPORTANT]
+> Code `-1` means **execution success, not semantic task success**. A tool call may be syntactically valid and execute without a VM error, therefore emitting `-1`, while still being task-incorrect and later terminating the BFCL user turn with `0`.
+
+Only terminal codes `0` and `1` determine BFCL user-turn completion. The Stage 2/3 fixed-denominator Progress Reward ignores `-3`, `-2`, and `-1` in both its numerator and denominator.
+
+For rollout $i$, let $C_i$ be its diagnostic-code sequence, $T_i=|C_i|$, and $n_{i,c}$ the count of code $c$. Define
 
 $$
 I_i^{\mathrm{tool}}=\mathbf{1}[n_{i,-1}+n_{i,-2}>0],
@@ -194,7 +212,7 @@ ToolWeave's diagnostic-code semantics follow the public EnvTuning implementation
 
 #### Stage 2 — Progress-Reward Learning
 
-Stage 2 begins from Stage 1 update 25 and replaces the cold-start score with the RODS fixed-denominator Progress Reward. If user turn $u$ is successful only when both its state and response conditions pass, then
+Stage 2 begins from Stage 1 update 25 and replaces the cold-start score with the RODS fixed-denominator Progress Reward. For non-empty-GT turns, terminal success requires the applicable BFCL state and response checks to pass. Empty-GT Missing Function and Missing Parameter turns follow the explicit no-call/answer protocol. In either case, the reward wrapper ultimately receives terminal code `1` for success and `0` for failure. The reward is
 
 $$
 R_P^{(i)}=
@@ -275,7 +293,9 @@ S_{\mathrm{pn}}(p,g)=
 {|N_p|+|N_g|-I_{\mathrm{multi}}(N_p,N_g)}.
 $$
 
-When both argument-name collections are empty, the implementation returns $S_{\mathrm{pn}}=1$. The parameter-content component counts exact structured equality only over GT argument keys:
+When both argument-name collections are empty, the implementation returns $S_{\mathrm{pn}}=1$. Because canonical structured arguments are mappings, valid calls normally have unique argument keys. For such canonical inputs, the multiset form reduces to ordinary set Jaccard. The distinction is retained here to document the audited implementation exactly.
+
+The parameter-content component counts exact structured equality only over GT argument keys:
 
 $$
 S_{\mathrm{pc}}(p,g)=
@@ -516,6 +536,69 @@ The unchanged implementation applies the configured clipped/dual-clipped surroga
 
 </details>
 
+### 3.4 Boundary-Guided Online Data Evolution
+
+The same $K$ rollout rewards also produce a prompt-level mean
+
+$$
+\bar r_P(q)=\frac{1}{K}\sum_{i=1}^{K}R_P^{(i)}.
+$$
+
+RODS-style capability regions are
+
+| Region | Rule |
+|---|---|
+| Too hard | $\bar r_P(q)<0.20$ |
+| Boundary | $0.20\le\bar r_P(q)\le0.85$ |
+| Mastered | $\bar r_P(q)>0.85$ |
+
+Boundary examples are prioritized by
+
+$$
+\phi(q)=4\bar r_P(q)\left(1-\bar r_P(q)\right).
+$$
+
+After a sample-identity cooldown, candidates are partitioned into Base, Missing Function, Missing Parameter, and Long Context buckets. Each bucket is ranked by descending $\phi$, limited by its quota $M_{\tau}$, and bounded by total budget $M$, with
+
+$$
+\sum_{\tau}M_{\tau}=M.
+$$
+
+There is no quota redistribution when one type has too few eligible samples. The paper specifies the mechanism but does not publish one unique numeric default for $M$, $M_{\tau}$, or cooldown $c$; ToolWeave's formal training configuration supplies these project hyperparameters explicitly, and validation fails fast if they are omitted.
+
+ToolWeave formal training fixes these project choices to
+
+$$
+M=16,
+\qquad
+M_{\tau}=4
+\quad \forall \tau\in
+\lbrace
+\mathrm{Base},\mathrm{MF},\mathrm{MP},\mathrm{LC}
+\rbrace,
+\qquad
+c=13.
+$$
+
+These are ToolWeave project hyperparameters and are not attributed to RODS. The four per-type quotas sum exactly to the total selection budget.
+
+This branch consumes only $R_P$. It never consumes $A^{\ell}$, call similarities, or the fused advantage. Seed dispatch occurs after a successful optimizer update, and the separate generator proceeds asynchronously while policy learning can continue.
+
+Validated candidates generated in epoch `n` are staged and become eligible only at epoch `n+1`. ToolWeave implements a reproducible adaptation of RODS-style lifecycle management, not a claim of a verbatim unpublished RODS lifecycle. It protects all original rows, limits new admission to at most `floor(0.20 × active_pool_before)`, caps the generated sub-pool at 400, supports trial eviction and drift retirement for generated rows, and persists deferred validated candidates for later epochs.
+
+<details>
+<summary>Audited lifecycle constants and edge behavior</summary>
+
+- One observation is required before a generated row leaves its trial state.
+- Trial rows below `0.20` can be evicted as too hard.
+- Observed generated rows above `0.95` can retire as mastered; the lower retirement boundary is `0.20`.
+- Stale retirement is an optional disabled hook because no reproducible paper-default stale window is available.
+- If restored state is already above the 400-row generated cap, observed generated rows with the lowest available $\phi$ are pruned first. The implementation does not fabricate priorities for unobserved trial rows.
+
+</details>
+
+### 3.5 Formal-Training Credit-Assignment Audit
+
 #### Real Rollout Case Study: Interaction-Level Credit Assignment
 
 **Full trajectory and reproducible group statistics:** [Hugging Face dataset](https://huggingface.co/datasets/muradil211/ToolWeave-BFCL-Rollout-Case-Study)
@@ -691,67 +774,6 @@ This real K=16 formal-training group shows strictly finer interaction-level cred
 
 > **Matching provenance.** The MatchTIR paper describes maximum-weight Hungarian/KM assignment. At audited public commit [`975c453`](https://github.com/quchangle1/MatchTIR/commit/975c4535fbb86a49f21ff7d291a1fa822f827684), the helper named `hungarian_assignment` performs greedy sorted-edge matching. ToolWeave's implemented solver uses the paper-style one-to-one objective with SciPy's true `linear_sum_assignment(..., maximize=True)`.
 
-### 3.4 Boundary-Guided Online Data Evolution
-
-The same $K$ rollout rewards also produce a prompt-level mean
-
-$$
-\bar r_P(q)=\frac{1}{K}\sum_{i=1}^{K}R_P^{(i)}.
-$$
-
-RODS-style capability regions are
-
-| Region | Rule |
-|---|---|
-| Too hard | $\bar r_P(q)<0.20$ |
-| Boundary | $0.20\le\bar r_P(q)\le0.85$ |
-| Mastered | $\bar r_P(q)>0.85$ |
-
-Boundary examples are prioritized by
-
-$$
-\phi(q)=4\bar r_P(q)\left(1-\bar r_P(q)\right).
-$$
-
-After a sample-identity cooldown, candidates are partitioned into Base, Missing Function, Missing Parameter, and Long Context buckets. Each bucket is ranked by descending $\phi$, limited by its quota $M_{\tau}$, and bounded by total budget $M$, with
-
-$$
-\sum_{\tau}M_{\tau}=M.
-$$
-
-There is no quota redistribution when one type has too few eligible samples. The paper specifies the mechanism but does not publish one unique numeric default for $M$, $M_{\tau}$, or cooldown $c$; ToolWeave's formal training configuration supplies these project hyperparameters explicitly, and validation fails fast if they are omitted.
-
-ToolWeave formal training fixes these project choices to
-
-$$
-M=16,
-\qquad
-M_{\tau}=4
-\quad \forall \tau\in
-\lbrace
-\mathrm{Base},\mathrm{MF},\mathrm{MP},\mathrm{LC}
-\rbrace,
-\qquad
-c=13.
-$$
-
-These are ToolWeave project hyperparameters and are not attributed to RODS. The four per-type quotas sum exactly to the total selection budget.
-
-This branch consumes only $R_P$. It never consumes $A^{\ell}$, call similarities, or the fused advantage. Seed dispatch occurs after a successful optimizer update, and the separate generator proceeds asynchronously while policy learning can continue.
-
-Validated candidates generated in epoch `n` are staged and become eligible only at epoch `n+1`. ToolWeave implements a reproducible adaptation of RODS-style lifecycle management, not a claim of a verbatim unpublished RODS lifecycle. It protects all original rows, limits new admission to at most `floor(0.20 × active_pool_before)`, caps the generated sub-pool at 400, supports trial eviction and drift retirement for generated rows, and persists deferred validated candidates for later epochs.
-
-<details>
-<summary>Audited lifecycle constants and edge behavior</summary>
-
-- One observation is required before a generated row leaves its trial state.
-- Trial rows below `0.20` can be evicted as too hard.
-- Observed generated rows above `0.95` can retire as mastered; the lower retirement boundary is `0.20`.
-- Stale retirement is an optional disabled hook because no reproducible paper-default stale window is available.
-- If restored state is already above the 400-row generated cap, observed generated rows with the lowest available $\phi$ are pruned first. The implementation does not fabricate priorities for unobserved trial rows.
-
-</details>
-
 ### ToolWeave Stage 3 at a Glance
 
 ```text
@@ -817,7 +839,7 @@ A RODS-derived planner concept proposes an ordered executable structure and late
 
 ### 3. Real BFCL VM Execution
 
-Ground truth is generated and executed before the natural-language query. User turns share state and execution history. Failures enter a 12-class taxonomy, and only eligible failures trigger deterministic configuration patching, cumulative blocklisting, and feedback-conditioned replanning. A seed is dropped after at most three complete pipeline attempts.
+Ground truth is generated and executed before the natural-language query. User turns share state and execution history. Failures enter the generator's [12-class structured taxonomy](code/AWorld-RL-stage1-worktree/EnvTuning/env_tuning/rods_data_generation_v1/error_taxonomy.py), and only eligible failures trigger deterministic configuration patching, cumulative blocklisting, and feedback-conditioned replanning. A seed is dropped after at most three complete pipeline attempts.
 
 ### 4. Query Construction and Whole-Conversation Rewrite
 
@@ -856,17 +878,7 @@ Stage 1/2 results below come from deterministic one-rollout evaluation artifacts
 
 ### Evaluation Protocol
 
-The environment emits one diagnostic event for each assistant action or closed user turn:
-
-| Code | Executable meaning in this project |
-|---:|---|
-| `-3` | Response-format/parser failure |
-| `-2` | Parsed tool call reached execution but failed in the VM |
-| `-1` | Parsed tool call executed without an execution error; this is not terminal task success |
-| `0` | Terminal user-turn failure |
-| `1` | Terminal user-turn success |
-
-Only `0` and `1` are terminal. Additional diagnostics are
+Evaluation uses the [diagnostic-event semantics defined in Stage 1](#diagnostic-event-semantics). Only codes `0` and `1` are terminal. Additional evaluation diagnostics are
 
 $$
 P_i^{\mathrm{observed}}=

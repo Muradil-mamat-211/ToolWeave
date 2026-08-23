@@ -6,6 +6,8 @@ commit `cbabf00`; commit `b746aa7` restores vendored veRL Python sources that a
 broad `models/` copy-ignore rule initially omitted. No training or generation
 semantics are inferred from a proposed architecture.
 
+[← Back to ToolWeave README](../README.md)
+
 ## Baseline
 
 - Original read-only CPU test suite: `265 passed`, `0 failed`, `3 warnings`.

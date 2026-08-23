@@ -4,6 +4,8 @@ ToolWeave separates a static BFCL task from the on-policy trajectory produced wh
 
 This page documents data and runtime structure only. It does not define a new local reward, return, normalization rule, or eligibility policy.
 
+[← Back to ToolWeave README](../README.md)
+
 <div align="center">
   <img src="../assets/toolweave-data-anatomy.svg" alt="ToolWeave BFCL data hierarchy and parser-recovery trajectory" width="100%">
 </div>

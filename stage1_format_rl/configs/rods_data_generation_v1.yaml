@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # RODS Data-Generation Branch V1. This shipped file is intentionally dry-run
 # safe: it reads/validates seed records but cannot write Training's production
 # candidate queue. Change dry_run and candidate_path only for an authorized run.

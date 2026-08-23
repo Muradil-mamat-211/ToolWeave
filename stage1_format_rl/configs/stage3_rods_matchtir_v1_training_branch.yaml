@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Retained monolithic formal Stage 3 compatibility/reference configuration.
 # The layered stage3_reference.yaml profile is the current portable formal
 # launch contract.

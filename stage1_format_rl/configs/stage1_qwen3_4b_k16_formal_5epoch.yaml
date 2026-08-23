@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Formal RODS Stage 1 profile for Qwen3-4B on 2 x 48 GB.
 # Five outer epochs follow the paper. PPO epochs remain one so every sampled
 # rollout batch is consumed once. Checkpoints are resumable and rotate at each

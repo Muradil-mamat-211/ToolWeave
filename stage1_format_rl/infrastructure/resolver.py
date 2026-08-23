@@ -27,6 +27,16 @@ from .qualification import qualify_reference
 from .topology import build_topology_plan
 
 
+_LAYER_SCHEMAS = {
+    "hardware": "toolweave.hardware.v1",
+    "runtime": "toolweave.runtime.v1",
+    "assets": "toolweave.assets.v1",
+    "experiment": "toolweave.experiment.v1",
+    "generator": "toolweave.generator-experiment.v1",
+    "qualification": "toolweave.qualification.v1",
+}
+
+
 @dataclass(frozen=True)
 class ResolvedProjectConfig:
     profile_path: Path
@@ -69,7 +79,10 @@ def _layer(profile_path: Path, profile: Mapping[str, Any], key: str) -> dict[str
     value = profile.get(key)
     if not isinstance(value, str) or not value.strip():
         raise ConfigError(f"profile.{key} must name a YAML file")
-    return load_yaml(resolve_relative_path(profile_path, value))
+    return load_yaml(
+        resolve_relative_path(profile_path, value),
+        expected_schema=_LAYER_SCHEMAS[key],
+    )
 
 
 def resolve_profile(
@@ -81,7 +94,7 @@ def resolve_profile(
 ) -> ResolvedProjectConfig:
     profile_path = Path(profile_path).expanduser().resolve()
     project_root = find_project_root(profile_path)
-    profile = load_yaml(profile_path)
+    profile = load_yaml(profile_path, expected_schema="toolweave.profile.v1")
     selected_mode = str(mode or profile.get("mode", "portable"))
     if selected_mode not in {"portable", "reference"}:
         raise ConfigError("mode must be 'portable' or 'reference'")

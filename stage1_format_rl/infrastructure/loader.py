@@ -15,9 +15,32 @@ from .models import ConfigError, MachineConfig
 
 
 _PLACEHOLDER = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_.-]*)\}")
+_SCHEMA_VERSION = re.compile(r"^toolweave\.[a-z][a-z0-9-]*\.v[1-9][0-9]*$")
+
+SUPPORTED_LAYER_SCHEMAS = frozenset(
+    {
+        "toolweave.machine.v1",
+        "toolweave.profile.v1",
+        "toolweave.hardware.v1",
+        "toolweave.runtime.v1",
+        "toolweave.assets.v1",
+        "toolweave.experiment.v1",
+        "toolweave.generator-experiment.v1",
+        "toolweave.qualification.v1",
+    }
+)
 
 
-def load_yaml(path: str | Path) -> dict[str, Any]:
+def load_yaml(
+    path: str | Path, *, expected_schema: str | None = None
+) -> dict[str, Any]:
+    """Load YAML, optionally enforcing one exact ToolWeave layer contract.
+
+    Generic callers deliberately remain schema-agnostic so historical Hydra
+    configs, upstream YAML, and reproduction snapshots are not pulled into the
+    layered configuration contract.
+    """
+
     path = Path(path)
     try:
         value = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -25,6 +48,20 @@ def load_yaml(path: str | Path) -> dict[str, Any]:
         raise ConfigError(f"configuration file does not exist: {path}") from exc
     if not isinstance(value, dict):
         raise ConfigError(f"YAML root must be a mapping: {path}")
+    if expected_schema is not None:
+        if expected_schema not in SUPPORTED_LAYER_SCHEMAS:
+            raise ConfigError(f"unsupported expected ToolWeave schema: {expected_schema}")
+        observed = value.get("schema_version")
+        observed_label = "<missing>" if observed is None else repr(observed)
+        if (
+            not isinstance(observed, str)
+            or _SCHEMA_VERSION.fullmatch(observed) is None
+            or observed != expected_schema
+        ):
+            raise ConfigError(
+                f"schema_version mismatch for {path}: expected schema "
+                f"{expected_schema!r}; observed schema {observed_label}"
+            )
     return value
 
 
@@ -107,7 +144,9 @@ def load_machine_config(
     environ: Mapping[str, str] | None = None,
 ) -> MachineConfig:
     variables = machine_environment_defaults(project_root, environ)
-    raw = expand_templates(load_yaml(path), variables)
+    raw = expand_templates(
+        load_yaml(path, expected_schema="toolweave.machine.v1"), variables
+    )
     return MachineConfig.from_mapping(raw)
 
 

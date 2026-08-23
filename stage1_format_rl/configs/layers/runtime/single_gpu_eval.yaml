@@ -47,3 +47,27 @@ runtime:
     rollout_logprob_max_token_len_per_gpu: 32768
     reference_logprob_micro_batch_size_per_gpu: 1
     reference_logprob_max_token_len_per_gpu: 32768
+  # Specialized BFCL100 server runtime. These values intentionally differ
+  # from training rollout limits; only TP is derived from TopologyPlan.
+  evaluation_server:
+    host: 127.0.0.1
+    port: 31000
+    dtype: bfloat16
+    max_used_memory_mib: 2048
+    sglang:
+      context_length: 32768
+      memory_fraction_static: 0.90
+      max_running_requests: 24
+      cuda_graph_max_batch_size: 32
+      attention_backend: triton
+      sampling_backend: flashinfer
+      enable_tokenizer_batch_encode: true
+    vllm:
+      max_model_len: 262144
+      gpu_memory_utilization: 0.90
+      max_num_seqs: 32
+      max_num_batched_tokens: 65536
+      enable_prefix_caching: true
+      language_model_only: true
+      skip_mm_profiling: true
+      generation_config: vllm

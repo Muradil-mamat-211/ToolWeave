@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Standalone smoke-only config. Never use this file for formal training.
 hydra:
   searchpath:

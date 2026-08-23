@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Recovery continuation after the original run collapsed after epoch 1.
 # The model starts from the held-out-selected global_step_25 HF merge, runs the
 # remaining four outer epochs, and keeps all five logical epoch-boundary weights.
@@ -145,4 +147,3 @@ trainer:
   total_epochs: 4
   total_training_steps: null
   log_val_generations: 0
-

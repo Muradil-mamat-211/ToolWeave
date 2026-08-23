@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Formal Stage 1 profile for Qwen3-4B on 2 x 48 GB.
 # Method parameters follow the paper-aligned profile except that this run uses
 # one outer data epoch. Hardware parameters are those validated by the GPU

@@ -231,6 +231,112 @@ class RoleResources:
 
 
 @dataclass(frozen=True)
+class EvaluationServerRuntime:
+    """Backend runtime contract for the specialized read-only eval servers."""
+
+    host: str
+    port: int
+    dtype: str
+    max_used_memory_mib: int
+    sglang_context_length: int
+    sglang_memory_fraction_static: float
+    sglang_max_running_requests: int
+    sglang_cuda_graph_max_batch_size: int
+    sglang_attention_backend: str
+    sglang_sampling_backend: str
+    sglang_enable_tokenizer_batch_encode: bool
+    vllm_max_model_len: int
+    vllm_gpu_memory_utilization: float
+    vllm_max_num_seqs: int
+    vllm_max_num_batched_tokens: int
+    vllm_enable_prefix_caching: bool
+    vllm_language_model_only: bool
+    vllm_skip_mm_profiling: bool
+    vllm_generation_config: str
+
+    @classmethod
+    def from_mapping(cls, raw: Mapping[str, Any]) -> "EvaluationServerRuntime":
+        raw = _as_mapping(raw, "runtime.evaluation_server")
+        sglang = _as_mapping(raw.get("sglang", {}), "runtime.evaluation_server.sglang")
+        vllm = _as_mapping(raw.get("vllm", {}), "runtime.evaluation_server.vllm")
+        host = str(raw.get("host", "127.0.0.1")).strip()
+        dtype = str(raw.get("dtype", "bfloat16")).strip()
+        attention_backend = str(sglang.get("attention_backend", "triton")).strip()
+        sampling_backend = str(sglang.get("sampling_backend", "flashinfer")).strip()
+        generation_config = str(vllm.get("generation_config", "vllm")).strip()
+        if not host:
+            raise ConfigError("runtime.evaluation_server.host is required")
+        if not dtype:
+            raise ConfigError("runtime.evaluation_server.dtype is required")
+        if not attention_backend or not sampling_backend:
+            raise ConfigError(
+                "runtime.evaluation_server.sglang backends must be nonempty"
+            )
+        if not generation_config:
+            raise ConfigError(
+                "runtime.evaluation_server.vllm.generation_config is required"
+            )
+        sglang_memory = float(sglang.get("memory_fraction_static", 0.90))
+        if not 0.0 < sglang_memory <= 1.0:
+            raise ConfigError(
+                "runtime.evaluation_server.sglang.memory_fraction_static "
+                "must be in (0, 1]"
+            )
+        vllm_memory = float(vllm.get("gpu_memory_utilization", 0.90))
+        if not 0.0 < vllm_memory <= 1.0:
+            raise ConfigError(
+                "runtime.evaluation_server.vllm.gpu_memory_utilization "
+                "must be in (0, 1]"
+            )
+        return cls(
+            host=host,
+            port=_positive_int(raw.get("port", 31000), "runtime.evaluation_server.port"),
+            dtype=dtype,
+            max_used_memory_mib=_nonnegative_int(
+                raw.get("max_used_memory_mib", 2048),
+                "runtime.evaluation_server.max_used_memory_mib",
+            ),
+            sglang_context_length=_positive_int(
+                sglang.get("context_length", 32768),
+                "runtime.evaluation_server.sglang.context_length",
+            ),
+            sglang_memory_fraction_static=sglang_memory,
+            sglang_max_running_requests=_positive_int(
+                sglang.get("max_running_requests", 24),
+                "runtime.evaluation_server.sglang.max_running_requests",
+            ),
+            sglang_cuda_graph_max_batch_size=_positive_int(
+                sglang.get("cuda_graph_max_batch_size", 32),
+                "runtime.evaluation_server.sglang.cuda_graph_max_batch_size",
+            ),
+            sglang_attention_backend=attention_backend,
+            sglang_sampling_backend=sampling_backend,
+            sglang_enable_tokenizer_batch_encode=bool(
+                sglang.get("enable_tokenizer_batch_encode", True)
+            ),
+            vllm_max_model_len=_positive_int(
+                vllm.get("max_model_len", 262144),
+                "runtime.evaluation_server.vllm.max_model_len",
+            ),
+            vllm_gpu_memory_utilization=vllm_memory,
+            vllm_max_num_seqs=_positive_int(
+                vllm.get("max_num_seqs", 32),
+                "runtime.evaluation_server.vllm.max_num_seqs",
+            ),
+            vllm_max_num_batched_tokens=_positive_int(
+                vllm.get("max_num_batched_tokens", 65536),
+                "runtime.evaluation_server.vllm.max_num_batched_tokens",
+            ),
+            vllm_enable_prefix_caching=bool(
+                vllm.get("enable_prefix_caching", True)
+            ),
+            vllm_language_model_only=bool(vllm.get("language_model_only", True)),
+            vllm_skip_mm_profiling=bool(vllm.get("skip_mm_profiling", True)),
+            vllm_generation_config=generation_config,
+        )
+
+
+@dataclass(frozen=True)
 class RuntimeConfig:
     """Framework/runtime choices; none are reward or policy-objective values."""
 
@@ -277,6 +383,7 @@ class RuntimeConfig:
     generator_gpu_memory_utilization: float
     generator_backend_concurrency: int
     generator_seed_workers: int
+    evaluation_server: EvaluationServerRuntime
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any]) -> "RuntimeConfig":
@@ -299,6 +406,9 @@ class RuntimeConfig:
         batching = _as_mapping(raw.get("batching", {}), "runtime.batching")
         data = _as_mapping(raw.get("data", {}), "runtime.data")
         generator = _as_mapping(raw.get("generator", {}), "runtime.generator")
+        evaluation_server = EvaluationServerRuntime.from_mapping(
+            raw.get("evaluation_server", {})
+        )
         ray_num_cpus_raw = ray.get("num_cpus", "auto")
         ray_num_cpus = None if ray_num_cpus_raw == "auto" else _positive_int(ray_num_cpus_raw, "runtime.ray.num_cpus")
         rollout_dp_raw = rollout.get("data_parallel_size", "auto")
@@ -357,6 +467,7 @@ class RuntimeConfig:
             generator_gpu_memory_utilization=generator_memory,
             generator_backend_concurrency=_positive_int(generator.get("backend_concurrency", 1), "runtime.generator.backend_concurrency"),
             generator_seed_workers=_positive_int(generator.get("seed_workers", 1), "runtime.generator.seed_workers"),
+            evaluation_server=evaluation_server,
         )
 
 

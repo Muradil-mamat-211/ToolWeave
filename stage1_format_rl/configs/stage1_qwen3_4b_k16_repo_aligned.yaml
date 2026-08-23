@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Repo-aligned static profile for Qwen3-4B on 2 x 48 GB.
 # Source: EnvTuning config + Stage 1 shell at AWorld-RL be52dbf.
 # Its hardware-only overrides were GPU-smoke-validated and it must still not be

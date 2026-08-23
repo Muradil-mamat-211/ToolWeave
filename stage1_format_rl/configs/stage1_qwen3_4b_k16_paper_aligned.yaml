@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Paper-aligned static profile for Qwen3-4B on 2 x 48 GB.
 # RODS Appendix J supplies LR=1e-6, KL=0.01, K=16, 5 epochs and a
 # 512-trajectory PPO mini-batch. Fields not reported by the paper retain repo

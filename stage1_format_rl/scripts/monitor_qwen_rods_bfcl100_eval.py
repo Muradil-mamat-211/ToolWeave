@@ -13,8 +13,17 @@ from pathlib import Path
 
 import psutil
 
+from stage1_format_rl.infrastructure.cli import selected_role_physical_gpu
+from stage1_format_rl.infrastructure.resolver import resolve_profile
 
-def gpu_snapshot() -> dict[str, float | str]:
+
+DEFAULT_PROFILE = (
+    Path(__file__).resolve().parents[1]
+    / "configs/layers/profiles/single_gpu_eval.yaml"
+)
+
+
+def gpu_snapshot(selected_physical_gpu: int) -> dict[str, float | str]:
     fields = (
         "name,memory.used,memory.total,utilization.gpu,power.draw,"
         "temperature.gpu,clocks.sm"
@@ -22,6 +31,7 @@ def gpu_snapshot() -> dict[str, float | str]:
     output = subprocess.check_output(
         [
             "nvidia-smi",
+            f"--id={selected_physical_gpu}",
             f"--query-gpu={fields}",
             "--format=csv,noheader,nounits",
         ],
@@ -43,7 +53,15 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--stop-file", type=Path, required=True)
     parser.add_argument("--interval", type=float, default=1.0)
+    parser.add_argument(
+        "--profile",
+        type=Path,
+        default=Path(
+            os.environ.get("TOOLWEAVE_SINGLE_GPU_PROFILE", DEFAULT_PROFILE)
+        ),
+    )
     args = parser.parse_args()
+    selected_gpu = selected_role_physical_gpu(resolve_profile(args.profile))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("a", encoding="utf-8") as handle:
         while not args.stop_file.exists():
@@ -51,7 +69,7 @@ def main() -> None:
             load = os.getloadavg()
             record = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "gpu": gpu_snapshot(),
+                "gpu": gpu_snapshot(selected_gpu),
                 "host": {
                     "load1": load[0],
                     "load5": load[1],

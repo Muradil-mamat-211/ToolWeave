@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # RODS Stage 2: Base Reasoning with Progress Reward (plain, non-augmented env)
 # Start model: Stage 1 checkpoint/update 25 (merged HF).
 # Reward: official bfcl_reward.py::compute_score, score == progress (0/1 turn mean).

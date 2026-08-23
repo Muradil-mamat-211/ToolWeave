@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # RODS Stage 1 retrain from scratch (Qwen3-4B, 2 x 48 GB).
 # Objectives vs the collapsed/recovered lineage:
 #   - train_batch_size 20  -> 320 trajectories per update (was 64)

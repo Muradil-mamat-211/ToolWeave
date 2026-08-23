@@ -6,19 +6,38 @@ import json
 import os
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import yaml
 from omegaconf import OmegaConf
 
+from stage1_format_rl.infrastructure import cli as cli_module
+from stage1_format_rl.infrastructure import loader as loader_module
+from stage1_format_rl.infrastructure import resolver as resolver_module
 from stage1_format_rl.infrastructure.assets import validate_assets
 from stage1_format_rl.infrastructure.cli import (
+    build_evaluation_server_command,
     build_role_environment,
     build_training_command,
+    check_selected_learner_gpu,
+    selected_role_physical_gpu,
 )
-from stage1_format_rl.infrastructure.integrations.verl import build_verl_config
+from stage1_format_rl.infrastructure.integrations.generator import (
+    GENERATOR_FIELD_OWNERS,
+    build_generator_config,
+)
+from stage1_format_rl.infrastructure.integrations.verl import (
+    VERL_FIELD_OWNERS,
+    build_verl_config,
+)
 from stage1_format_rl.infrastructure.inventory import validate_local_inventory
-from stage1_format_rl.infrastructure.loader import load_yaml
+from stage1_format_rl.infrastructure.loader import (
+    SUPPORTED_LAYER_SCHEMAS,
+    dotted_set,
+    load_yaml,
+)
 from stage1_format_rl.infrastructure.models import (
     ConfigError,
     HardwareConfig,
@@ -30,6 +49,7 @@ from stage1_format_rl.infrastructure.qualification import (
 )
 from stage1_format_rl.infrastructure.resolver import resolve_profile
 from stage1_format_rl.infrastructure.topology import build_topology_plan
+from stage1_format_rl.scripts import monitor_qwen_rods_bfcl100_eval as eval_monitor
 from verl.trainer.ppo.ray_trainer import ResourcePoolManager, Role
 from verl.trainer import main_ppo as main_ppo_module
 
@@ -42,6 +62,16 @@ ALTERNATE_PROFILE = LAYERS / "profiles/stage3_portable_8gpu.yaml"
 SINGLE_GPU_PROFILE = LAYERS / "profiles/single_gpu_eval.yaml"
 GOLDEN = ROOT / "stage1_format_rl/tests/fixtures/stage3_algorithm_golden.json"
 DEFAULT_ASSET_ROOT = Path(os.environ.get("TOOLWEAVE_ASSET_ROOT", ROOT)).resolve()
+LAYER_SCHEMA_FILES = {
+    "toolweave.machine.v1": ROOT / "environment/machine.template.yaml",
+    "toolweave.profile.v1": LAYERS / "profiles/stage3_reference.yaml",
+    "toolweave.hardware.v1": LAYERS / "hardware/reference_2x_rtx_pro_6000.yaml",
+    "toolweave.runtime.v1": LAYERS / "runtime/stage3_reference_training.yaml",
+    "toolweave.assets.v1": LAYERS / "assets/stage3_reference.yaml",
+    "toolweave.experiment.v1": LAYERS / "experiment/stage3_rods_matchtir_v1.yaml",
+    "toolweave.generator-experiment.v1": LAYERS / "experiment/rods_data_generation_v1.yaml",
+    "toolweave.qualification.v1": LAYERS / "qualification/reference_2x_rtx_pro_6000.yaml",
+}
 
 
 def _environment(tmp_path: Path | None = None, **overrides: str) -> dict[str, str]:
@@ -83,6 +113,10 @@ def _plan(hardware_raw: dict, runtime_raw: dict):
     hardware = HardwareConfig.from_mapping(hardware_raw)
     runtime = RuntimeConfig.from_mapping(runtime_raw)
     return hardware, runtime, build_topology_plan(hardware, runtime)
+
+
+def _command_value(command: list[str], option: str) -> str:
+    return command[command.index(option) + 1]
 
 
 def test_reference_plan_is_single_source_for_verl_ray_fsdp_and_shell(tmp_path: Path) -> None:
@@ -515,3 +549,273 @@ def test_ray_init_consumes_local_or_existing_runtime_config(
         assert "num_cpus" not in calls[0]
     else:
         assert "address" not in calls[0]
+
+
+@pytest.mark.parametrize("expected_schema", sorted(LAYER_SCHEMA_FILES))
+def test_each_layer_schema_contract_accepts_current_version(
+    expected_schema: str,
+) -> None:
+    value = load_yaml(
+        LAYER_SCHEMA_FILES[expected_schema], expected_schema=expected_schema
+    )
+    assert value["schema_version"] == expected_schema
+
+
+@pytest.mark.parametrize("expected_schema", sorted(LAYER_SCHEMA_FILES))
+@pytest.mark.parametrize(
+    "mutation",
+    ("missing", "wrong-family", "unsupported-version", "malformed"),
+)
+def test_each_layer_schema_contract_fails_closed(
+    expected_schema: str, mutation: str, tmp_path: Path
+) -> None:
+    raw = load_yaml(LAYER_SCHEMA_FILES[expected_schema])
+    if mutation == "missing":
+        raw.pop("schema_version", None)
+    elif mutation == "wrong-family":
+        raw["schema_version"] = (
+            "toolweave.profile.v1"
+            if expected_schema != "toolweave.profile.v1"
+            else "toolweave.runtime.v1"
+        )
+    elif mutation == "unsupported-version":
+        raw["schema_version"] = expected_schema.rsplit(".v", 1)[0] + ".v999"
+    else:
+        raw["schema_version"] = "not-a-toolweave-schema"
+    target = tmp_path / f"{expected_schema}-{mutation}.yaml"
+    target.write_text(yaml.safe_dump(raw, sort_keys=False), encoding="utf-8")
+    with pytest.raises(ConfigError) as caught:
+        load_yaml(target, expected_schema=expected_schema)
+    message = str(caught.value)
+    assert str(target) in message
+    assert f"expected schema {expected_schema!r}" in message
+    assert "observed schema" in message
+
+
+def test_generic_yaml_loader_does_not_claim_historical_configs(tmp_path: Path) -> None:
+    target = tmp_path / "historical-hydra.yaml"
+    target.write_text("trainer:\n  nnodes: 1\n", encoding="utf-8")
+    assert load_yaml(target) == {"trainer": {"nnodes": 1}}
+
+
+def test_resolver_requests_schema_for_every_referenced_layer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    observed: list[str | None] = []
+    original_layer_load = resolver_module.load_yaml
+    original_machine_load = loader_module.load_yaml
+
+    def record_layer(path, *, expected_schema=None):
+        observed.append(expected_schema)
+        return original_layer_load(path, expected_schema=expected_schema)
+
+    def record_machine(path, *, expected_schema=None):
+        observed.append(expected_schema)
+        return original_machine_load(path, expected_schema=expected_schema)
+
+    monkeypatch.setattr(resolver_module, "load_yaml", record_layer)
+    monkeypatch.setattr(loader_module, "load_yaml", record_machine)
+    _resolve(REFERENCE_PROFILE, tmp_path)
+    _resolve(ONLINE_PROFILE, tmp_path)
+    assert set(observed) == SUPPORTED_LAYER_SCHEMAS
+    assert None not in observed
+
+
+@pytest.mark.parametrize("destination", tuple(VERL_FIELD_OWNERS))
+def test_every_authoritative_verl_field_rejects_experiment_redeclaration(
+    destination: str, tmp_path: Path
+) -> None:
+    resolved = _resolve(REFERENCE_PROFILE, tmp_path)
+    experiment = copy.deepcopy(resolved.experiment)
+    dotted_set(experiment["verl"], destination, "illegal duplicate owner")
+    with pytest.raises(ConfigError, match="illegally owns runtime/topology"):
+        build_verl_config(
+            experiment,
+            resolved.assets,
+            resolved.machine,
+            resolved.runtime,
+            resolved.topology,
+        )
+
+
+@pytest.mark.parametrize(
+    "destination",
+    (
+        "ray_init.address",
+        "actor_rollout_ref.rollout.max_model_len",
+        "actor_rollout_ref.rollout.tensor_model_parallel_size",
+    ),
+)
+@pytest.mark.parametrize("binding_name", ("asset_bindings", "output_bindings"))
+def test_bindings_cannot_override_runtime_or_topology_owned_verl_fields(
+    destination: str, binding_name: str, tmp_path: Path
+) -> None:
+    resolved = _resolve(REFERENCE_PROFILE, tmp_path)
+    experiment = copy.deepcopy(resolved.experiment)
+    experiment[binding_name][destination] = (
+        "progress_reward" if binding_name == "asset_bindings" else "/tmp/collision"
+    )
+    with pytest.raises(ConfigError, match="destination .* collides with"):
+        build_verl_config(
+            experiment,
+            resolved.assets,
+            resolved.machine,
+            resolved.runtime,
+            resolved.topology,
+        )
+
+
+def test_binding_parent_cannot_mask_owned_verl_children(tmp_path: Path) -> None:
+    resolved = _resolve(REFERENCE_PROFILE, tmp_path)
+    experiment = copy.deepcopy(resolved.experiment)
+    experiment["asset_bindings"]["actor_rollout_ref.rollout"] = "progress_reward"
+    with pytest.raises(ConfigError, match="collides with runtime-owned field"):
+        build_verl_config(
+            experiment,
+            resolved.assets,
+            resolved.machine,
+            resolved.runtime,
+            resolved.topology,
+        )
+
+
+@pytest.mark.parametrize("destination", tuple(GENERATOR_FIELD_OWNERS))
+def test_generator_runtime_topology_ownership_is_also_fail_closed(
+    destination: str, tmp_path: Path
+) -> None:
+    resolved = _resolve(ONLINE_PROFILE, tmp_path)
+    generator_experiment = load_yaml(
+        LAYERS / "experiment/rods_data_generation_v1.yaml",
+        expected_schema="toolweave.generator-experiment.v1",
+    )
+    dotted_set(
+        generator_experiment["generator"], destination, "illegal duplicate owner"
+    )
+    with pytest.raises(ConfigError, match="illegally owns runtime/topology"):
+        build_generator_config(
+            generator_experiment,
+            resolved.assets,
+            resolved.machine,
+            resolved.runtime,
+            resolved.topology,
+        )
+
+
+def test_selected_gpu_preflight_targets_physical_gpu_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    resolved = _resolve(ONLINE_PROFILE, tmp_path)
+    selected = selected_role_physical_gpu(resolved)
+    calls: list[list[str]] = []
+
+    def fake_run(command, **_kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="512\n", stderr="")
+
+    monkeypatch.setattr(cli_module.subprocess, "run", fake_run)
+    assert check_selected_learner_gpu(selected, 2048) == 512
+    assert selected == 1
+    assert calls == [
+        [
+            "nvidia-smi",
+            "--id=1",
+            "--query-gpu=memory.used",
+            "--format=csv,noheader,nounits",
+        ]
+    ]
+
+
+def test_eval_monitor_targets_selected_physical_gpu_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def fake_check_output(command, **_kwargs):
+        calls.append(command)
+        return "GPU, 512, 98304, 0, 20, 30, 100\n"
+
+    monkeypatch.setattr(eval_monitor.subprocess, "check_output", fake_check_output)
+    snapshot = eval_monitor.gpu_snapshot(1)
+    assert snapshot["memory_used_mib"] == 512
+    assert calls[0][0:2] == ["nvidia-smi", "--id=1"]
+
+
+def test_single_gpu_evaluation_fails_closed_on_zero_or_multiple_learners(
+    tmp_path: Path,
+) -> None:
+    resolved = _resolve(REFERENCE_PROFILE, tmp_path)
+    with pytest.raises(ConfigError, match="exactly one learner physical GPU; resolved 2"):
+        selected_role_physical_gpu(resolved)
+    empty_assignments = dict(resolved.topology.role_assignments)
+    empty_assignments["learner"] = {}
+    empty_plan = replace(resolved.topology, role_assignments=empty_assignments)
+    empty = replace(resolved, topology=empty_plan)
+    with pytest.raises(ConfigError, match="exactly one learner physical GPU; resolved 0"):
+        selected_role_physical_gpu(empty)
+
+
+def test_eval_tensor_parallel_size_propagates_from_topology(tmp_path: Path) -> None:
+    hardware_raw, runtime_raw = _raw_configs()
+    runtime_raw["runtime"]["rollout"]["tensor_parallel_size"] = 2
+    _hardware, runtime, plan = _plan(hardware_raw, runtime_raw)
+    resolved = replace(
+        _resolve(REFERENCE_PROFILE, tmp_path), runtime=runtime, topology=plan
+    )
+    sglang = build_evaluation_server_command(resolved, "sglang")
+    vllm = build_evaluation_server_command(resolved, "vllm")
+    assert _command_value(sglang, "--tp-size") == "2"
+    assert _command_value(vllm, "--tensor-parallel-size") == "2"
+
+
+def test_specialized_eval_runtime_is_not_training_rollout_runtime(
+    tmp_path: Path,
+) -> None:
+    resolved = _resolve(SINGLE_GPU_PROFILE, tmp_path)
+    sglang = build_evaluation_server_command(resolved, "sglang")
+    vllm = build_evaluation_server_command(resolved, "vllm")
+    assert _command_value(sglang, "--context-length") == "32768"
+    assert _command_value(sglang, "--mem-fraction-static") == "0.9"
+    assert _command_value(vllm, "--max-model-len") == "262144"
+    assert _command_value(vllm, "--gpu-memory-utilization") == "0.9"
+    assert resolved.runtime.rollout_max_model_len == 32768
+    assert resolved.runtime.rollout_gpu_memory_utilization == 0.72
+
+
+@pytest.mark.parametrize(
+    "launcher",
+    (
+        "launch_qwen_rods_bfcl100_sglang.sh",
+        "launch_qwen_rods_bfcl100_vllm.sh",
+    ),
+)
+def test_eval_launcher_dry_run_selects_gpu_one_without_gpu_query(
+    launcher: str, tmp_path: Path
+) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    marker = tmp_path / "nvidia-smi-was-called"
+    fake_nvidia_smi = fake_bin / "nvidia-smi"
+    fake_nvidia_smi.write_text(
+        f"#!/usr/bin/env bash\ntouch {marker}\nexit 99\n", encoding="utf-8"
+    )
+    fake_nvidia_smi.chmod(0o755)
+    env = {
+        "PATH": f"{fake_bin}{os.pathsep}{os.environ.get('PATH', '')}",
+        "PYTHONPATH": str(ROOT),
+        "TOOLWEAVE_SINGLE_GPU_PROFILE": str(ONLINE_PROFILE),
+        **_environment(tmp_path),
+    }
+    result = subprocess.run(
+        [str(ROOT / "stage1_format_rl/scripts" / launcher), "--dry-run"],
+        cwd=ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["selected_learner_gpu"] == 1
+    assert payload["cuda_visible_devices"] == "1"
+    assert payload["tensor_parallel_size"] == 1
+    assert marker.exists() is False

@@ -1,7 +1,6 @@
 schema_version: toolweave.generator-experiment.v1
 generator:
   llm:
-    backend: vllm_openai
     temperature: 1.0
     top_p: 0.7
     max_tokens: 4096

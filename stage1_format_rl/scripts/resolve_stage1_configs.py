@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# HISTORICAL REPRODUCTION RESOLVER — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# Portable/runtime launches resolve configs/layers/profiles/*.yaml instead.
 from __future__ import annotations
 
 import argparse

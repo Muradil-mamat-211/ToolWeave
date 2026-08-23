@@ -1,3 +1,5 @@
+# HISTORICAL REPRODUCTION SNAPSHOT — NOT A PORTABLE TOOLWEAVE ENTRYPOINT.
+# For portable/runtime launches use stage1_format_rl/configs/layers/profiles/.
 # Online Stage-3 smoke: physical GPU1 only. GPU0 is reserved for the Gemma
 # generator service. Exactly 64 rows / batch 32 / one epoch yields two updates.
 hydra:

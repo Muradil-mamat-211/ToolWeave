@@ -120,6 +120,55 @@ The alternate `8 x 80 GiB / 96 CPU / 512 GiB` profile resolves to learner
 world size 8, rollout TP 2, rollout DP 4 and eight Ray GPU bundles without a
 GPU-count branch in Python.
 
+## Repository configuration classification
+
+- **Active layered runtime contracts:**
+  `stage1_format_rl/configs/layers/profiles/*.yaml` and every machine,
+  hardware, runtime, asset, experiment, and optional qualification layer they
+  reference. Each referenced file is validated against its exact
+  `toolweave.<family>.v1` schema before resolution.
+- **Reference qualification:** the RTX PRO 6000 Blackwell manifests and
+  qualification layers deliberately fix the formal reference at two GPUs with
+  96 GiB each. These facts are qualification constraints, not portable
+  defaults.
+- **Portable fixtures:** `portable_8x80gb.yaml` and its profile/runtime are a
+  synthetic alternate-topology contract used to prove generic derivation.
+  They are test-only and do not redefine the formal reference hardware.
+- **Historical reproduction snapshots:** monolithic YAML directly under
+  `stage1_format_rl/configs/` and `resolve_stage1_configs.py` preserve the GPU,
+  TP, node, and runtime facts of prior Stage 1/2/3 runs. They are explicitly
+  marked as non-portable and are not loaded by the layered resolver.
+- **Vendored upstream examples:** framework configs, recipes, and examples
+  under `code/AWorld-RL-stage1-worktree/EnvTuning/verl/` remain upstream
+  material. Their topology literals are not ToolWeave runtime contracts.
+
+The specialized BFCL100 SGLang/vLLM server limits live under
+`runtime.evaluation_server`; its tensor-parallel size and selected physical
+learner GPU come from `TopologyPlan`. Dry-run command rendering does not query
+hardware or start a server.
+
+### Final repository-wide coupling sweep
+
+The final scan covered host paths, CUDA visibility, physical GPU labels,
+veRL/Ray topology fields, TP flags, placement, backend memory, `nvidia-smi`,
+and 48/80/96-GiB capacity labels. Every match is classified by the following
+path and semantic boundary; matches are retained only where the category owns
+them.
+
+| Class | Repository matches | Disposition |
+|---|---|---|
+| A. Active portable runtime | `stage1_format_rl/infrastructure/`, layered runtime profiles, current Stage 3/Generator launchers, and configurable evaluation utilities | Field names and runtime values are resolved from `RuntimeConfig`/`TopologyPlan`; no host path, fixed physical GPU, literal launcher TP, or generic node-count invariant remains. |
+| B. Reference qualification | reference hardware/qualification layers and guarded qualification utilities | The formal 2 x RTX PRO 6000 Blackwell / 96-GiB facts and single-node qualification expectations remain intentional. |
+| C. Portable test fixture | `stage3_portable_8gpu`, `portable_8x80gb`, and their assertions | The synthetic 8 x 80-GiB topology remains test-only. |
+| D. Historical reproduction snapshot | monolithic files directly under `stage1_format_rl/configs/` plus their Stage 1/2 reproduction/validation launchers | Historical GPU count, TP, memory, and `nnodes=1` facts remain unchanged and are not layered entrypoints. |
+| E. Vendored upstream | `code/AWorld-RL-stage1-worktree/EnvTuning/verl/` examples, recipes, configs, and framework implementation | Upstream framework terminology and example constants are retained; protected vendored algorithm sources are byte-stable. |
+| F. Documentation | Markdown and explanatory comments, including an AutoDL provider reference | Descriptive facts are not executable ownership. |
+| G. Test expectation | `stage1_format_rl/tests/` | Reference, alternate-topology, negative-case, schema, ownership, and selected-GPU assertions remain explicit. |
+
+The only remaining `GPU0`/`GPU1` text outside vendored material is inside the
+explicitly marked historical online-smoke snapshot. Current BFCL100 launch and
+telemetry paths query `nvidia-smi --id=<selected learner physical GPU>`.
+
 ## Compatibility and limits
 
 - The audited production adapter is single-node. Multi-node learner placement

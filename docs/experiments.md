@@ -46,6 +46,15 @@ The Stage 1 directory retains validation outputs for updates 10, 15, 20, and 25.
 
 The canonical 400-row held-in evaluation set is assembled from the upstream [AWorld-RL EnvTuning data](https://github.com/inclusionAI/AWorld-RL/tree/main/EnvTuning/data): 100 rows from [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) and 300 rows from [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet). It contains 100 rows each of Base, Long Context, Missing Function, and Missing Parameter.
 
+#### Audited Local Training-Dataset Identities
+
+| Stage | Dataset | Composition | SHA256 |
+|---|---|---|---|
+| Stage 1/2 | `bfcl_stage1_train_base_100_shuffled_seed42.parquet` | 100 Base rows | `d02122551606f616c5d9d6b2915113e8266872078906c58cdefbc97ea198bf5d` |
+| Stage 3 | `bfcl_stage3_train_all_400_shuffled_seed42.parquet` | 400 rows, 100 per category | `fee03852fefed510e4022a7f44894518ef0af6790807e35655b0baf9979ef2d6` |
+
+The local Stage 1/2 membership matches upstream `bfcl_train_base.parquet`; the prepared Stage 3 original-pool membership matches upstream `bfcl_train.parquet`. Online generated candidates remain separately provenance-gated.
+
 ### Stage 1
 
 The selected Stage 1 update-25 checkpoint and retained intermediate evaluations are summarized below. The cross-stage fixed-denominator comparison remains visible in [Stage 1 to Stage 2 Improvement](#stage-1-to-stage-2-improvement).

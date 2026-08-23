@@ -4,6 +4,7 @@
 
 - [Credit-Assignment Audit](credit-assignment-audit.md) - Full deterministic K=16 runtime-interaction audit, detailed rollout provenance, peer statistics, and regime analysis.
 - [Online Data Evolution](online-data-evolution.md) - Full verified-synthesis pipeline, lifecycle behavior, semantic hardening, failure handling, and admission logic.
+- [Implementation Notes](implementation-notes.md) - Runtime/provenance compatibility, local-credit fail-closed invariants, and the PPO/GRPO implementation contract.
 
 ## Experiments
 

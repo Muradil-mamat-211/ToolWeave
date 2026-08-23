@@ -61,7 +61,8 @@ Multi-turn tool use has two coupled difficulties. A policy must learn *whether a
 
 Stage 3 deliberately has two non-blocking branches over the same rollout group. The policy branch combines group-normalized $R_P$ with local interaction credit derived from runtime provenance and per-user-turn call matching. The data branch uses grouped $R_P$ only to select boundary seeds, then synthesizes and validates candidates asynchronously for a later epoch. A candidate generated from epoch `n` is never fed back into the current update and is first eligible at epoch `n+1`.
 
-### Method provenance at a glance
+<details>
+<summary><b>Method provenance and upstream distinctions</b></summary>
 
 | Source | Role in ToolWeave |
 |---|---|
@@ -69,6 +70,8 @@ Stage 3 deliberately has two non-blocking branches over the same rollout group. 
 | [RODS](https://arxiv.org/abs/2606.19047) | Progress Reward, boundary-driven online synthesis, and dynamic-replay concepts |
 | [MatchTIR](https://arxiv.org/abs/2601.10712) | Tool-call similarity, one-to-one local matching, and dual-level credit inspiration |
 | ToolWeave | BFCL user-turn-local return, ragged same-runtime-depth normalization, additive residual fusion, deterministic semantic hardening, and durable online lifecycle safeguards |
+
+</details>
 
 **Formal-training provenance.** The released Stage 3 checkpoint, the frozen `runtime_interaction_final` implementation selected by the [formal reference profile](stage1_format_rl/configs/layers/profiles/stage3_reference.yaml), and the real K=16 trajectory evidence belong to the confirmed ToolWeave Stage 3 formal-training provenance chain. The current source reproduces the published interaction-credit evidence deterministically; the released model is the final formal Stage 3 checkpoint.
 
@@ -262,9 +265,9 @@ For a rollout $\tau_i$, ToolWeave uses the following consistent notation:
 | $A_{i,u,j}^{\ell}$ | Ragged same-runtime-depth normalized local advantage |
 | $A_{i,u,j}^{TW}$ | Fused ToolWeave advantage used on actor tokens belonging to runtime interaction $j$ |
 
-Implementation fields map to this notation as follows: prompt identity `uid` corresponds to $q$; `user_turn_id` to $u$; and `runtime_interaction_index` to $j$. The backward-compatible field `policy_step_id` remains a legacy alias for $j$, while `tool_attempt_index` is diagnostic only. The package path `rods_matchtir_v1` is likewise a legacy module name; the active configuration selects `runtime_interaction_final`. This is the frozen ToolWeave Stage-3 formal-training credit-assignment algorithm.
+Throughout the public method description, $j$ denotes the real non-answer runtime-interaction depth. The canonical public advantage notation is $A^g$, $A^{\ell}$, and $A^{TW}$. Implementation compatibility fields and legacy provenance aliases are documented separately in [Implementation Notes](docs/implementation-notes.md).
 
-**Notation compatibility.** Public notation uses $A^g$, $A^{\ell}$, and $A^{TW}$. Existing implementation/artifact fields such as `A_RODS`, `rods_advantages`, `A_local`, and `A_TW` are retained only for backward compatibility.
+This is the frozen ToolWeave Stage-3 formal-training credit-assignment algorithm.
 
 ### 3.1 Reward Modeling
 
@@ -498,22 +501,15 @@ For a token inside an actor-span-reliable non-answer runtime interaction, the ac
 
 The local scalar is broadcast over the trainable actor tokens inside the originating runtime-interaction assistant span, intersected with the existing actor response/loss mask. This includes parser-rejected or unclassified malformed non-answer generations when temporal identity and actor span are reliable. ToolWeave does **not** define a finer per-call JSON-token-subspan objective. User messages, tool observations, environment tokens, and other non-actor positions receive zero local residual, and the implementation asserts that local values cannot leak outside the actor mask.
 
-#### Implementation Invariants
+#### Core Local-Credit Invariants
 
-| Condition | Local branch behavior |
-|---|---|
-| Empty GT / Missing turn | $A^{\ell}=0$; no clarification or final-answer local reward is invented |
-| Valid final answer / turn closure | Excluded from the local sequence; answer actor tokens receive global-only credit |
-| Temporally reliable unparsed non-answer interaction | Enters the local sequence with no parsed calls and $r=0$ |
-| Unreliable user-turn ownership or runtime ordering | User-turn local branch fails closed |
-| Reliable temporal provenance but unreliable actor span | Remains in the return chain, but receives no token-level local residual |
-| Successfully parsed call with environment execution failure | Participates in semantic call matching; stateful failure remains visible through $A^g$ |
-| No rollout-level provenance or batch misalignment | Exact global baseline |
-| Ragged peer support below 2 | $A^{\ell}=0$ |
-| Zero variance or non-finite sample std | $A^{\ell}=0$ |
-| Local disabled or weight set to zero | Original global tensors are returned unchanged |
+1. An unparsed non-answer runtime interaction has $P_{i,u,j}=\varnothing$ and $r_{i,u,j}=0$, but remains in the temporal chain.
+2. A valid final answer or turn closure is excluded from the local chain; answer actor tokens receive global-only credit.
+3. For empty GT, $A^{\ell}=0$; no local clarification or final-answer reward is invented.
+4. For ragged peer support below 2, or zero/non-finite sample standard deviation, $A^{\ell}=0$.
 
-At every new BFCL user turn, `runtime_interaction_index` and the local discount accumulator restart from zero. `tool_attempt_index` may also reset for diagnostics, but it has no formal credit-assignment role.
+**Full implementation and fail-closed contract →**
+[docs/implementation-notes.md](docs/implementation-notes.md)
 
 #### PPO/GRPO Actor Update
 
@@ -537,16 +533,7 @@ $$
 
 The unchanged implementation applies the configured clipped/dual-clipped surrogate, response mask, reference KL, backward pass, and optimizer step. Local credit is not added to reward-side KL or to boundary statistics.
 
-<details>
-<summary>Implementation-level PPO/KL details</summary>
-
-- `epsilon_low = 0.20`, `epsilon_high = 0.28`, and dual-clip constant `10`.
-- The log-ratio is clamped to `[-20,20]` before exponentiation.
-- The reference term uses `kl_loss_type = low_var_kl` with coefficient `0.01`; reward-side KL is disabled.
-- The masked actor loss uses the existing `seq-mean-token-mean` aggregation.
-- For GRPO tensor-contract consistency, the implementation mirrors the same token-level local residual into `returns_new`; the actor-only path consumes `advantages`, not a critic return. This does not introduce critic learning.
-
-</details>
+Exact clipping, KL, aggregation, and tensor-contract details are documented in [Implementation Notes](docs/implementation-notes.md#ppo--grpo-implementation-contract).
 
 ### 3.4 Boundary-Guided Online Data Evolution
 
@@ -673,6 +660,7 @@ Boundary-driven planning, executable interaction, query construction, critique/r
 | [Credit-Assignment Audit](docs/credit-assignment-audit.md) | Full deterministic K=16 formal-training evidence |
 | [Experiments](docs/experiments.md) | Complete Stage 1/2/3 evaluation and training audit |
 | [Online Data Evolution](docs/online-data-evolution.md) | Full verified-synthesis and lifecycle details |
+| [Implementation Notes](docs/implementation-notes.md) | Runtime/provenance compatibility, local-credit fail-closed invariants, and PPO/GRPO implementation contract |
 | [Data & Trajectory Anatomy](docs/data-and-trajectories.md) | BFCL runtime hierarchy and trajectory examples |
 | [Infrastructure Decoupling](docs/infrastructure-decoupling.md) | Portable configuration and runtime separation |
 
@@ -706,14 +694,7 @@ These parquet rows provide prompts, tools, environment metadata, and reward-side
 
 RODS describes an 800-row BFCL V3 Multi-Turn in-distribution protocol: 400 training rows (100 per category) and 400 held-in evaluation rows (100 per category). In the public AWorld-RL processed layout, the held-in IDs are the union of the 100-row validation and 300-row test files above. The separate local RODS-style audit subset has 100 rows (25 per category); it is not the canonical Stage 1/2 eval-400 used in the reported comparison.
 
-### Audited local dataset identities
-
-| Stage | Dataset | Composition | SHA256 |
-|---|---|---|---|
-| Stage 1/2 | `bfcl_stage1_train_base_100_shuffled_seed42.parquet` | 100 Base rows | `d02122551606f616c5d9d6b2915113e8266872078906c58cdefbc97ea198bf5d` |
-| Stage 3 | `bfcl_stage3_train_all_400_shuffled_seed42.parquet` | 400 rows, 100 per category | `fee03852fefed510e4022a7f44894518ef0af6790807e35655b0baf9979ef2d6` |
-
-The local Stage 1/2 membership matches upstream `bfcl_train_base.parquet`; the prepared Stage 3 original-pool membership matches upstream `bfcl_train.parquet`. Online generated candidates remain separately provenance-gated.
+Exact prepared-dataset identities and SHA256 hashes used by the audited runs are recorded in the [Experiments and Training Audit](docs/experiments.md#audited-local-training-dataset-identities).
 
 ## Repository Layout
 
@@ -732,6 +713,7 @@ ToolWeave/
 │   ├── credit-assignment-audit.md  # Complete deterministic K=16 audit
 │   ├── experiments.md              # Full evaluation and training audit
 │   ├── online-data-evolution.md    # Verified synthesis and lifecycle audit
+│   ├── implementation-notes.md     # Runtime and optimizer implementation contract
 │   ├── data-and-trajectories.md    # BFCL runtime and trajectory anatomy
 │   └── infrastructure-decoupling.md # Portable runtime/configuration audit
 ├── environment/                    # Machine-local configuration templates

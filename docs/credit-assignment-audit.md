@@ -4,7 +4,7 @@ This document preserves the complete deterministic K=16 formal-training runtime-
 
 [← Back to ToolWeave README](../README.md)
 
-## 3.5 Formal-Training Credit-Assignment Audit
+## Formal-Training Credit-Assignment Audit
 
 ### Real Rollout Case Study: Interaction-Level Credit Assignment
 

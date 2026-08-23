@@ -8,6 +8,8 @@ No new formal training was started and no checkpoint was written. Static validat
 
 The source package remains named `rods_matchtir_v1` for import compatibility. The active formal configuration selects `runtime_interaction_final`.
 
+Public scientific notation uses global advantage $A_i^g$, local advantage $A_{i,u,j}^{\ell}$, and fused ToolWeave advantage $A_{i,u,j}^{TW}$. Backward-compatible implementation and artifact fields—including `A_RODS`, `rods_advantages`, `A_local`, and `A_TW`—retain their existing internal names.
+
 ## 2. Previous compressed temporal semantics
 
 The previous implementation stored both `runtime_interaction_index` and `tool_attempt_index`, but constructed its local sequence only from reliably classified tool attempts. It then:
@@ -121,11 +123,14 @@ The production grouping key is:
 (uid, user_turn_id, runtime_interaction_index).
 ```
 
-Missing late interactions are absent, not zero-valued samples. For support `n>=2`, ToolWeave computes the peer mean and unbiased sample standard deviation, then:
+Missing late interactions are absent, not zero-valued samples. For support $n\ge 2$, ToolWeave computes the peer mean and unbiased sample standard deviation, then:
 
-```text
-A_local = (R_local - peer_mean) / (peer_sample_std + 1e-6).
-```
+$$
+A_{i,u,j}^{\ell}
+=
+\frac{R_{i,u,j}^{\ell}-\mu_{q,u,j}^{\ell}}
+{s_{q,u,j}^{\ell}+10^{-6}}.
+$$
 
 Actor-span reliability does not alter peer membership. An unreliable actor span prevents a token write but leaves a temporally reliable interaction in return and normalization calculations.
 
@@ -133,9 +138,9 @@ Actor-span reliability does not alter peer membership. An unreliable actor span 
 
 If support is below two, sample standard deviation is zero, or the standard deviation is non-finite:
 
-```text
-A_local = 0.
-```
+$$
+A_{i,u,j}^{\ell}=0.
+$$
 
 No missing-depth zero padding and no MatchTIR singleton `mean=0, std=1` fallback are used.
 
@@ -147,24 +152,23 @@ The global score remains fixed-denominator Progress Reward:
 R_P = terminally successful BFCL user turns / expected BFCL user turns.
 ```
 
-The unchanged veRL GRPO estimator groups the `K` rollouts by prompt UID and computes the global advantage with unbiased sample standard deviation. The local module neither recomputes nor mutates this branch. Boundary selection continues to observe `R_P` only.
+The unchanged veRL GRPO estimator groups the `K` rollouts by prompt UID and computes the global advantage $A_i^g$ with unbiased sample standard deviation. The local module neither recomputes nor mutates this branch. Boundary selection continues to observe `R_P` only.
 
 ## 12. Fusion and tensor contract
 
-With frozen `lambda_local=1.0`:
+With frozen $\lambda_{\mathrm{local}}=1.0$:
 
-```text
-A_TW = A_g + A_local.
-```
+$$
+A_{i,u,j}^{TW}
+=
+A_i^g+A_{i,u,j}^{\ell}.
+$$
 
-There is no division by two, post-fusion normalization, centering, RMS rescaling, adaptive weighting, or additional clipping. Global-only tokens keep `A_TW=A_g`.
+There is no division by two, post-fusion normalization, centering, RMS rescaling, adaptive weighting, or additional clipping. Global-only tokens use $A_i^g$ without a local residual.
 
 The actor-only veRL tensor contract mirrors the residual into returns:
 
-```text
-advantages_new = advantages_global + A_local_token
-returns_new    = returns_global    + A_local_token.
-```
+The internal tensor assignments remain `advantages_new = advantages_global + A_local_token` and `returns_new = returns_global + A_local_token`.
 
 This does not introduce critic learning or alter the PPO/GRPO surrogate objective.
 
@@ -179,7 +183,7 @@ Thus, a parser-error interaction with reliable temporal identity and actor span 
 - Valid final answer/turn closure is excluded from the local sequence.
 - Answer tokens receive global advantage only.
 - ToolWeave does not use MatchTIR's final-answer F1 local reward.
-- Empty-GT Missing Function/Missing Parameter user turns receive `A_local=0` and remain global-only.
+- Empty-GT Missing Function/Missing Parameter user turns receive $A_{i,u,j}^{\ell}=0$ and remain global-only.
 
 ## 15. MatchTIR comparison
 
@@ -203,14 +207,14 @@ The audited source contains 512 trajectories and the `multi_turn_base_156` group
 
 For User Turn 3, production replay gives:
 
-```text
-r       = [0, 0, 0, 0, 0, 1]
-R       = [0.59049, 0.6561, 0.729, 0.81, 0.9, 1]
-support = [16, 16, 1, 1, 1, 1]
-A_local = [-3.7438335935, -3.6416055642, 0, 0, 0, 0]
-A_g     = -0.4966976345
-A_TW    = [-4.2405312279, -4.1383031986, -0.4966976345, -0.4966976345, -0.4966976345, -0.4966976345]
-```
+| Quantity | Value |
+|---|---|
+| Interaction rewards $r$ | `[0, 0, 0, 0, 0, 1]` |
+| Local returns $R^{\ell}$ | `[0.59049, 0.6561, 0.729, 0.81, 0.9, 1]` |
+| Peer support | `[16, 16, 1, 1, 1, 1]` |
+| Local advantage $A^{\ell}$ | `[-3.7438335935, -3.6416055642, 0, 0, 0, 0]` |
+| Global advantage $A^g$ | `-0.4966976345` |
+| Fused advantage $A^{TW}$ | `[-4.2405312279, -4.1383031986, -0.4966976345, -0.4966976345, -0.4966976345, -0.4966976345]` |
 
 Offset 0 preserves efficient local/global agreement. Offset 14 reproduces the second-interaction sign flip. Offset 2 reproduces locally correct calls under a strongly negative global stateful outcome. Offset 9 reproduces early parser-error residuals and singleton abstention for late interactions. The offset 2 state checker again verifies the earlier TravelAPI mismatch rather than mislabeling User Turn 3's calls as locally wrong.
 

@@ -113,7 +113,7 @@
   <text class="label" x="397.5" y="638" text-anchor="middle">Group</text>
   <text class="tiny" x="397.5" y="658" text-anchor="middle">normalization</text>
   <rect class="rods" x="525" y="612" rx="13" ry="13" width="145" height="60"/>
-  <text class="label" x="597.5" y="649" text-anchor="middle">A_global</text>
+  <text class="label" x="597.5" y="649" text-anchor="middle">A^g</text>
   <path class="tealArrow" d="M270 642 H310"/>
   <path class="tealArrow" d="M475 642 H515"/>
 
@@ -131,17 +131,17 @@
   <rect class="local" x="605" y="710" rx="13" ry="13" width="165" height="82"/>
   <text class="label" x="687.5" y="735" text-anchor="middle">Ragged (q,u,j)</text>
   <text class="tiny" x="687.5" y="757" text-anchor="middle">same runtime depth</text>
-  <text class="tiny" x="687.5" y="778" text-anchor="middle">singleton → A_local=0</text>
+  <text class="tiny" x="687.5" y="778" text-anchor="middle">singleton → A^ℓ=0</text>
   <path class="orangeArrow" d="M265 744 H285"/>
   <path class="orangeArrow" d="M415 744 H435"/>
   <path class="orangeArrow" d="M580 744 H595"/>
 
   <rect class="local" x="615" y="820" rx="13" ry="13" width="145" height="62"/>
-  <text class="label" x="687.5" y="857" text-anchor="middle">A_local</text>
+  <text class="label" x="687.5" y="857" text-anchor="middle">A^ℓ</text>
   <path class="orangeArrow" d="M687.5 792 V810"/>
 
   <rect class="policy" x="305" y="820" rx="15" ry="15" width="220" height="66"/>
-  <text class="label" x="415" y="848" text-anchor="middle">A_global + A_local</text>
+  <text class="label" x="415" y="848" text-anchor="middle">A^TW = A^g + A^ℓ</text>
   <text class="tiny" x="415" y="871" text-anchor="middle">additive residual, weight 1.0</text>
   <path class="tealArrow" d="M597.5 672 V692 H130 V800 H415 V810"/>
   <path class="orangeArrow" d="M615 851 H535"/>
@@ -181,7 +181,7 @@
   <text class="tiny" x="1050" y="915" text-anchor="middle">future rollouts only</text>
   <path class="tealArrow" d="M1030 807 V855"/>
 
-  <text class="small" x="1265" y="900" text-anchor="middle">A_local never enters</text>
+  <text class="small" x="1265" y="900" text-anchor="middle">A^ℓ never enters</text>
   <text class="small" x="1265" y="922" text-anchor="middle">boundary selection</text>
 
   <!-- Compact provenance legend -->

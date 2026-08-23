@@ -852,7 +852,7 @@ Structural complexity profiles are used only as synthesis guidance and diagnosti
 
 ## Experiments and Results
 
-Stage 1/2 results below come from deterministic one-rollout evaluation artifacts and report internal EnvTuning/RODS reward and protocol metrics. Stage 3 is documented through implementation validation and the real K=16 formal-training replay, not a model benchmark table. None of these results is presented as an official BFCL leaderboard submission.
+Stage 1/2 results below come from deterministic one-rollout evaluation artifacts and report internal EnvTuning/RODS reward and protocol metrics. The final Stage 3 checkpoint is additionally reported with complete-entry BFCL Multi-Turn accuracy on the balanced 400-row held-in set. Stage 3 implementation validation and the real K=16 formal-training replay are documented separately. None of these results is presented as an official BFCL leaderboard submission.
 
 ### Evaluation Protocol
 
@@ -1008,6 +1008,21 @@ To compare task progress on one scale, Stage 1 update 25 was re-evaluated with t
 | **Stage 2 update 25** | **0.4567** | **0.6027** | **0.3952** | **0.4515** | **0.3774** |
 
 The paired overall improvement is `+0.0839`, with a paired 95% bootstrap interval of `[+0.0536, +0.1146]` over the same 400 sample IDs.
+
+### Stage 3 Model Evaluation
+
+The final ToolWeave Stage 3 checkpoint was evaluated on the canonical balanced 400-row held-in set: 100 entries each from Base, Missing Function, Missing Parameter, and Long Context. These values are complete-entry BFCL Multi-Turn accuracies, not the training-time Progress Reward $R_P$.
+
+| Model | Overall | Base | Missing Function | Missing Parameter | Long Context | Correct entries |
+|---|---:|---:|---:|---:|---:|---:|
+| **ToolWeave Stage 3** | **48.50** | **56.00** | **50.00** | **42.00** | **46.00** | **194 / 400** |
+
+Because the four categories are balanced, the overall score is both their unweighted mean and the complete-entry accuracy over all 400 entries:
+
+$$
+\frac{56.00+50.00+42.00+46.00}{4}
+=48.50.
+$$
 
 ### Stage 3 Implementation Validation
 

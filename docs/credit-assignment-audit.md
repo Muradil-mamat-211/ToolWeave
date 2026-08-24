@@ -197,7 +197,7 @@ For each training update:
   7. Compute discounted local returns over real runtime depth within each BFCL user turn.
   8. Normalize over ragged (prompt, user turn, runtime depth) peers to obtain local advantage A^ℓ.
   9. Form fused A^TW = A^g + A^ℓ on reliable non-answer actor spans.
- 10. Run the unchanged PPO/GRPO actor update.
+ 10. Optimize A^TW under the existing GRPO training framework using the inherited PPO-style clipped surrogate.
  11. Select up to M=16 boundary seeds from grouped R_P only (4/type, cooldown c=13).
  12. Synthesize and validate executable candidate trajectories.
  13. Admit eligible candidates from the next epoch onward.

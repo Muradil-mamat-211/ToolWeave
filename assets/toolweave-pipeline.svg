@@ -90,8 +90,8 @@
   <path class="arrow" d="M285 627 H300 V580 H310"/>
 
   <rect class="policy" x="530" y="525" rx="14" ry="14" width="140" height="78"/>
-  <text class="label" x="600" y="556" text-anchor="middle">PPO / GRPO</text>
-  <text class="small" x="600" y="581" text-anchor="middle">optimizer step</text>
+  <text class="label" x="600" y="556" text-anchor="middle">GRPO framework</text>
+  <text class="small" x="600" y="581" text-anchor="middle">PPO-style clipping</text>
   <path class="arrow" d="M485 564 H520"/>
 
   <rect class="policy" x="520" y="625" rx="14" ry="14" width="160" height="55"/>

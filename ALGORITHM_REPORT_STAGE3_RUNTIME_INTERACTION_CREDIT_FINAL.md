@@ -2,7 +2,7 @@
 
 ## 1. Scope and verdict
 
-This report records the final source-of-truth Stage-3 credit-assignment correction. The implementation uses real non-answer runtime interactions as its local temporal axis. The fixed-denominator RODS Progress Reward, global GRPO normalization, call-similarity mathematics, maximum-weight solver, PPO/GRPO objective, KL semantics, boundary selection, data-generation lifecycle, Stage 1, and Stage 2 are unchanged.
+This report records the final source-of-truth Stage-3 credit-assignment correction. The implementation uses real non-answer runtime interactions as its local temporal axis. The fixed-denominator RODS Progress Reward, global GRPO normalization, call-similarity mathematics, maximum-weight solver, GRPO training framework and inherited PPO-style clipped surrogate, KL semantics, boundary selection, data-generation lifecycle, Stage 1, and Stage 2 are unchanged.
 
 No new formal training was started and no checkpoint was written. Static validation, the complete 319-test decoupled-source suite, deterministic trainer/token tensor checks, and the real formal-training K=16 replay all passed in the no-GPU environment.
 
@@ -168,7 +168,7 @@ The actor-only veRL tensor contract mirrors the residual into returns:
 
 The internal tensor assignments remain `advantages_new = advantages_global + A_local_token` and `returns_new = returns_global + A_local_token`.
 
-This does not introduce critic learning or alter the PPO/GRPO surrogate objective.
+This does not introduce critic learning or alter the inherited PPO-style clipped surrogate.
 
 ## 13. Token broadcast and fail-closed behavior
 

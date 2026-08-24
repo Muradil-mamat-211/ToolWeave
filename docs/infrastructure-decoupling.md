@@ -23,7 +23,7 @@ The algorithm-field and source-hash baseline is stored in
 
 | Layer | Audited responsibility | Pre-refactor finding | Required boundary |
 |---|---|---|---|
-| Algorithm | Progress Reward, GRPO advantage, MatchTIR-derived matching/local credit, lifecycle selection, PPO objective | The dedicated reward and `rods_matchtir_v1` modules do not read CUDA, Ray, host paths, or fixed topology. | Keep source and mathematical fields byte/semantic stable. |
+| Algorithm | Progress Reward, GRPO advantage, MatchTIR-derived matching/local credit, lifecycle selection, and the PPO-style clipped surrogate under the GRPO framework | The dedicated reward and `rods_matchtir_v1` modules do not read CUDA, Ray, host paths, or fixed topology. | Keep source and mathematical fields byte/semantic stable. |
 | Experiment | Batch/rollout sampling, optimization, reward and lifecycle hyperparameters | Correct values exist, but share YAML files with paths, GPU counts, backend memory knobs, and output directories. | Retain values in an experiment layer and bind infrastructure separately. |
 | Assets | Models, datasets, tokenizer-compatible checkpoint, interaction config, schemas | Paths are repeated as host-specific absolute strings; integrity data is scattered through historical manifests. | Use logical asset IDs, one asset manifest, and optional/required checksums. |
 | Framework integration | veRL/Hydra field names and Ray resource-pool construction | Project launchers write veRL fields directly; Ray resources are independently reconstructed from `nnodes` and `n_gpus_per_node`. | One adapter translates a validated topology plan into veRL/Hydra fields. |

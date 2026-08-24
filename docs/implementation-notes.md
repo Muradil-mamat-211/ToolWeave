@@ -45,7 +45,9 @@ These fields are internal compatibility identifiers, not alternative public math
 | Zero variance or non-finite sample std | $A^{\ell}=0$ |
 | Local disabled or weight set to zero | Original global tensors are returned unchanged |
 
-## PPO / GRPO Implementation Contract
+## Clipped Policy-Update Implementation Contract
+
+ToolWeave retains the existing GRPO training framework and its PPO-style clipped policy surrogate; the Stage 3 modification enters through the fused advantage $A^{TW}$.
 
 - `epsilon_low = 0.20`, `epsilon_high = 0.28`, and dual-clip constant `10`.
 - The log-ratio is clamped to `[-20,20]` before exponentiation.

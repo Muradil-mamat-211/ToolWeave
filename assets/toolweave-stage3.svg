@@ -147,7 +147,8 @@
   <path class="orangeArrow" d="M615 851 H535"/>
 
   <rect class="policy" x="335" y="920" rx="13" ry="13" width="160" height="46"/>
-  <text class="label" x="415" y="949" text-anchor="middle">PPO / GRPO</text>
+  <text class="label" x="415" y="941" text-anchor="middle">GRPO framework</text>
+  <text class="small" x="415" y="960" text-anchor="middle">PPO-style clipping</text>
   <path class="blueArrow" d="M415 886 V910"/>
   <text class="tiny" x="75" y="902">valid answer: excluded from local chain</text>
   <text class="tiny" x="75" y="921">answer tokens: global-only</text>

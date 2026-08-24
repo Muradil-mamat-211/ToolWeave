@@ -495,7 +495,9 @@ $$
 \qquad \lambda_{\mathrm{local}}=1.0.
 $$
 
-For a token inside an actor-span-reliable non-answer runtime interaction, the actor uses $A_i^g+A_{i,u,j}^{\ell}$. Every other trainable actor token uses $A_i^g$. There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting.
+> **ToolWeave replaces vanilla GRPO’s uniform trajectory-level credit with a dual-level interaction-aware advantage, while retaining a PPO-style clipped surrogate for policy updates.**
+
+Vanilla/global GRPO supplies one group-relative trajectory signal, $A_i^g$. For a token inside an actor-span-reliable non-answer runtime interaction, ToolWeave replaces uniform per-trajectory credit assignment with $A_{i,u,j}^{TW}=A_i^g+A_{i,u,j}^{\ell}$; every other trainable actor token retains $A_i^g$. The old-policy importance ratio, clipping machinery, actor mask, reference KL, loss aggregation, backward pass, and optimizer mechanics remain inherited from the existing training stack. There is no divide-by-two fusion, post-fusion normalization, RMS rescaling, or adaptive local weighting.
 
 #### Token Assignment
 
@@ -511,9 +513,9 @@ The local scalar is broadcast over the trainable actor tokens inside the origina
 **Full implementation and fail-closed contract →**
 [docs/implementation-notes.md](docs/implementation-notes.md)
 
-#### PPO/GRPO Actor Update
+#### Policy Update under the GRPO Framework
 
-The fused advantage is passed to the existing actor-only PPO/GRPO path. For actor-token position $z$,
+The fused ToolWeave advantage is optimized under the existing GRPO training framework using the inherited PPO-style clipped importance-ratio surrogate. The novelty lies in the construction and assignment of $A^{TW}$; the clipped importance-ratio surrogate itself is inherited. For actor-token position $z$,
 
 $$
 \rho_{i,z}=
@@ -533,7 +535,7 @@ $$
 
 The unchanged implementation applies the configured clipped/dual-clipped surrogate, response mask, reference KL, backward pass, and optimizer step. Local credit is not added to reward-side KL or to boundary statistics.
 
-Exact clipping, KL, aggregation, and tensor-contract details are documented in [Implementation Notes](docs/implementation-notes.md#ppo--grpo-implementation-contract).
+Exact clipping, KL, aggregation, and tensor-contract details are documented in [Implementation Notes](docs/implementation-notes.md#clipped-policy-update-implementation-contract).
 
 ### 3.4 Boundary-Guided Online Data Evolution
 
@@ -654,7 +656,7 @@ Boundary-driven planning, executable interaction, query construction, critique/r
 | [Credit-Assignment Audit](docs/credit-assignment-audit.md) | Full deterministic K=16 formal-training evidence |
 | [Experiments](docs/experiments.md) | Complete Stage 1/2/3 evaluation and training audit |
 | [Online Data Evolution](docs/online-data-evolution.md) | Full verified-synthesis and lifecycle details |
-| [Implementation Notes](docs/implementation-notes.md) | Runtime/provenance compatibility, local-credit fail-closed invariants, and PPO/GRPO implementation contract |
+| [Implementation Notes](docs/implementation-notes.md) | Runtime/provenance compatibility, local-credit fail-closed invariants, and the clipped policy-update implementation contract |
 | [Data & Trajectory Anatomy](docs/data-and-trajectories.md) | BFCL runtime hierarchy and trajectory examples |
 | [Infrastructure Decoupling](docs/infrastructure-decoupling.md) | Portable configuration and runtime separation |
 

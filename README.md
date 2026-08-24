@@ -599,13 +599,7 @@ It can distinguish which rollout was better overall, but it cannot distinguish s
 
 #### ToolWeave's solution
 
-ToolWeave adds the runtime-interaction-level local residual:
-
-$$
-A_{i,u,j}^{TW}
-=
-A_i^g+A_{i,u,j}^{\ell}.
-$$
+ToolWeave adds the runtime-interaction-level local residual $A_{i,u,j}^{TW}=A_i^g+A_{i,u,j}^{\ell}$.
 
 The local residual allows interactions inside one rollout to receive different fused advantages. In the real special-recovery rollout for User Turn 3, five parser-rejected actions remain explicit zero-reward temporal steps before one valid two-call action:
 

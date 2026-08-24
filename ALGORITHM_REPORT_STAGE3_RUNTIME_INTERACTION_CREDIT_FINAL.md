@@ -126,8 +126,7 @@ The production grouping key is:
 Missing late interactions are absent, not zero-valued samples. For support $n\ge 2$, ToolWeave computes the peer mean and unbiased sample standard deviation, then:
 
 $$
-A_{i,u,j}^{\ell}
-=
+A_{i,u,j}^{\ell}=
 \frac{R_{i,u,j}^{\ell}-\mu_{q,u,j}^{\ell}}
 {s_{q,u,j}^{\ell}+10^{-6}}.
 $$
@@ -159,8 +158,7 @@ The unchanged veRL GRPO estimator groups the `K` rollouts by prompt UID and comp
 With frozen $\lambda_{\mathrm{local}}=1.0$:
 
 $$
-A_{i,u,j}^{TW}
-=
+A_{i,u,j}^{TW}=
 A_i^g+A_{i,u,j}^{\ell}.
 $$
 

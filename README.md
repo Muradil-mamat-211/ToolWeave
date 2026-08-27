@@ -92,7 +92,7 @@ Stage 3 complete-entry accuracy is a different metric from the training-time Pro
 
 ## Getting Started
 
-The public repository separates portable source/configuration from machine-local models, datasets, outputs, and credentials. Use Python 3.10+ with the project runtime dependencies already installed; the repository does not currently provide a one-command environment bootstrap.
+The public repository separates portable source/configuration from machine-local models, datasets, outputs, and credentials. Use Python 3.10+ with the project training dependencies already installed; the training stack does not currently have a one-command bootstrap. The isolated Gemma synthesis stack has a version-pinned [reconstruction contract](environment/gemma-synthesis/README.md).
 
 1. Clone the repository and create an ignored local environment file:
 
@@ -102,13 +102,17 @@ The public repository separates portable source/configuration from machine-local
    cp environment/env.template.sh environment/env.local.sh
    ```
 
-2. Edit `environment/env.local.sh` so `TOOLWEAVE_ASSET_ROOT`, `TOOLWEAVE_DATA_ROOT`, and `TOOLWEAVE_PYTHON` point to your local assets and compatible Python environment, then load it:
+2. Edit `environment/env.local.sh` so `TOOLWEAVE_ASSET_ROOT`, `TOOLWEAVE_DATA_ROOT`, and `TOOLWEAVE_PYTHON` point to your local assets and compatible Python environment. For Stage 3 online synthesis, first rebuild the audited [Gemma environment](environment/gemma-synthesis/README.md) and set `TOOLWEAVE_SYNTH_PYTHON` to its absolute Python executable. Then load the file:
 
    ```bash
    source environment/env.local.sh
    ```
 
    The exact required model/data files and hashes are declared in the [Stage 3 asset layer](stage1_format_rl/configs/layers/assets/stage3_reference.yaml). Upstream datasets and released model links are listed in [Data](#data) and [Models](#models).
+
+   `TOOLWEAVE_SYNTH_PYTHON` is an executable selector, not an activation or
+   download mechanism. Once the environment exists locally, generator-server
+   and generator-daemon commands invoke that interpreter directly.
 
 3. Resolve and validate the formal Stage 3 reference profile:
 
@@ -712,7 +716,8 @@ ToolWeave/
 │   ├── implementation-notes.md     # Runtime and optimizer implementation contract
 │   ├── data-and-trajectories.md    # BFCL runtime and trajectory anatomy
 │   └── infrastructure-decoupling.md # Portable runtime/configuration audit
-├── environment/                    # Machine-local configuration templates
+├── environment/                    # Machine templates and audited environment contracts
+│   └── gemma-synthesis/            # Rebuild, lock, and verify the Gemma vLLM stack
 ├── scripts/                        # Data, evaluation, and audit utilities
 └── stage1_format_rl/
     ├── configs/layers/

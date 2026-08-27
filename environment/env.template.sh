@@ -18,7 +18,11 @@ export TOOLWEAVE_CACHE_ROOT="${TOOLWEAVE_CACHE_ROOT:-$TOOLWEAVE_ASSET_ROOT/.cach
 export TOOLWEAVE_TEMP_ROOT="${TOOLWEAVE_TEMP_ROOT:-$TOOLWEAVE_ASSET_ROOT/.runtime}"
 export TOOLWEAVE_SHORT_TEMP_ROOT="${TOOLWEAVE_SHORT_TEMP_ROOT:-${TMPDIR:-/tmp}/toolweave}"
 export TOOLWEAVE_PYTHON="${TOOLWEAVE_PYTHON:-$(command -v python)}"
+# Rebuild the audited Gemma environment via environment/gemma-synthesis/create.sh,
+# then set this to the absolute Python path printed by that script.
 export TOOLWEAVE_SYNTH_PYTHON="${TOOLWEAVE_SYNTH_PYTHON:-$TOOLWEAVE_PYTHON}"
+# Historical launchers activate this only when non-empty and then replace
+# TOOLWEAVE_PYTHON. Leave it empty when using direct interpreter paths.
 export TOOLWEAVE_CONDA_ENV="${TOOLWEAVE_CONDA_ENV:-}"
 export TOOLWEAVE_EVAL_HOST="${TOOLWEAVE_EVAL_HOST:-127.0.0.1}"
 export TOOLWEAVE_EVAL_PORT="${TOOLWEAVE_EVAL_PORT:-31000}"

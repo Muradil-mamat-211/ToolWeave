@@ -13,6 +13,7 @@ from omegaconf import OmegaConf
 
 from stage1_format_rl.infrastructure.assets import validate_assets
 from stage1_format_rl.infrastructure.cli import (
+    build_generator_server_command,
     build_role_environment,
     build_training_command,
 )
@@ -195,6 +196,25 @@ def test_online_roles_are_process_isolated_and_generator_is_derived(tmp_path: Pa
     assert resolved.effective_generator["llm"]["concurrency"] == 4
     assert resolved.effective_generator["seed_worker_count"] == 4
     assert resolved.effective_verl["actor_rollout_ref"]["rollout"]["multi_stage_wake_up"] is True
+
+
+def test_online_generator_uses_the_dedicated_synthesis_interpreter(
+    tmp_path: Path,
+) -> None:
+    synthesis_python = tmp_path / "gemma-synthesis/bin/python"
+    resolved = resolve_profile(
+        ONLINE_PROFILE,
+        environ=_environment(
+            tmp_path,
+            TOOLWEAVE_SYNTH_PYTHON=str(synthesis_python),
+        ),
+    )
+    command = build_generator_server_command(resolved)
+    assert command[:3] == [
+        str(synthesis_python),
+        "-m",
+        "vllm.entrypoints.openai.api_server",
+    ]
 
 
 def test_machine_paths_change_without_experiment_or_python_changes(tmp_path: Path) -> None:

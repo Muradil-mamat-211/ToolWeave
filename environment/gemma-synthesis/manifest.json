@@ -1,0 +1,61 @@
+{
+  "schema_version": "toolweave.environment.v1",
+  "environment_id": "gemma-synthesis",
+  "source_environment_name": "rods-synth",
+  "captured_utc": "2026-08-27T07:23:23Z",
+  "purpose": "Isolated vLLM environment for the Gemma-4-31B Stage 3 synthesis service",
+  "entrypoint_environment_variable": "TOOLWEAVE_SYNTH_PYTHON",
+  "platform": {
+    "os": "Ubuntu 22.04.5 LTS",
+    "architecture": "x86_64",
+    "conda_subdir": "linux-64"
+  },
+  "audited_hardware": {
+    "gpu_count": 2,
+    "gpu_model": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_memory_mib_each": 97887,
+    "driver_version": "595.58.03",
+    "nvidia_smi_cuda_version": "13.2",
+    "host_nvcc_version": "12.8.93"
+  },
+  "python_version": "3.12.13",
+  "torch_compiled_cuda_version": "12.9",
+  "package_indexes": {
+    "pypi": "https://pypi.org/simple",
+    "pytorch_cu129": "https://download.pytorch.org/whl/cu129"
+  },
+  "expected_distributions": {
+    "cuda-toolkit": "12.9.1",
+    "flashinfer-python": "0.6.14",
+    "huggingface-hub": "1.27.0",
+    "humming-kernels": "0.1.10",
+    "numpy": "2.3.5",
+    "safetensors": "0.8.0",
+    "torch": "2.11.0+cu129",
+    "torchaudio": "2.11.0+cu129",
+    "torchcodec": "0.15.0+cu129",
+    "torchvision": "0.26.0+cu129",
+    "transformers": "5.14.1",
+    "triton": "3.6.0",
+    "vllm": "0.26.0"
+  },
+  "model": {
+    "hub_id": "google/gemma-4-31B-it",
+    "asset_id": "gemma_4_31b",
+    "weights_included": false
+  },
+  "lock_artifacts": {
+    "conda-linux-64.explicit": {
+      "record_count": 28,
+      "sha256": "5a8109b16a44f345f891b9c9c9869cf2c6f1339b8eb4997641f891c35bd50b7a"
+    },
+    "requirements-pypi-linux-x86_64.lock": {
+      "record_count": 198,
+      "sha256": "1fe8e2d2fb0d16f735b9860b53b6a42c883534fb0744228320243d2bdcd334b8"
+    },
+    "requirements-pytorch-cu129-linux-x86_64.lock": {
+      "record_count": 4,
+      "sha256": "645fd40d57f70b264b6e98f478235e1beb023c04544c09b5460290a339bfa077"
+    }
+  }
+}

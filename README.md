@@ -656,11 +656,11 @@ Boundary-driven planning, executable interaction, query construction, critique/r
 
 ## Second Synthesis Method: Codex CLI
 
-ToolWeave now also constructs data through the official `codex exec` CLI with an existing ChatGPT login. Python dispatches each logical role and executes the real BFCL VM; this backend uses no direct LLM API/SDK. It is a second project construction method alongside the Gemma vLLM deployment.
+ToolWeave provides another data-construction method through the official `codex exec` CLI with an existing ChatGPT login. Python coordinates the generation roles and executes tool calls in the BFCL VM. This backend uses no direct LLM API or SDK calls.
 
 **Planner plans the whole task → build each turn by generating one function’s arguments and immediately executing it in the VM, then reverse-write that turn’s Query → rewrite the complete conversation → apply MP/MF transformations → review the final conversation → package the data.**
 
-All four categories share this main workflow. MF hides a necessary tool definition, keeps the affected request and inserts a tool-restoration turn. MP removes a necessary value from the affected request and inserts a clarification Query. Each adds one turn, with empty GT at the affected turn and the original calls at recovery. LC uses the same construction process with VM `long_context=True`, so later requests select useful information from extended tool output.
+Base, Missing Function (MF), Missing Parameter (MP), and Long Context (LC) share this workflow. MF adds tool restoration; MP adds parameter clarification. Each converts an existing turn into a missing turn with `GT=[]` and inserts one recovery turn containing the successful calls. LC uses VM `long_context=True` to produce extended observations that later turns use.
 
 | Real source seed | Category | Final turns / calls | Published candidate |
 | --- | --- | ---: | --- |
@@ -669,9 +669,9 @@ All four categories share this main workflow. MF hides a necessary tool definiti
 | `multi_turn_miss_param_33` | Missing Parameter | 5 / 7 | [MP JSON](data/codex-synthesis/missing_parameter.json) |
 | `multi_turn_long_context_33` | Long Context | 3 / 5 | [LC JSON](data/codex-synthesis/long_context.json) |
 
-These are genuine accepted examples from the 2026-10-07 strict-policy smoke run, with original Queries, GT, real Observations and validation records preserved. They are historical evidence, not newly generated results under the latest defaults. The current final review reuses successful construction evidence and normally calls Quality Judge once; extra final GT replay is optional. Four related examples establish feasibility, not a batch success rate or training gain.
+The four examples include their generated Queries, executable GT, actual VM observations, and recorded validation results. The accompanying JSONL contains their training-format samples.
 
-**[Role cooperation and construction guide](docs/codex-data-synthesis.md) · [Example bundle and provenance](data/codex-synthesis/README.md) · [Training samples JSONL](data/codex-synthesis/training_samples.jsonl) · [CLI configuration](stage1_format_rl/configs/rods_data_generation_codex_cli.yaml) · [Current review policy](stage1_format_rl/docs/RODS_VALIDATION_POLICY.md)**
+**[Construction guide and role cooperation](docs/codex-data-synthesis.md) · [Four-category examples](data/codex-synthesis/README.md) · [Training samples JSONL](data/codex-synthesis/training_samples.jsonl) · [CLI configuration](stage1_format_rl/configs/rods_data_generation_codex_cli.yaml)**
 
 ## Detailed Documentation
 
@@ -680,9 +680,7 @@ These are genuine accepted examples from the 2026-10-07 strict-policy smoke run,
 | [Credit-Assignment Audit](docs/credit-assignment-audit.md) | Full deterministic K=16 formal-training evidence |
 | [Experiments](docs/experiments.md) | Complete Stage 1/2/3 evaluation and training audit |
 | [Online Data Evolution](docs/online-data-evolution.md) | Full verified-synthesis and lifecycle details |
-| [Codex Data Synthesis](docs/codex-data-synthesis.md) | Second construction method, exact role cooperation, four real examples and local verification |
-| [Planner v2 Design](stage1_format_rl/docs/PLANNER_V2_DESIGN.md) | Category-specific planning, exact input/output contracts, role cooperation, and Codex CLI configuration |
-| [Historical Strict Validation](stage1_format_rl/docs/QUERY_CONTRACT_HARDENING.md) | Archived strict-policy checks and the four-category CLI/VM run used by the published examples |
+| [Codex Data Synthesis](docs/codex-data-synthesis.md) | Second construction method, generation roles, category rules, and real examples |
 | [Implementation Notes](docs/implementation-notes.md) | Runtime/provenance compatibility, local-credit fail-closed invariants, and the clipped policy-update implementation contract |
 | [Data & Trajectory Anatomy](docs/data-and-trajectories.md) | BFCL runtime hierarchy and trajectory examples |
 | [Infrastructure Decoupling](docs/infrastructure-decoupling.md) | Portable configuration and runtime separation |
@@ -711,7 +709,7 @@ ToolWeave does not rehost the upstream BFCL/EnvTuning datasets; canonical upstre
 | Stage 3 original pool | 400 rows: 100 per BFCL multi-turn category | [AWorld-RL `bfcl_train.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train.parquet) |
 | Held-in evaluation | 400 rows: 100-row validation + 300-row test | [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) + [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet) |
 | Original benchmark source | BFCL V3 Multi-Turn | [BFCL dataset](https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard) and [repository data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data) |
-| Codex construction examples | Four real smoke candidates with Queries, GT, Observations and recorded reviews | [Example bundle](data/codex-synthesis/README.md) and [training JSONL](data/codex-synthesis/training_samples.jsonl) |
+| Codex construction examples | Four generated candidates with Queries, GT, observations, and recorded reviews | [Example bundle](data/codex-synthesis/README.md) and [training JSONL](data/codex-synthesis/training_samples.jsonl) |
 | Generated Stage 3 candidates | Execution- and semantics-validated online replay rows | Formal-training project artifact; separate data release not included here |
 
 These parquet rows provide prompts, tools, environment metadata, and reward-side GT for executable RL interaction; ToolWeave does not describe them as supervised trajectory-imitation data.

@@ -46,6 +46,7 @@ def _read_json_or_jsonl(path: Path) -> list[dict[str, Any]]:
 class FunctionCatalog:
     def __init__(self, specs: Iterable[FunctionSpec]):
         self._specs: dict[str, FunctionSpec] = {}
+        self.source_tool_updates: dict[str, list[dict[str, Any]]] = {}
         for spec in specs:
             existing = self._specs.get(spec.name)
             if existing is not None and existing != spec:
@@ -105,7 +106,7 @@ class FunctionCatalog:
         # parquet until this production-aligned source is explicitly selected.
         import pandas as pd
 
-        from env_tuning.rods_matchtir_v1.provenance import extract_available_functions
+        from env_tuning.rods_matchtir_v1.provenance import extract_available_functions, extract_source_tool_updates
 
         frame = pd.read_parquet(source)
         required_columns = {"prompt", "extra_info"}
@@ -118,6 +119,7 @@ class FunctionCatalog:
         schemas: dict[str, dict[str, Any]] = {}
         possible_classes: dict[str, set[str]] = {}
         observations: dict[str, int] = {}
+        source_updates: dict[str, list[dict[str, Any]]] = {}
 
         for row_index, row in frame.iterrows():
             extra_info = row["extra_info"]
@@ -126,6 +128,8 @@ class FunctionCatalog:
             interaction_kwargs = extra_info.get("interaction_kwargs")
             if not isinstance(interaction_kwargs, Mapping):
                 raise CatalogError(f"row {row_index} lacks interaction_kwargs")
+            updates = extract_source_tool_updates(interaction_kwargs)
+            source_updates[str(interaction_kwargs.get("id", ""))] = updates
             raw_classes = interaction_kwargs.get("involved_classes")
             if not isinstance(raw_classes, (list, tuple)) and not hasattr(
                 raw_classes, "tolist"
@@ -150,6 +154,8 @@ class FunctionCatalog:
                 ) from exc
             if not row_schemas:
                 raise CatalogError(f"row {row_index} exposes no functions")
+            for update in updates:
+                row_schemas.extend(update["tools"])
 
             for schema in row_schemas:
                 name = schema.get("name")
@@ -185,7 +191,9 @@ class FunctionCatalog:
                     schema=schema,
                 )
             )
-        return cls(specs)
+        result = cls(specs)
+        result.source_tool_updates = source_updates
+        return result
 
     def with_seed_functions(self, seed: SeedRecord) -> "FunctionCatalog":
         """Verify a seed against the configured, execution-aligned catalog."""

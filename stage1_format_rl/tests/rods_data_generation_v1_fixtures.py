@@ -38,7 +38,9 @@ def make_catalog() -> FunctionCatalog:
 
 def make_seed(data_type: str = "multi_turn_base", *, epoch: int = 7) -> dict[str, Any]:
     catalog = make_catalog()
-    tools = [copy.deepcopy(catalog.get(name).schema) for name in ("add", "multiply")]
+    tools = [copy.deepcopy(spec.schema) for spec in catalog.functions_for_classes(["MathAPI"])]
+    if data_type == "multi_turn_long_context":
+        tools = [copy.deepcopy(spec.schema) for spec in catalog.functions_for_classes(["GorillaFileSystem"])]
     return {
         "schema_version": SEED_SCHEMA_VERSION,
         "sample_id": f"seed-{data_type}",
@@ -49,7 +51,10 @@ def make_seed(data_type: str = "multi_turn_base", *, epoch: int = 7) -> dict[str
         ],
         "GT_old": [["add(a=1.0, b=1.0)"], ["multiply(a=2.0, b=2.0)"]],
         "available_functions": tools,
-        "initial_config": {},
+        "initial_config": ({"GorillaFileSystem": {"root": {"project": {
+            "type": "directory", "contents": {"inspection_notes.txt": {"type": "file",
+            "content": "budget analysis approved\nfinal checks done"}}}}}}
+            if data_type == "multi_turn_long_context" else {}),
         "mean_progress": 0.5,
         "boundary_score_phi": 1.0,
         "training_epoch_or_step": {"epoch": epoch, "global_step": 70},
@@ -61,6 +66,19 @@ def make_seed(data_type: str = "multi_turn_base", *, epoch: int = 7) -> dict[str
 
 
 def success_script(data_type: str = "multi_turn_base") -> dict[str, list[str]]:
+    if data_type == "multi_turn_long_context":
+        return {
+            "planner": ["<reason>Inspect a long report and form an exact receipt from its beginning and ending.</reason>"
+                        "<narrative>Read inspection_notes.txt, then print a receipt using exact format `Start: {start}; Ending: {ending}` with the first line and final five words, preserving punctuation.</narrative>"
+                        "<turn>GorillaFileSystem: cat</turn><turn>GorillaFileSystem: echo</turn>"],
+            "parameter_generator": ['<reason>Read the report.</reason><arguments>{"file_name":"inspection_notes.txt"}</arguments>',
+                                    '<reason>Use the observed beginning and ending.</reason><arguments>{"content":"Start: budget analysis approved; Ending: for future growth and profitability."}</arguments>'],
+            "query_generator": ['<reason>Read full contents.</reason><query>Show the full contents of inspection_notes.txt.</query>',
+                                '<reason>Combine distant facts.</reason><query>Print the receipt in exact format `Start: {start}; Ending: {ending}`. Fill start with the first line and ending with the final five whitespace-separated words of the earlier file, preserving punctuation.</query>'],
+            "query_verifier": [VERIFY_ACCEPT, VERIFY_ACCEPT],
+            "coherence_rewrite": ['<query>Show the full contents of inspection_notes.txt.</query><query>Print the receipt in exact format `Start: {start}; Ending: {ending}`. Fill start with the first line and ending with the final five whitespace-separated words of the earlier file, preserving punctuation.</query>'],
+            "final_query_verifier": [VERIFY_ACCEPT], "quality_judge": [JUDGE_ACCEPT],
+        }
     script: dict[str, list[str]] = {
         "planner": [PLANNER_ADD_MULTIPLY],
         "parameter_generator": [PARAM_ADD, PARAM_MULTIPLY],
@@ -109,6 +127,7 @@ def make_config(
         function_catalog_dir=str(CATALOG_DIR),
         dry_run=dry_run,
         test_mode=test_mode,
+        validation_policy="strict",  # Historical hardening tests exercise the opt-in policy.
         seed_worker_count=2,
     )
 

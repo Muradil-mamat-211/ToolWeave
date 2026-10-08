@@ -11,6 +11,7 @@ from ..metrics import GeneratorMetrics
 from ..models import ConversationDraft, SynthesizedTurn
 from ..parsing import StructuredParseError, parse_missing_function_response
 from ..prompts import load_prompt
+from .final_trace import finalize_recovery_trace
 
 
 class MissingFunctionTransformer:
@@ -93,8 +94,7 @@ class MissingFunctionTransformer:
             "Appendix-P recovery turn restores the withheld tool for the unresolved request."
         )
         output.turns.insert(choice.affected_turn + 1, recovery)
-        for turn_id, turn in enumerate(output.turns):
-            turn.turn_id = turn_id
+        finalize_recovery_trace(output)
         output.structural_profile["adversarial"] = {
             "kind": "missing_function",
             "affected_turn": choice.affected_turn,

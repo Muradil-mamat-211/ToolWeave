@@ -15,6 +15,7 @@ from ..prompts import load_prompt
 from ..validation.missing_parameter_validity import (
     evaluate_missing_parameter_validity,
 )
+from .final_trace import finalize_recovery_trace
 
 
 def _value_markers(value: Any) -> list[str]:
@@ -38,10 +39,13 @@ class MissingParameterTransformer:
         backend: LLMBackend,
         catalog: FunctionCatalog,
         metrics: GeneratorMetrics | None = None,
+        *,
+        validation_policy: str = "strict",
     ):
         self.backend = backend
         self.catalog = catalog
         self.metrics = metrics
+        self.validation_policy = validation_policy
 
     async def transform(self, draft: ConversationDraft) -> ConversationDraft:
         prompt = load_prompt(
@@ -103,12 +107,12 @@ class MissingParameterTransformer:
             affected_query=choice.affected_query,
             catalog=self.catalog,
         )
-        if validity["decision"] == "REJECT_UNIQUELY_RECOVERABLE":
+        if self.validation_policy == "strict" and validity["decision"] == "REJECT_UNIQUELY_RECOVERABLE":
             raise StructuredParseError(
                 "selected missing parameter is uniquely recoverable from "
                 "policy-visible context"
             )
-        if validity["decision"] == "REJECT_VALUE_STILL_EXPOSED":
+        if self.validation_policy == "strict" and validity["decision"] == "REJECT_VALUE_STILL_EXPOSED":
             raise StructuredParseError(
                 "affected query still exposes the deliberately missing value"
             )
@@ -129,8 +133,7 @@ class MissingParameterTransformer:
             "Appendix-P recovery turn explicitly supplies the omitted parameter value."
         )
         output.turns.insert(choice.affected_turn + 1, recovery)
-        for turn_id, turn in enumerate(output.turns):
-            turn.turn_id = turn_id
+        finalize_recovery_trace(output)
         output.structural_profile["adversarial"] = {
             "kind": "missing_parameter",
             "affected_turn": choice.affected_turn,
@@ -138,5 +141,6 @@ class MissingParameterTransformer:
             "missing_parameter": choice.parameter_name,
             "source_status": self.SOURCE_STATUS,
             "missing_parameter_validity": validity,
+            "validity_heuristic_blocking": self.validation_policy == "strict",
         }
         return output

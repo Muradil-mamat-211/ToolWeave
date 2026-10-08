@@ -13,6 +13,9 @@ Relevant environment/dependency context:
 {execution_context}
 
 Accept only when the query requests all and only the represented behavior without function/schema leakage.
+Use the supplied tool definitions and pre/post execution trace to determine
+actual effects when return prose is ambiguous or misleading. Internal state
+evidence is not additional actor-visible history or a missing user choice.
 Return exactly:
 <reason>verification analysis</reason><verdict>accept</verdict>
 or

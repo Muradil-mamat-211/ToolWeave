@@ -203,7 +203,7 @@ def test_all_generator_prompts_use_reason_not_think_and_have_source_headers():
     for path in paths:
         raw = path.read_text(encoding="utf-8")
         assert "SOURCE_STATUS" in raw
-        assert "RODS arXiv:2606.19047v1" in raw
+        assert "RODS arXiv:2606.19047v1" in raw or "SOURCE_STATUS = PROJECT_SUBSTITUTION" in raw
         body = load_prompt(str(path.relative_to(PROMPT_ROOT)), {}) if "{" not in raw.split("---PROMPT---", 1)[1] else None
         if body is not None:
             assert "<think>" not in body
@@ -512,7 +512,8 @@ def test_retry_planner_keeps_complete_compact_feedback_and_only_patch_delta():
     assert "add(a=1.0, b=2.0)" in prompt
     assert '"add"' in prompt
     assert '"fixture_enabled": true' in prompt
-    assert "UNCHANGED_STATE_BLOB_" not in prompt
+    # V2 deliberately supplies the initial config; forensics are still excluded.
+    assert "UNCHANGED_STATE_BLOB_" in prompt
     assert "FORENSIC_PRE_STATE_" not in prompt
     assert "FORENSIC_POST_STATE_" not in prompt
 

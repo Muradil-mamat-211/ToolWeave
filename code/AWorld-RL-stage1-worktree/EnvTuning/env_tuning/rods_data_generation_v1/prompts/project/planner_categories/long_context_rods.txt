@@ -1,0 +1,12 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave Planner long-context category for RODS admission
+---PROMPT---
+multi_turn_long_context: plan 2-5 turns with VM long_context=True.
+Expose extended actor-visible tool output, then make a later practical request
+use relevant facts or selections from that history despite distractors.
+Long Queries or independent short calculations alone do not create an LC task.
+Refer naturally to the earlier output without restating the resolved answer.
+Do not bypass the intended history dependency by rereading the same content.
+The initial preview may be truncated; obtain needed details through execution.
+There is no required character separation, ending region, number of excerpts,
+or exact text-template syntax. Prefer a meaningful task over an extraction puzzle.

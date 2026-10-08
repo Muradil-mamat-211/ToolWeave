@@ -1,0 +1,19 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave natural query guidance for Appendix G admission
+---PROMPT---
+Write a clear, practical user request consistent with the executed calls and
+their actual effects. Preserve the task's intent and meaningful links between
+turns. Use earlier successful observations when the request depends on history;
+do not prefill the answer in the user's question or invent observed facts.
+Ordinary arithmetic, selection, unit conversion and concise composition from
+observed results are allowed when the requested operation is clear.
+
+Keep the request sufficiently precise for the reference calls. Specify literal
+wording or a compact format when the user's task needs it; avoid gratuitous
+formatting instructions and mechanical extraction puzzles. There is no universal
+exact-format syntax, formal parameter-provenance requirement or LC positional
+threshold. Long-context tasks should actually need earlier extended history.
+Do not expose callable API names, argument interfaces or generation instructions.
+
+Earlier successful actor-visible outputs of THIS NEW task:
+{prior_actor_observations}

@@ -84,6 +84,12 @@ def build_rollout_context(
         except json.JSONDecodeError as exc:
             context_reliable = False
             context_error = f"invalid initial_config JSON: {exc}"
+    try:
+        tool_updates = extract_source_tool_updates(kwargs)
+    except (ValueError, TypeError, json.JSONDecodeError) as exc:
+        tool_updates = []
+        context_reliable = False
+        context_error = f"invalid original tool updates: {exc}"
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -93,9 +99,31 @@ def build_rollout_context(
         "ground_truth": to_builtin(kwargs.get("ground_truth", [])),
         "available_functions": available_functions,
         "initial_config": to_builtin(initial_config),
+        # Prompt-level task definition, not sampled policy execution history.
+        "original_tool_updates": tool_updates,
         "context_reliable": context_reliable,
         "context_error": context_error,
     }
+
+
+def extract_source_tool_updates(kwargs: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Decode original MF restoration messages from processed_question only."""
+    updates = []
+    processed = to_builtin(kwargs.get("processed_question", []))
+    if not isinstance(processed, list):
+        raise ValueError("processed_question must be a list")
+    for index, text in enumerate(processed):
+        if not isinstance(text, str) or "I have updated some more functions" not in text:
+            continue
+        tools, end = json.JSONDecoder().raw_decode(text.lstrip())
+        if not isinstance(tools, list) or not tools or not all(
+            isinstance(tool, Mapping) and isinstance(tool.get("name"), str) for tool in tools
+        ):
+            raise ValueError("source tool update lacks valid schemas")
+        if "I have updated some more functions" not in text.lstrip()[end:]:
+            raise ValueError("invalid source tool update suffix")
+        updates.append({"turn_id": index + 1, "tools": to_builtin(tools)})
+    return updates
 
 
 def response_relative_step(

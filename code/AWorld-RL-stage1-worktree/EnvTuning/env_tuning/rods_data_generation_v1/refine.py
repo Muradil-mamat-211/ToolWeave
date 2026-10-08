@@ -30,14 +30,20 @@ def locate_rejected_turn(fail_reason: str, *, num_turns: int) -> int:
 
 
 class RefineAgent:
-    def __init__(self, backend: LLMBackend, metrics: GeneratorMetrics):
+    def __init__(self, backend: LLMBackend, metrics: GeneratorMetrics, *, validation_policy: str = "strict"):
         self.backend = backend
         self.metrics = metrics
+        self.validation_policy = validation_policy
+
+    def _quality_guidance(self) -> str:
+        return load_prompt("project/rods_quality_guidance.txt" if self.validation_policy == "rods"
+                           else "project/quality_review_contract.txt")
 
     async def classify(
         self, draft: ConversationDraft, rejected: JudgeResult
     ) -> tuple[str, str]:
         system = load_prompt("official_rods/refine_classify_system.txt")
+        system += "\n\n" + self._quality_guidance()
         user = load_prompt(
             "official_rods/refine_classify_user.txt",
             {
@@ -69,6 +75,7 @@ class RefineAgent:
         )
         turn = draft.turns[turn_index]
         system = load_prompt("official_rods/refine_rewrite_system.txt")
+        system += "\n\n" + self._quality_guidance()
         user = load_prompt(
             "official_rods/refine_rewrite_user.txt",
             {
@@ -77,6 +84,8 @@ class RefineAgent:
                 "gt_str": json.dumps(turn.ground_truth, ensure_ascii=False),
             },
         )
+        user += "\n\nProject verification context (hidden snapshots are not actor history):\n" + json.dumps(
+            conversation_summary(draft), ensure_ascii=False, indent=2, default=repr)
         response = await self.backend.complete(
             role="refine_rewrite",
             messages=[

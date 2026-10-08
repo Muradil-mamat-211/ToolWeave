@@ -1,0 +1,19 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave tool GT versus grounded assistant answer presentation
+---PROMPT---
+Executable GT records tool calls, not the assistant's final natural-language
+answer. A read/lookup query may also ask the assistant to deterministically
+count, sort, select or report facts from its successful visible results. Such
+answer presentation does not require an additional tool call when all operands
+are available and the rule is unambiguous. For example, listing users can support
+reporting the first and last distinct names after a specified lexical sort;
+the tool need not itself return only those two names. Verify the computation
+from the actual result, rather than rejecting because no separate sorting tool
+appears in GT. This does not prove that a future actor will answer correctly.
+
+Sending/writing/deleting/changing an object is a tool effect and must be present
+in GT. A user asking to send a selected item is not satisfied by just listing
+items. Presentation cannot invent facts, access hidden state, fill a missing
+user preference, require an unexecuted external lookup, or conceal unmatched
+tool side effects. Observation-derived tool text still obeys the exact format
+and extraction rules; this distinction does not permit arbitrary message bodies.

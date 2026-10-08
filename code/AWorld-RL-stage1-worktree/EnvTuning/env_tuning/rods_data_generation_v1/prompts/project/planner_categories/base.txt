@@ -1,0 +1,6 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave Planner v2 base category
+---PROMPT---
+multi_turn_base: plan 2-5 normal executable turns serving one user goal.
+Use relevant prior outputs/state in later turns when required by that goal.
+Do not create an intentional tool or parameter omission.

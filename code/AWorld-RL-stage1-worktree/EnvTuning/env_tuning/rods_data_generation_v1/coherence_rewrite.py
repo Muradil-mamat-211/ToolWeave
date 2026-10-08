@@ -13,13 +13,17 @@ from .query_generator import QueryGenerator
 
 
 class CoherenceRewriteAgent:
-    def __init__(self, backend: LLMBackend, metrics: GeneratorMetrics):
+    def __init__(self, backend: LLMBackend, metrics: GeneratorMetrics, *, validation_policy: str = "strict"):
         self.backend = backend
         self.metrics = metrics
         self.calls = 0
+        self.validation_policy = validation_policy
 
     async def rewrite(self, draft: ConversationDraft) -> ConversationDraft:
         system = load_prompt("official_rods/coherence_rewrite_system.txt")
+        guidance = ("project/rods_query_guidance.txt" if self.validation_policy == "rods"
+                    else "project/query_contract.txt")
+        system += "\n\n" + load_prompt(guidance, {"prior_actor_observations": "See the supplied executed turns."})
         turns = [
             {
                 "turn": index + 1,

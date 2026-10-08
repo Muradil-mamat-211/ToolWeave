@@ -47,12 +47,14 @@ class LLMConfig:
     temperature: float = 1.0  # RODS Appendix J
     top_p: float = 0.7  # RODS Appendix J
     max_tokens: int = 4096  # PROJECT/RECONSTRUCTED default
-    timeout_seconds: float = 120.0  # PROJECT/RECONSTRUCTED default
+    timeout_seconds: float = 600.0  # PROJECT/RECONSTRUCTED default
     transport_retries: int = 2  # Transport only; not an algorithm retry.
     concurrency: int = 1  # Must be benchmarked for the target 2x48GB host.
     disable_native_thinking: bool = True
     raw_response_log_path: str = ""
     replay_path: str = ""  # PROJECT fixture/config path; never a RODS default.
+    codex_binary: str = "codex"
+    codex_artifact_dir: str = str(ARTIFACTS_ROOT / "stage3_generator/codex_calls")
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any] | None) -> "LLMConfig":
@@ -60,7 +62,7 @@ class LLMConfig:
         defaults = cls()
         return cls(
             backend=str(raw.get("backend", "replay")),
-            model=str(raw.get("model", defaults.model)),
+            model=str(raw.get("model", "" if raw.get("backend") == "codex_cli" else defaults.model)),
             endpoint=str(raw.get("endpoint", defaults.endpoint)),
             api_key=str(raw.get("api_key", "EMPTY")),
             temperature=float(raw.get("temperature", 1.0)),
@@ -72,6 +74,8 @@ class LLMConfig:
             disable_native_thinking=bool(raw.get("disable_native_thinking", True)),
             raw_response_log_path=str(raw.get("raw_response_log_path", "")),
             replay_path=str(raw.get("replay_path", "")),
+            codex_binary=str(raw.get("codex_binary", "codex")),
+            codex_artifact_dir=str(raw.get("codex_artifact_dir", defaults.codex_artifact_dir)),
         )
 
 
@@ -115,10 +119,17 @@ class GeneratorConfig:
     dry_run: bool = True
     test_mode: bool = False
     use_augmented_environment: bool = False
+    validation_policy: str = "rods"  # Semantic Judge admission; project rules are diagnostics.
+    # PROJECT choice: reuse successful synthesis execution for final query review.
+    # Opt in to Appendix G's extra replay; strict mode always retains it.
+    replay_final_gt: bool = False
     seed_worker_count: int = 1  # PROJECT default; production must benchmark.
     queue_poll_seconds: float = 5.0  # PROJECT default.
+    long_context_min_observation_chars: int = 2048  # PROJECT policy, not BFCL's definition.
 
     def __post_init__(self) -> None:
+        if self.validation_policy not in {"rods", "strict"}:
+            raise ValueError("validation_policy must be 'rods' or 'strict'")
         if self.max_pipeline_attempts != 3:
             raise ValueError("RODS V1 requires exactly 3 full pipeline attempts")
         if self.planner_retries != 3:
@@ -131,6 +142,8 @@ class GeneratorConfig:
             raise ValueError("LLM concurrency and max_tokens must be positive")
         if self.seed_worker_count < 1 or self.queue_poll_seconds <= 0:
             raise ValueError("seed_worker_count and queue_poll_seconds must be positive")
+        if self.long_context_min_observation_chars < 1:
+            raise ValueError("long-context observation threshold must be positive")
 
     @classmethod
     def from_mapping(cls, raw: Mapping[str, Any] | None) -> "GeneratorConfig":
@@ -150,6 +163,9 @@ class GeneratorConfig:
             dry_run=bool(raw.get("dry_run", True)),
             test_mode=bool(raw.get("test_mode", False)),
             use_augmented_environment=bool(raw.get("use_augmented_environment", False)),
+            validation_policy=str(raw.get("validation_policy", "rods")),
+            replay_final_gt=bool(raw.get("replay_final_gt", False)),
             seed_worker_count=int(raw.get("seed_worker_count", 1)),
             queue_poll_seconds=float(raw.get("queue_poll_seconds", 5.0)),
+            long_context_min_observation_chars=int(raw.get("long_context_min_observation_chars", 2048)),
         )

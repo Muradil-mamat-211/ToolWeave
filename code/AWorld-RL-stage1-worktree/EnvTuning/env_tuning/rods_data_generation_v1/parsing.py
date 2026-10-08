@@ -47,14 +47,15 @@ def parse_planner_response(
     allowed_functions: Iterable[str],
     class_for_function: dict[str, str],
     blocked_functions: Iterable[str] = (),
+    max_turns: int = 5,
 ) -> PlannerResult:
     tags = _ordered_top_level_tags(text)
     if len(tags) < 4 or tags[0][0] != "reason" or tags[1][0] != "narrative":
-        raise StructuredParseError("planner requires reason, narrative, then 2-5 turns")
+        raise StructuredParseError(f"planner requires reason, narrative, then 2-{max_turns} turns")
     if any(tag != "turn" for tag, _ in tags[2:]):
         raise StructuredParseError("planner emitted an unexpected tag")
-    if not 2 <= len(tags[2:]) <= 5:
-        raise StructuredParseError("planner must emit 2-5 turns")
+    if not 2 <= len(tags[2:]) <= max_turns:
+        raise StructuredParseError(f"planner must emit 2-{max_turns} turns")
 
     allowed = set(allowed_functions)
     blocked = set(blocked_functions)

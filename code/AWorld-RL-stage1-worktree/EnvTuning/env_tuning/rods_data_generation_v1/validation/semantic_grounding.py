@@ -27,6 +27,8 @@ from ..result_semantics import (
     domain_negative_contract,
 )
 from ..structural_profile import draft_structural_profile, structural_alignment_diagnostics
+from .query_contract import TEXT_ARGUMENTS, bind_exact_text
+from ..adversarial.final_trace import planner_scaffold_alignment
 
 
 SOURCE_STATUS = "PROJECT_SEMANTIC_GUARD"
@@ -284,9 +286,17 @@ def _scalar_mentioned(
                 rf"\b{re.escape(day_number)}(?:st|nd|rd|th)?\b", natural
             ):
                 return True
-        if parameter == "mode" and value == "w" and "word" in _normal_text(text):
-            # Public GorillaFileSystem.wc contract: mode='w' means word count.
-            return True
+        if function_name == "wc" and parameter == "mode":
+            # Public GorillaFileSystem.wc codes are l=line, w=word, c=character.
+            # Match whole words and only this function, not arbitrary mode
+            # arguments or words such as "password" containing "word".
+            units = {
+                "l": {"line", "lines"},
+                "w": {"word", "words"},
+                "c": {"character", "characters", "char", "chars"},
+            }.get(value, set())
+            if set(_normal_text(text).split()) & units:
+                return True
         return _string_mentioned(value, text)
     return False
 
@@ -351,6 +361,46 @@ def _user_context_evidence(
         "match": "free-text lexical anchors",
         "anchors": overlap,
     }
+
+
+def _python_declaration_pattern_evidence(
+    record: ExecutionRecord, parameter: str, query: str,
+    prior_records: Sequence[tuple[int, int, ExecutionRecord]],
+) -> dict[str, Any] | None:
+    """Recognize Python declaration searches, never arbitrary content slices."""
+    if record.call.name != "grep" or parameter != "pattern":
+        return None
+    file_name = record.call.arguments.get("file_name", "")
+    pattern = record.call.arguments.get("pattern")
+    if not isinstance(file_name, str) or not file_name.endswith(".py") or not isinstance(pattern, str):
+        return None
+    declaration_intent = re.search(
+        r"\bfunction\s+(?:declaration|definition|name)\b"
+        r"|\b(?:declaring|defining|defines?|declares?)\s+(?:(?:its|the|a|deployment)\s+)*function\b",
+        query, re.IGNORECASE,
+    )
+    if not declaration_intent:
+        return None
+    if pattern in {"def", "def "}:
+        return {"source_type": ParameterSourceType.USER_CONTEXT.value,
+                "source_path": "current_query.function_declaration_request",
+                "match": "Python def keyword for an explicit declaration request",
+                "language": "Python", "file_name": file_name}
+    if not re.fullmatch(r"def [A-Za-z_][A-Za-z_0-9]*", pattern):
+        return None
+    declaration = re.compile(r"(?m)^\s*(?:async\s+)?" + re.escape(pattern) + r"\s*\(")
+    for turn_id, call_id, prior in reversed(prior_records):
+        if prior.call.name not in {"cat", "grep"} or prior.call.arguments.get("file_name") != file_name:
+            continue
+        if classify_execution_result(prior.call.name, prior.execution_result).outcome != ExecutionSemanticOutcome.SUCCESS:
+            continue
+        for path, value in _iter_scalar_paths(prior.execution_result, path="result"):
+            if isinstance(value, str) and declaration.search(value):
+                return {"source_type": ParameterSourceType.PRIOR_TOOL_OUTPUT.value,
+                        "source_path": path, "source_turn": turn_id, "source_call": call_id,
+                        "match": "named Python declaration observed in this exact file",
+                        "source_calls": [{"source_turn": turn_id, "source_call": call_id}]}
+    return None
 
 
 def _exact_value_evidence(
@@ -453,6 +503,28 @@ def _domain_negative_conflict(
             "producer": record.canonical_call,
         }
     return None
+
+
+def _exact_text_binding_evidence(
+    function_name: str, parameter: str, value: Any,
+    query_sources: Sequence[tuple[int, str]],
+    records: Sequence[tuple[int, int, ExecutionRecord]],
+) -> dict[str, Any] | None:
+    if TEXT_ARGUMENTS.get(function_name) != parameter or not isinstance(value, str):
+        return None
+    successful = [record for _, _, record in records
+                  if classify_execution_result(record.call.name, record.execution_result).outcome
+                  == ExecutionSemanticOutcome.SUCCESS]
+    binding = bind_exact_text(value, "\n".join(query for _, query in query_sources), successful)
+    if binding is None:
+        return None
+    calls = sorted({(source["turn_id"], source["call_id"])
+                    for slot in binding["bindings"] for source in slot["sources"]})
+    return {"source_type": ParameterSourceType.PRIOR_TOOL_OUTPUT.value,
+            "source_path": "explicit_exact_template+successful_visible_results",
+            "source_calls": [{"turn_id": turn_id, "call_id": call_id} for turn_id, call_id in calls],
+            "match": "exact template with supported observable transformations",
+            "exact_text_binding": binding}
 
 
 def _composite_text_evidence(
@@ -618,7 +690,15 @@ def semantic_grounding_gate(
                         )
                     )
                     if evidence is None:
+                        evidence = _python_declaration_pattern_evidence(
+                            record, parameter, current_query, prior_executed
+                        )
+                    if evidence is None:
                         evidence = _exact_value_evidence(parameter, value, prior_executed)
+                    if evidence is None:
+                        evidence = _exact_text_binding_evidence(
+                            record.call.name, parameter, value, query_sources, prior_executed
+                        )
                     if evidence is None:
                         evidence = _composite_text_evidence(
                             parameter, value, query_sources, prior_executed
@@ -776,6 +856,7 @@ def semantic_context_for_verifier(draft: ConversationDraft) -> str:
                 "intentional_missing": turn.is_intentional_missing,
                 "missing_kind": turn.missing_kind,
                 "recovery_tools": [tool.get("name") for tool in turn.recovery_tools],
+                "recovery_tool_definitions": turn.recovery_tools,
                 "final_gt": turn.ground_truth,
                 "execution": records,
             }
@@ -811,7 +892,16 @@ def semantic_context_for_verifier(draft: ConversationDraft) -> str:
 
     context = {
         "source_status": "PROJECT_SEMANTIC_GUARD/GLOBAL_COHERENCE",
+        "data_type": draft.data_type,
+        "initial_tool_definitions": draft.initial_tools,
+        "actor_visibility_contract": {
+            "tool_availability": "Only initial_tool_definitions are available until a turn restores its recovery_tool_definitions.",
+            "visible_history": "Prior queries, actual assistant calls and their returned observations are actor-visible.",
+            "hidden_evidence": "Planner narrative, generator parameter provenance and internal pre/post state changes do not supply a missing actor-visible parameter.",
+            "intentional_missing": "Intentional missing turns have no executed observations and their intended calls are not actor history.",
+        },
         "planner_latent_narrative": draft.narrative,
+        "planner_scaffold_alignment": planner_scaffold_alignment(draft),
         "global_coherence_contract": {
             "single_underlying_goal_required": True,
             "topic_transition_requires_semantic_bridge": True,

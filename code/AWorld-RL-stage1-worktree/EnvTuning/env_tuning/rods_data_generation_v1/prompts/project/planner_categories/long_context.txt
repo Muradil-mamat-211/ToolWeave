@@ -1,0 +1,27 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave Planner v2 long-context category
+---PROMPT---
+multi_turn_long_context: plan 2-5 turns. This means actual actor-visible tool
+outputs/history, not just more turns or longer Queries. VM long_context=True.
+Expose extended content/populated directories, then make a later request find
+or use relevant information from that output despite distractors. Independent
+short calculations do not qualify. Final semantic verification checks the
+information link; the category gate checks measurable observation exposure.
+
+Make the large observation necessary for a later choice or composed value.
+After exposing the full content, prefer a later action that uses a specific
+item/order/fact from that earlier observation without reading/searching the
+same content again. Re-reading a file and pasting the entire resolved summary
+verbatim into the later request bypasses the intended history dependency.
+Later Queries should naturally refer to the earlier content, leaving the
+selected facts to be recovered from it rather than restating their answers.
+
+For the project quality profile, compose exact later text from TWO distinct
+facts widely separated in the SAME large earlier observation (at least half
+its length apart, one in its final fifth). Do not rely only on the short original
+prefix followed by unrelated padding. A source-file inspection receipt can
+combine its function name with a short exact ending excerpt to document the
+unexpected appended material. Fix the excerpt's word count and punctuation
+rule, and provide an exact placeholder format in the narrative, never prefilled
+answers. The initial truncated preview cannot reveal the exact ending: parameter
+generation must obtain it from actual execution. Do not make up ending content.

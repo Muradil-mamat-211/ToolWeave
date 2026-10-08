@@ -12,6 +12,7 @@ from jsonschema import ValidationError
 from .config import GeneratorConfig
 from .contracts import validate_seed_record
 from .llm_backend import (
+    BackendQuotaExceeded,
     LLMBackend,
     build_backend,
     pop_request_metadata,
@@ -174,6 +175,16 @@ class GeneratorDaemon:
             self._inject_fault("after_pipeline_before_terminal_journal")
             terminal_record = self.terminal_results.commit(result)
             self._finalize_terminal(terminal_record, inject_faults=True)
+        except BackendQuotaExceeded as exc:
+            self.tracker.defer_for_backend(seed.sample_id, str(exc))
+            self.expanded_results.append([{
+                "result_id": stable_id("result_quota_deferred", {"seed_id": seed.sample_id, "detail": str(exc)}),
+                "timestamp": utc_now(), "seed_id": seed.sample_id,
+                "status": "DEFERRED_BACKEND_QUOTA", "reason": str(exc),
+            }])
+            # Stop this daemon invocation, preserving PENDING for a later run
+            # after the account quota has been restored.
+            raise
         except Exception as exc:
             # RUNNING remains durable. On restart PromptTracker returns it to
             # PENDING and resumes from the last attempt checkpoint.
@@ -219,7 +230,14 @@ class GeneratorDaemon:
             async with semaphore:
                 await self._process_seed(seed)
 
-        await asyncio.gather(*(worker(seed) for seed in seeds))
+        workers = [asyncio.create_task(worker(seed)) for seed in seeds]
+        try:
+            await asyncio.gather(*workers)
+        except BackendQuotaExceeded:
+            # Other workers may already own seeds. Let them release their
+            # claims through the same quota path before leaving this run.
+            await asyncio.gather(*workers, return_exceptions=True)
+            raise
         self.metrics.ensure_error_keys()
         return self.metrics.snapshot()
 

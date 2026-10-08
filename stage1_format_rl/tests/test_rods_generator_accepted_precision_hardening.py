@@ -7,6 +7,7 @@ claimed as rules or thresholds published by RODS.
 from __future__ import annotations
 
 import json
+import pytest
 
 from env_tuning.rods_data_generation_v1.validation.action_minimality import (
     action_minimality_gate,
@@ -24,6 +25,38 @@ from env_tuning.rods_data_generation_v1.validation.semantic_grounding import (
 
 from rods_data_generation_v1_fixtures import make_catalog
 from test_rods_generator_semantic_hardening import _draft, _record, _turn
+
+
+@pytest.mark.parametrize("query,arguments,accepted", [
+    ("Please read deploy.py and measure its line count.", {"file_name": "deploy.py"}, True),
+    ("Please count the words in deploy.py.", {"file_name": "deploy.py", "mode": "w"}, True),
+    ("How many characters are in deploy.py?", {"file_name": "deploy.py", "mode": "c"}, True),
+    ("Please show me the complete contents of deploy.py.", {"file_name": "deploy.py"}, False),
+    ("Find every line containing final checks in deploy.py.", {"file_name": "deploy.py"}, False),
+    ("Measure the word count in deploy.py.", {"file_name": "deploy.py", "mode": "l"}, False),
+    ("How many people reviewed deploy.py?", {"file_name": "deploy.py"}, False),
+    ("How many words are in deploy.py?", {"file_name": "deploy.py", "mode": "l"}, False),
+])
+def test_wc_requires_explicit_count_intent_and_matching_unit(query, arguments, accepted):
+    record = _record("wc", arguments, {"count": 1, "type": "lines"},
+                     class_name="GorillaFileSystem", turn_id=0, call_id=0)
+    draft = _draft([_turn(0, "GorillaFileSystem", query, [record])])
+    gate = action_minimality_gate(draft, catalog=make_catalog())
+    assert gate.passed is accepted
+
+
+@pytest.mark.parametrize("mode,query,accepted", [
+    ("c", "Count the characters in deploy.py.", True),
+    ("w", "Count the words in deploy.py.", True),
+    ("c", "Count the words in deploy.py.", False),
+    ("w", "Count the characters in deploy.py.", False),
+    ("w", "Find the password in deploy.py.", False),
+])
+def test_wc_mode_grounding_uses_the_requested_unit(mode, query, accepted):
+    record = _record("wc", {"file_name": "deploy.py", "mode": mode}, {"count": 1},
+                     class_name="GorillaFileSystem", turn_id=0, call_id=0)
+    draft = _draft([_turn(0, "GorillaFileSystem", query, [record])])
+    assert semantic_grounding_gate(draft, catalog=make_catalog()).passed is accepted
 
 
 def _missing_parameter_draft(

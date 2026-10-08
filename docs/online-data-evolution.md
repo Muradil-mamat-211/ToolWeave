@@ -1,6 +1,6 @@
 # Online Data Evolution
 
-This document preserves the complete verified-synthesis pipeline, semantic-hardening contract, and durable lifecycle behavior from the root README.
+This document preserves the earlier synthesis deployment and strict semantic-hardening audit. The shared Gemma vLLM service is the first deployment; the [second method uses Codex CLI](codex-data-synthesis.md). The current default review policy is documented [separately](../stage1_format_rl/docs/RODS_VALIDATION_POLICY.md); the strict checks and mandatory fresh replay described below are historical/opt-in behavior.
 
 [← Back to ToolWeave README](../README.md)
 

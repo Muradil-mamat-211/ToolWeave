@@ -1,0 +1,23 @@
+# Standalone Generator config: ChatGPT login, no LLM SDK or API-key calls.
+# Paths are supplied by the machine's TOOLWEAVE_* roots.
+llm:
+  backend: codex_cli
+  model: "" # Inherit the installed CLI's configured model.
+  codex_binary: codex
+  codex_artifact_dir: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator_codex/codex_calls
+  timeout_seconds: 240
+  concurrency: 1
+function_schema_parquet: ${TOOLWEAVE_DATA_ROOT}/bfcl_stage3_train_all_400_shuffled_seed42.parquet
+function_catalog_dir: ${TOOLWEAVE_ASSET_ROOT}/data/Berkeley-Function-Calling-Leaderboard/multi_turn_func_doc
+queues:
+  seed_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/boundary_seeds.jsonl
+  candidate_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator_codex/dry_run/validated_candidates.jsonl
+  production_candidate_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_queues/validated_candidates.jsonl
+  tracker_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator_codex/dry_run/tracker.json
+  event_log_path: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator_codex/dry_run/events.jsonl
+  expanded_log_dir: ${TOOLWEAVE_ARTIFACTS_ROOT}/stage3_generator_codex/dry_run/expanded
+dry_run: true
+validation_policy: rods # Final semantic Judge; project heuristics remain diagnostics.
+replay_final_gt: false # Reuse synthesis evidence; true enables the extra fresh-VM replay.
+test_mode: false
+long_context_min_observation_chars: 2048 # Diagnostic in rods mode; blocking only in strict mode.

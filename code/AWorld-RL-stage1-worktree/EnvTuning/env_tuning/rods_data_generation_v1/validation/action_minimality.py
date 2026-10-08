@@ -216,9 +216,34 @@ def _is_direct_intent(
         description = description.split("Tool description:", 1)[1]
     description_tokens = _tokens(description) - _GENERIC_SCHEMA_WORDS
 
-    if record.call.name == "wc" and {"how", "many"}.issubset(query_tokens):
-        return True, {
-            "rule": "explicit natural-language count request for wc",
+    if record.call.name == "echo" and not record.call.arguments.get("file_name"):
+        # Terminal output is a real echo mode, distinct from writing a file.
+        direct = bool(query_tokens & {"print", "display", "show"})
+        return direct, {
+            "rule": "explicit terminal-output request with no file destination",
+            "query_tokens": sorted(query_tokens),
+            "function_tokens": sorted(function_tokens),
+        }
+
+    if record.call.name == "wc":
+        # An explicit measurement request is direct intent even if another
+        # inspection also returns the content. Require the requested unit to
+        # agree with this wc mode; reading/searching alone does not ask to count.
+        mode = record.call.arguments.get("mode", "l")
+        units = {
+            "l": {"line", "lines"},
+            "w": {"word", "words"},
+            "c": {"character", "characters", "char", "chars"},
+        }.get(mode, set())
+        count_intent = bool(query_tokens & {"count", "measure", "number", "total"}) or {
+            "how", "many",
+        }.issubset(query_tokens)
+        direct = count_intent and bool(query_tokens & units)
+        return direct, {
+            "rule": "explicit natural-language count request matching wc mode",
+            "mode": mode,
+            "count_intent": count_intent,
+            "matching_units": sorted(query_tokens & units),
             "query_tokens": sorted(query_tokens),
             "function_tokens": sorted(function_tokens),
         }

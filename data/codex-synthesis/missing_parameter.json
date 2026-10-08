@@ -1,0 +1,3870 @@
+{
+  "schema_version": "rods_validated_candidate.v1",
+  "candidate_id": "candidate_174faf59b62a038f4dd9ccbb",
+  "validated": true,
+  "validation": {
+    "passed": true,
+    "deterministic_gates": [
+      {
+        "name": "category_validity_gate",
+        "passed": true,
+        "detail": "category protocol and measured exposure passed",
+        "metadata": {
+          "data_type": "multi_turn_miss_param",
+          "final_turn_count": 5
+        }
+      },
+      {
+        "name": "unit_semantic_gate",
+        "passed": true,
+        "detail": "all explicit unit-bearing GT quantities are compatible with audited contracts",
+        "metadata": {
+          "source_status": "PROJECT_UNIT_SEMANTIC_GUARD",
+          "checks": [],
+          "failures": [],
+          "catalog_audit": [
+            {
+              "function": "adjustClimateControl",
+              "parameter": "temperature",
+              "dimension": "temperature",
+              "canonical_unit": "celsius",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema argument unit; explicit unit argument='celsius'",
+              "schema_description": "The temperature to set in degree. Default to be celsius.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "compute_exchange_rate",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('base_currency', None)",
+              "schema_description": "The value to convert",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "estimate_drive_feasibility_by_mileage",
+              "parameter": "distance",
+              "dimension": "distance",
+              "canonical_unit": "mile",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: distance to travel in miles",
+              "schema_description": "The distance to travel in miles.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "fillFuelTank",
+              "parameter": "fuelAmount",
+              "dimension": "volume",
+              "canonical_unit": "gallon",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: amount of fuel to fill in gallons",
+              "schema_description": "The amount of fuel to fill in gallons; this is the additional fuel to add to the tank.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "gallon_to_liter",
+              "parameter": "gallon",
+              "dimension": "volume",
+              "canonical_unit": "gallon",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema/public implementation: amount of gallon",
+              "schema_description": "The amount of gallon to convert.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "imperial_si_conversion",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('unit_in', None)",
+              "schema_description": "Value to be converted.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "liter_to_gallon",
+              "parameter": "liter",
+              "dimension": "volume",
+              "canonical_unit": "liter",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema/public implementation: amount of liter",
+              "schema_description": "The amount of liter to convert.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "notify_price_change",
+              "parameter": "threshold",
+              "dimension": "ratio",
+              "canonical_unit": "percent",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: percentage change threshold",
+              "schema_description": "Percentage change threshold to trigger a notification. ",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "setCruiseControl",
+              "parameter": "speed",
+              "dimension": "UNIT_UNKNOWN",
+              "canonical_unit": "UNIT_UNKNOWN",
+              "status": "UNIT_UNKNOWN",
+              "evidence": "schema token 'm/h' is ambiguous; no unit guessed",
+              "schema_description": "The speed to set in m/h. The speed should be between 0 and 120 and a multiple of 5.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "setCruiseControl",
+              "parameter": "distanceToNextVehicle",
+              "dimension": "distance",
+              "canonical_unit": "meter",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: distance to the next vehicle in meters",
+              "schema_description": "The distance to the next vehicle in meters.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "set_budget_limit",
+              "parameter": "budget_limit",
+              "dimension": "currency",
+              "canonical_unit": "usd",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: budget limit in USD",
+              "schema_description": "The budget limit to set in USD",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "si_unit_conversion",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('unit_in', None)",
+              "schema_description": "Value to be converted.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            }
+          ],
+          "gt_rewritten": false
+        }
+      },
+      {
+        "name": "semantic_grounding_gate",
+        "passed": true,
+        "detail": "all provided required/optional final GT arguments have auditable provenance",
+        "metadata": {
+          "source_status": "PROJECT_SEMANTIC_GUARD",
+          "parameter_provenance": [
+            {
+              "turn_id": 0,
+              "call_id": 0,
+              "function": "ls",
+              "parameter": "a",
+              "required": false,
+              "provided": true,
+              "value": false,
+              "source_type": "SCHEMA_DEFAULT",
+              "source_path": "catalog.ls.parameters.properties.a.default",
+              "default_value": false
+            },
+            {
+              "turn_id": 0,
+              "call_id": 1,
+              "function": "wc",
+              "parameter": "file_name",
+              "required": true,
+              "provided": true,
+              "value": "deploy.py",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 0,
+                  "source_call": 0,
+                  "source_path": "result.current_directory_content[0]"
+                }
+              ]
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "parameter": "file_name",
+              "required": true,
+              "provided": true,
+              "value": "deploy.py",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 0,
+                  "source_call": 0,
+                  "source_path": "result.current_directory_content[0]"
+                }
+              ]
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "parameter": "pattern",
+              "required": true,
+              "provided": true,
+              "value": "def ",
+              "source_type": "USER_CONTEXT",
+              "source_turns": [
+                0
+              ],
+              "source_path": [
+                "turn[0].final_query"
+              ],
+              "match": "all scalar leaves explicitly mentioned"
+            },
+            {
+              "turn_id": 3,
+              "call_id": 0,
+              "function": "get_user_id",
+              "parameter": "user",
+              "required": true,
+              "provided": true,
+              "value": "Daniel",
+              "source_type": "USER_CONTEXT",
+              "source_turns": [
+                3
+              ],
+              "source_path": [
+                "turn[3].final_query"
+              ],
+              "match": "all scalar leaves explicitly mentioned"
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "receiver_id",
+              "required": true,
+              "provided": true,
+              "value": "USR004",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 3,
+                  "source_call": 0,
+                  "source_path": "result.user_id"
+                }
+              ]
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "message",
+              "required": true,
+              "provided": true,
+              "value": "File: deploy.py; Function: deploy; Lines: 1",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "source_path": "explicit_exact_template+successful_visible_results",
+              "source_calls": [
+                {
+                  "turn_id": 0,
+                  "call_id": 0
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 1
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 2
+                }
+              ],
+              "match": "exact template with supported observable transformations",
+              "exact_text_binding": {
+                "template": "File: {filename}; Function: {function}; Lines: {lines}",
+                "bindings": [
+                  {
+                    "slot": "filename",
+                    "value": "deploy.py",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 0,
+                        "path": "result.current_directory_content[0]",
+                        "start": 0,
+                        "end": 9,
+                        "observation_characters": 9,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  },
+                  {
+                    "slot": "function",
+                    "value": "deploy",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 2,
+                        "path": "result.matching_lines[0]",
+                        "start": 4,
+                        "end": 10,
+                        "observation_characters": 98,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  },
+                  {
+                    "slot": "lines",
+                    "value": "1",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 1,
+                        "path": "result.count",
+                        "start": 0,
+                        "end": 1,
+                        "observation_characters": 1,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "unsupported": [],
+          "semantic_outcome_counts": {
+            "HARD_ERROR": 0,
+            "DOMAIN_NEGATIVE": 0,
+            "SUCCESS": 7
+          }
+        }
+      },
+      {
+        "name": "missing_parameter_validity_gate",
+        "passed": true,
+        "detail": "required parameter is absent or ambiguous in policy-visible context and recovered explicitly",
+        "metadata": {
+          "source_status": "PROJECT_MISSING_PARAMETER_VALIDITY_GUARD",
+          "parameter": "user",
+          "target_value": "Daniel",
+          "affected_turn": 2,
+          "visible_context_definition": {
+            "user_queries_through_affected_turn": true,
+            "prior_assistant_calls": true,
+            "prior_successful_tool_observations": true,
+            "raw_environment_state": false
+          },
+          "compatible_visible_candidates": [],
+          "candidate_sources": [],
+          "uniquely_recoverable": false,
+          "ambiguity_count": 0,
+          "target_was_still_exposed": false,
+          "decision": "GENUINE_MISSING_PARAMETER",
+          "recovery_turn": 3,
+          "recovery_supplies_value": true
+        }
+      },
+      {
+        "name": "observation_entailment_gate",
+        "passed": true,
+        "detail": "all deterministically decidable observation-attributed claims are entailed",
+        "metadata": {
+          "source_status": "PROJECT_OBSERVATION_ENTAILMENT_GUARD",
+          "checks": [],
+          "failures": [],
+          "deferred_to_final_semantic_verifier": [],
+          "policy_visible_prior_observations_only": true,
+          "hidden_environment_state_used": false,
+          "embedding_or_similarity_threshold_used": false
+        }
+      },
+      {
+        "name": "relational_resolution_gate",
+        "passed": true,
+        "detail": "all recoverable relational GT selections are unique and correct",
+        "metadata": {
+          "source_status": "PROJECT_RELATIONAL_GUARD",
+          "checks": [],
+          "failures": [],
+          "arbitrary_tie_break_used": false,
+          "embedding_or_distance_threshold_used": false
+        }
+      },
+      {
+        "name": "query_contract_gate",
+        "passed": true,
+        "detail": "exact text, quoted search conditions and observable history contracts passed",
+        "metadata": {
+          "source_status": "PROJECT_QUERY_CONTRACT_GUARD",
+          "checks": [
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "message",
+              "mode": "EXACT_HISTORY_TEMPLATE",
+              "template": "File: {filename}; Function: {function}; Lines: {lines}",
+              "bindings": [
+                {
+                  "slot": "filename",
+                  "value": "deploy.py",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 0,
+                      "path": "result.current_directory_content[0]",
+                      "start": 0,
+                      "end": 9,
+                      "observation_characters": 9,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                },
+                {
+                  "slot": "function",
+                  "value": "deploy",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 2,
+                      "path": "result.matching_lines[0]",
+                      "start": 4,
+                      "end": 10,
+                      "observation_characters": 98,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                },
+                {
+                  "slot": "lines",
+                  "value": "1",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 1,
+                      "path": "result.count",
+                      "start": 0,
+                      "end": 1,
+                      "observation_characters": 1,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "failures": [],
+          "cross_turn_binding_count": 3,
+          "long_context_pairs": [],
+          "policy": {
+            "minimum_span_fraction": 0.5,
+            "minimum_late_fraction": 0.8,
+            "threshold_source": "PROJECT_POLICY_NOT_BFCL_OFFICIAL"
+          },
+          "text_argument_scope": {
+            "send_message": "message",
+            "echo": "content"
+          },
+          "has_audited_text_call": true,
+          "hidden_snapshot_used": false,
+          "training_reward_changed": false
+        }
+      },
+      {
+        "name": "final_query_semantic_gate",
+        "passed": true,
+        "detail": "Turn-by-turn Query/GT semantics: Turn 0 requests a nonhidden directory listing, the sole listed Python script's line count, and lines containing the exact literal pattern 'def ', including its trailing space. Its GT performs precisely these operations. The successful observations uniquely identify deploy.py, report 1 line, and provide a matching function-definition line. Turn 1 requests only workspace users; list_users supplies Alice, Bob, Catherine, and Daniel without selecting a recipient. Turn 2 lawfully has empty GT and no executed observations: the recipient preference remains genuinely missing from actor-visible history, and listing available users does not establish that preference. Turn 3 supplies Daniel for the first time, resolving the missing parameter and continuing the pending send request. get_user_id returns USR004, which grounds send_message's receiver_id. The requested extraction rules uniquely yield filename deploy.py, function deploy, and line count 1. The GT message 'File: deploy.py; Function: deploy; Lines: 1' preserves the exact template, punctuation, and spaces and is within 200 characters. The supplied send observation reports success. Turn 4 requests inspection and confirmation; view_messages_sent returns that exact message under USR004. Confirmation is deterministic answer presentation, not an additional tool effect. No GT argument depends on hidden narrative or state, no negative lookup supplies a dependency, and no requested tool effect is absent or unrequested effect added. The later claim that the message was just sent is supported by the supplied records.\nGLOBAL_COHERENCE: All turns serve one goal: prepare a script inventory, choose its workspace recipient, send it, and verify its presence in sent history. The scaffold alignment maps the Planner's four executable steps to final turns 0, 1, 3, and 4, preserving their promised effects and ordering. Turn 2 is a lawful missing-parameter insertion, not unrelated filler. Sending uses the earlier file observations, and verification uses the resolved recipient ID and exact sent text. The narrative agrees with the final queries and GT, and Daniel's selection is not prematurely disclosed.",
+        "metadata": {
+          "source_status": "PROJECT_SEMANTIC_GUARD",
+          "global_coherence_source_status": "PROJECT_SEMANTIC_GUARD/GLOBAL_COHERENCE",
+          "verdict": "accept",
+          "request_id": "codex-a0bafb43b25249d79191263038be245e"
+        }
+      },
+      {
+        "name": "action_minimality_gate",
+        "passed": true,
+        "detail": "every final GT call is direct, prerequisite, or a dependency producer",
+        "metadata": {
+          "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+          "calls": [
+            {
+              "turn_id": 0,
+              "call_id": 0,
+              "function": "ls",
+              "canonical_call": "ls(a=False)",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 1,
+                    "consumer_function": "wc"
+                  },
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 2,
+                    "consumer_function": "grep"
+                  },
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 1,
+              "function": "wc",
+              "canonical_call": "wc(file_name='deploy.py')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "canonical_call": "grep(file_name='deploy.py', pattern='def ')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 1,
+              "call_id": 0,
+              "function": "list_users",
+              "canonical_call": "list_users()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9
+                ],
+                "function_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "query_object_tokens": [
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "so",
+                  "users",
+                  "workspace"
+                ],
+                "matching_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "a",
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "send",
+                  "show",
+                  "so",
+                  "the",
+                  "to",
+                  "users",
+                  "workspace"
+                ],
+                "function_tokens": [
+                  "list",
+                  "users"
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 0,
+              "function": "get_user_id",
+              "canonical_call": "get_user_id(user='Daniel')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "canonical_call": "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  16
+                ],
+                "function_object_tokens": [
+                  "1",
+                  "deploy",
+                  "file",
+                  "lines",
+                  "message",
+                  "py",
+                  "receiver",
+                  "sent",
+                  "status",
+                  "usr004"
+                ],
+                "query_object_tokens": [
+                  "10",
+                  "200",
+                  "account",
+                  "active",
+                  "after",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "format",
+                  "i",
+                  "immediately",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "them",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "matching_object_tokens": [
+                  "file",
+                  "lines",
+                  "message",
+                  "py"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "10",
+                  "200",
+                  "a",
+                  "account",
+                  "active",
+                  "after",
+                  "and",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "for",
+                  "format",
+                  "from",
+                  "function",
+                  "i",
+                  "immediately",
+                  "in",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "look",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "name",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "of",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "send",
+                  "set",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "the",
+                  "them",
+                  "to",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "function_tokens": [
+                  "message",
+                  "send"
+                ]
+              }
+            },
+            {
+              "turn_id": 4,
+              "call_id": 0,
+              "function": "view_messages_sent",
+              "canonical_call": "view_messages_sent()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9,
+                  16
+                ],
+                "function_object_tokens": [
+                  "historical",
+                  "message",
+                  "sent"
+                ],
+                "query_object_tokens": [
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "found",
+                  "him",
+                  "i",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "under",
+                  "you"
+                ],
+                "matching_object_tokens": [
+                  "message",
+                  "sent"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "and",
+                  "check",
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "for",
+                  "found",
+                  "him",
+                  "i",
+                  "id",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "the",
+                  "to",
+                  "under",
+                  "you"
+                ],
+                "function_tokens": [
+                  "message",
+                  "sent",
+                  "view"
+                ]
+              }
+            }
+          ],
+          "failures": [],
+          "allowed_classifications": [
+            "DIRECT_INTENT",
+            "REQUIRED_PREREQUISITE",
+            "DEPENDENCY_PRODUCER"
+          ],
+          "embedding_or_similarity_threshold_used": false,
+          "judge_override_allowed": false
+        }
+      },
+      {
+        "name": "fresh_vm_gate",
+        "passed": true,
+        "detail": "all final GT calls executed on a fresh instance",
+        "metadata": {
+          "environment_id": "bfcl-fresh_final_reverify-f9644eaf2ea94783abae0f2687e6f910",
+          "synthesis_environment_id": "bfcl-synthesis_attempt_1-d13a670bb92045e4814782ab834eb4c5",
+          "executed_call_count": 7
+        }
+      },
+      {
+        "name": "tool_availability_gate",
+        "passed": true,
+        "detail": "every final GT call is available in its turn",
+        "metadata": {
+          "trace": [
+            {
+              "turn_id": 0,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "ls",
+                "wc",
+                "grep"
+              ]
+            },
+            {
+              "turn_id": 1,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "list_users"
+              ]
+            },
+            {
+              "turn_id": 2,
+              "restored": [],
+              "available_count": 28,
+              "calls": []
+            },
+            {
+              "turn_id": 3,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "get_user_id",
+                "send_message"
+              ]
+            },
+            {
+              "turn_id": 4,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "view_messages_sent"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "parameter_complexity_gate",
+        "passed": true,
+        "detail": "recursive list/tuple and string limits satisfied",
+        "metadata": {
+          "checked_call_count": 7,
+          "interpretation": "recursive conservative engineering interpretation"
+        }
+      }
+    ],
+    "quality_judge": {
+      "reason": "Accept. The queries and GT align: turn 1 lists nonhidden entries, counts the sole Python script's lines using the default line-count mode, and searches for the exact literal pattern \"def \", including its trailing space. Turn 2 lists workspace users without choosing a recipient.\n\nTurn 3 genuinely lacks the recipient choice: the earlier user list supplies several names but does not establish whom the user wants. Its empty GT correctly withholds execution. Turn 4 explicitly selects Daniel, resolves his ID to USR004, and sends exactly one message using the active account. The planner alignment correctly accounts for the inserted missing-parameter turn while preserving operation order.\n\nThe message extraction is precise and supported by visible observations: filename is deploy.py, function is deploy, and line count is 1. The resulting text, \"File: deploy.py; Function: deploy; Lines: 1\", exactly preserves the requested labels, punctuation, and spaces and is within 200 characters. Turn 5 returns that exact message under USR004, supporting the requested confirmation without another tool call.\n\nAll executable calls use available tools and valid arguments. The supplied successful execution records and state changes support coherent progression and the requested send effect. The queries contain no forbidden procedural phrases or explicit tool-interface leakage; source syntax, filenames, and message-format labels are task data. The precise formatting instructions have a practical purpose.\n\nFor audit, send_message returns result.message_id as {\"new_id\":67410}, although its declared type is integer. This frozen-return discrepancy remains visible but does not justify rejection: sending succeeds, and no downstream operation assumes the declared integer shape. The sample is not an LC case.",
+      "decision": "accept",
+      "fail_reason": ""
+    },
+    "candidate_schema": "passed",
+    "training_validator": "passed"
+  },
+  "generation_metadata": {
+    "source_seed_id": "multi_turn_miss_param_33",
+    "source_epoch": 0,
+    "source_global_step": 0,
+    "generated_epoch": 0,
+    "data_type": "multi_turn_miss_param",
+    "latent_narrative": "The user wants to send a compact inventory of the current directory's sole visible Python script to a workspace colleague. In turn 1, list the directory without hidden entries, count that script's lines, and find its function definition using the literal pattern \"def \". In turn 2, list workspace users without selecting or recommending a recipient. In turn 3, the user explicitly chooses Daniel for the first time and requests one message after resolving his user ID. Use exactly this message format: File: {filename}; Function: {function}; Lines: {lines}. Set filename to the exact sole nonhidden name ending in .py returned by the directory listing. Set function to the trimmed substring immediately after the first occurrence of \"def \" and before the following opening parenthesis in the first returned matching line containing that pattern. Set lines to the base-10 line count returned by the earlier count operation, with no padding. Preserve the literal labels, punctuation, and spaces, and keep the message within 200 characters. In turn 4, inspect sent messages and confirm that this exact message appears under the recipient ID resolved in turn 3. Use the existing active messaging account.",
+    "generator_backend": "codex_cli",
+    "generator_model": "",
+    "rods_arxiv_version": "2606.19047v1",
+    "pipeline_attempt_count": 1,
+    "planner_calls": 1,
+    "failure_history": [],
+    "blocklist_history": [],
+    "config_patch_history": [],
+    "deterministic_gate_results": [
+      {
+        "name": "category_validity_gate",
+        "passed": true,
+        "detail": "category protocol and measured exposure passed",
+        "metadata": {
+          "data_type": "multi_turn_miss_param",
+          "final_turn_count": 5
+        }
+      },
+      {
+        "name": "unit_semantic_gate",
+        "passed": true,
+        "detail": "all explicit unit-bearing GT quantities are compatible with audited contracts",
+        "metadata": {
+          "source_status": "PROJECT_UNIT_SEMANTIC_GUARD",
+          "checks": [],
+          "failures": [],
+          "catalog_audit": [
+            {
+              "function": "adjustClimateControl",
+              "parameter": "temperature",
+              "dimension": "temperature",
+              "canonical_unit": "celsius",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema argument unit; explicit unit argument='celsius'",
+              "schema_description": "The temperature to set in degree. Default to be celsius.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "compute_exchange_rate",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('base_currency', None)",
+              "schema_description": "The value to convert",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "estimate_drive_feasibility_by_mileage",
+              "parameter": "distance",
+              "dimension": "distance",
+              "canonical_unit": "mile",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: distance to travel in miles",
+              "schema_description": "The distance to travel in miles.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "fillFuelTank",
+              "parameter": "fuelAmount",
+              "dimension": "volume",
+              "canonical_unit": "gallon",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: amount of fuel to fill in gallons",
+              "schema_description": "The amount of fuel to fill in gallons; this is the additional fuel to add to the tank.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "gallon_to_liter",
+              "parameter": "gallon",
+              "dimension": "volume",
+              "canonical_unit": "gallon",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema/public implementation: amount of gallon",
+              "schema_description": "The amount of gallon to convert.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "imperial_si_conversion",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('unit_in', None)",
+              "schema_description": "Value to be converted.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "liter_to_gallon",
+              "parameter": "liter",
+              "dimension": "volume",
+              "canonical_unit": "liter",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema/public implementation: amount of liter",
+              "schema_description": "The amount of liter to convert.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "notify_price_change",
+              "parameter": "threshold",
+              "dimension": "ratio",
+              "canonical_unit": "percent",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: percentage change threshold",
+              "schema_description": "Percentage change threshold to trigger a notification. ",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "setCruiseControl",
+              "parameter": "speed",
+              "dimension": "UNIT_UNKNOWN",
+              "canonical_unit": "UNIT_UNKNOWN",
+              "status": "UNIT_UNKNOWN",
+              "evidence": "schema token 'm/h' is ambiguous; no unit guessed",
+              "schema_description": "The speed to set in m/h. The speed should be between 0 and 120 and a multiple of 5.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "setCruiseControl",
+              "parameter": "distanceToNextVehicle",
+              "dimension": "distance",
+              "canonical_unit": "meter",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: distance to the next vehicle in meters",
+              "schema_description": "The distance to the next vehicle in meters.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "set_budget_limit",
+              "parameter": "budget_limit",
+              "dimension": "currency",
+              "canonical_unit": "usd",
+              "status": "AUDITED_STATIC",
+              "evidence": "schema: budget limit in USD",
+              "schema_description": "The budget limit to set in USD",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            },
+            {
+              "function": "si_unit_conversion",
+              "parameter": "value",
+              "dimension": "DYNAMIC",
+              "canonical_unit": "DYNAMIC_FROM_SCHEMA_ARGUMENT",
+              "status": "AUDITED_DYNAMIC",
+              "evidence": "('unit_in', None)",
+              "schema_description": "Value to be converted.",
+              "source_status": "PROJECT_UNIT_SEMANTIC_GUARD"
+            }
+          ],
+          "gt_rewritten": false
+        }
+      },
+      {
+        "name": "semantic_grounding_gate",
+        "passed": true,
+        "detail": "all provided required/optional final GT arguments have auditable provenance",
+        "metadata": {
+          "source_status": "PROJECT_SEMANTIC_GUARD",
+          "parameter_provenance": [
+            {
+              "turn_id": 0,
+              "call_id": 0,
+              "function": "ls",
+              "parameter": "a",
+              "required": false,
+              "provided": true,
+              "value": false,
+              "source_type": "SCHEMA_DEFAULT",
+              "source_path": "catalog.ls.parameters.properties.a.default",
+              "default_value": false
+            },
+            {
+              "turn_id": 0,
+              "call_id": 1,
+              "function": "wc",
+              "parameter": "file_name",
+              "required": true,
+              "provided": true,
+              "value": "deploy.py",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 0,
+                  "source_call": 0,
+                  "source_path": "result.current_directory_content[0]"
+                }
+              ]
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "parameter": "file_name",
+              "required": true,
+              "provided": true,
+              "value": "deploy.py",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 0,
+                  "source_call": 0,
+                  "source_path": "result.current_directory_content[0]"
+                }
+              ]
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "parameter": "pattern",
+              "required": true,
+              "provided": true,
+              "value": "def ",
+              "source_type": "USER_CONTEXT",
+              "source_turns": [
+                0
+              ],
+              "source_path": [
+                "turn[0].final_query"
+              ],
+              "match": "all scalar leaves explicitly mentioned"
+            },
+            {
+              "turn_id": 3,
+              "call_id": 0,
+              "function": "get_user_id",
+              "parameter": "user",
+              "required": true,
+              "provided": true,
+              "value": "Daniel",
+              "source_type": "USER_CONTEXT",
+              "source_turns": [
+                3
+              ],
+              "source_path": [
+                "turn[3].final_query"
+              ],
+              "match": "all scalar leaves explicitly mentioned"
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "receiver_id",
+              "required": true,
+              "provided": true,
+              "value": "USR004",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "leaf_sources": [
+                {
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_turn": 3,
+                  "source_call": 0,
+                  "source_path": "result.user_id"
+                }
+              ]
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "message",
+              "required": true,
+              "provided": true,
+              "value": "File: deploy.py; Function: deploy; Lines: 1",
+              "source_type": "PRIOR_TOOL_OUTPUT",
+              "source_path": "explicit_exact_template+successful_visible_results",
+              "source_calls": [
+                {
+                  "turn_id": 0,
+                  "call_id": 0
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 1
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 2
+                }
+              ],
+              "match": "exact template with supported observable transformations",
+              "exact_text_binding": {
+                "template": "File: {filename}; Function: {function}; Lines: {lines}",
+                "bindings": [
+                  {
+                    "slot": "filename",
+                    "value": "deploy.py",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 0,
+                        "path": "result.current_directory_content[0]",
+                        "start": 0,
+                        "end": 9,
+                        "observation_characters": 9,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  },
+                  {
+                    "slot": "function",
+                    "value": "deploy",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 2,
+                        "path": "result.matching_lines[0]",
+                        "start": 4,
+                        "end": 10,
+                        "observation_characters": 98,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  },
+                  {
+                    "slot": "lines",
+                    "value": "1",
+                    "sources": [
+                      {
+                        "turn_id": 0,
+                        "call_id": 1,
+                        "path": "result.count",
+                        "start": 0,
+                        "end": 1,
+                        "observation_characters": 1,
+                        "value_transform": "EXACT_VISIBLE_TEXT",
+                        "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "unsupported": [],
+          "semantic_outcome_counts": {
+            "HARD_ERROR": 0,
+            "DOMAIN_NEGATIVE": 0,
+            "SUCCESS": 7
+          }
+        }
+      },
+      {
+        "name": "missing_parameter_validity_gate",
+        "passed": true,
+        "detail": "required parameter is absent or ambiguous in policy-visible context and recovered explicitly",
+        "metadata": {
+          "source_status": "PROJECT_MISSING_PARAMETER_VALIDITY_GUARD",
+          "parameter": "user",
+          "target_value": "Daniel",
+          "affected_turn": 2,
+          "visible_context_definition": {
+            "user_queries_through_affected_turn": true,
+            "prior_assistant_calls": true,
+            "prior_successful_tool_observations": true,
+            "raw_environment_state": false
+          },
+          "compatible_visible_candidates": [],
+          "candidate_sources": [],
+          "uniquely_recoverable": false,
+          "ambiguity_count": 0,
+          "target_was_still_exposed": false,
+          "decision": "GENUINE_MISSING_PARAMETER",
+          "recovery_turn": 3,
+          "recovery_supplies_value": true
+        }
+      },
+      {
+        "name": "observation_entailment_gate",
+        "passed": true,
+        "detail": "all deterministically decidable observation-attributed claims are entailed",
+        "metadata": {
+          "source_status": "PROJECT_OBSERVATION_ENTAILMENT_GUARD",
+          "checks": [],
+          "failures": [],
+          "deferred_to_final_semantic_verifier": [],
+          "policy_visible_prior_observations_only": true,
+          "hidden_environment_state_used": false,
+          "embedding_or_similarity_threshold_used": false
+        }
+      },
+      {
+        "name": "relational_resolution_gate",
+        "passed": true,
+        "detail": "all recoverable relational GT selections are unique and correct",
+        "metadata": {
+          "source_status": "PROJECT_RELATIONAL_GUARD",
+          "checks": [],
+          "failures": [],
+          "arbitrary_tie_break_used": false,
+          "embedding_or_distance_threshold_used": false
+        }
+      },
+      {
+        "name": "query_contract_gate",
+        "passed": true,
+        "detail": "exact text, quoted search conditions and observable history contracts passed",
+        "metadata": {
+          "source_status": "PROJECT_QUERY_CONTRACT_GUARD",
+          "checks": [
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "parameter": "message",
+              "mode": "EXACT_HISTORY_TEMPLATE",
+              "template": "File: {filename}; Function: {function}; Lines: {lines}",
+              "bindings": [
+                {
+                  "slot": "filename",
+                  "value": "deploy.py",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 0,
+                      "path": "result.current_directory_content[0]",
+                      "start": 0,
+                      "end": 9,
+                      "observation_characters": 9,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                },
+                {
+                  "slot": "function",
+                  "value": "deploy",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 2,
+                      "path": "result.matching_lines[0]",
+                      "start": 4,
+                      "end": 10,
+                      "observation_characters": 98,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                },
+                {
+                  "slot": "lines",
+                  "value": "1",
+                  "sources": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 1,
+                      "path": "result.count",
+                      "start": 0,
+                      "end": 1,
+                      "observation_characters": 1,
+                      "value_transform": "EXACT_VISIBLE_TEXT",
+                      "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "failures": [],
+          "cross_turn_binding_count": 3,
+          "long_context_pairs": [],
+          "policy": {
+            "minimum_span_fraction": 0.5,
+            "minimum_late_fraction": 0.8,
+            "threshold_source": "PROJECT_POLICY_NOT_BFCL_OFFICIAL"
+          },
+          "text_argument_scope": {
+            "send_message": "message",
+            "echo": "content"
+          },
+          "has_audited_text_call": true,
+          "hidden_snapshot_used": false,
+          "training_reward_changed": false
+        }
+      },
+      {
+        "name": "final_query_semantic_gate",
+        "passed": true,
+        "detail": "Turn-by-turn Query/GT semantics: Turn 0 requests a nonhidden directory listing, the sole listed Python script's line count, and lines containing the exact literal pattern 'def ', including its trailing space. Its GT performs precisely these operations. The successful observations uniquely identify deploy.py, report 1 line, and provide a matching function-definition line. Turn 1 requests only workspace users; list_users supplies Alice, Bob, Catherine, and Daniel without selecting a recipient. Turn 2 lawfully has empty GT and no executed observations: the recipient preference remains genuinely missing from actor-visible history, and listing available users does not establish that preference. Turn 3 supplies Daniel for the first time, resolving the missing parameter and continuing the pending send request. get_user_id returns USR004, which grounds send_message's receiver_id. The requested extraction rules uniquely yield filename deploy.py, function deploy, and line count 1. The GT message 'File: deploy.py; Function: deploy; Lines: 1' preserves the exact template, punctuation, and spaces and is within 200 characters. The supplied send observation reports success. Turn 4 requests inspection and confirmation; view_messages_sent returns that exact message under USR004. Confirmation is deterministic answer presentation, not an additional tool effect. No GT argument depends on hidden narrative or state, no negative lookup supplies a dependency, and no requested tool effect is absent or unrequested effect added. The later claim that the message was just sent is supported by the supplied records.\nGLOBAL_COHERENCE: All turns serve one goal: prepare a script inventory, choose its workspace recipient, send it, and verify its presence in sent history. The scaffold alignment maps the Planner's four executable steps to final turns 0, 1, 3, and 4, preserving their promised effects and ordering. Turn 2 is a lawful missing-parameter insertion, not unrelated filler. Sending uses the earlier file observations, and verification uses the resolved recipient ID and exact sent text. The narrative agrees with the final queries and GT, and Daniel's selection is not prematurely disclosed.",
+        "metadata": {
+          "source_status": "PROJECT_SEMANTIC_GUARD",
+          "global_coherence_source_status": "PROJECT_SEMANTIC_GUARD/GLOBAL_COHERENCE",
+          "verdict": "accept",
+          "request_id": "codex-a0bafb43b25249d79191263038be245e"
+        }
+      },
+      {
+        "name": "action_minimality_gate",
+        "passed": true,
+        "detail": "every final GT call is direct, prerequisite, or a dependency producer",
+        "metadata": {
+          "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+          "calls": [
+            {
+              "turn_id": 0,
+              "call_id": 0,
+              "function": "ls",
+              "canonical_call": "ls(a=False)",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 1,
+                    "consumer_function": "wc"
+                  },
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 2,
+                    "consumer_function": "grep"
+                  },
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 1,
+              "function": "wc",
+              "canonical_call": "wc(file_name='deploy.py')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "canonical_call": "grep(file_name='deploy.py', pattern='def ')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 1,
+              "call_id": 0,
+              "function": "list_users",
+              "canonical_call": "list_users()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9
+                ],
+                "function_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "query_object_tokens": [
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "so",
+                  "users",
+                  "workspace"
+                ],
+                "matching_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "a",
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "send",
+                  "show",
+                  "so",
+                  "the",
+                  "to",
+                  "users",
+                  "workspace"
+                ],
+                "function_tokens": [
+                  "list",
+                  "users"
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 0,
+              "function": "get_user_id",
+              "canonical_call": "get_user_id(user='Daniel')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "canonical_call": "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  16
+                ],
+                "function_object_tokens": [
+                  "1",
+                  "deploy",
+                  "file",
+                  "lines",
+                  "message",
+                  "py",
+                  "receiver",
+                  "sent",
+                  "status",
+                  "usr004"
+                ],
+                "query_object_tokens": [
+                  "10",
+                  "200",
+                  "account",
+                  "active",
+                  "after",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "format",
+                  "i",
+                  "immediately",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "them",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "matching_object_tokens": [
+                  "file",
+                  "lines",
+                  "message",
+                  "py"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "10",
+                  "200",
+                  "a",
+                  "account",
+                  "active",
+                  "after",
+                  "and",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "for",
+                  "format",
+                  "from",
+                  "function",
+                  "i",
+                  "immediately",
+                  "in",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "look",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "name",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "of",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "send",
+                  "set",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "the",
+                  "them",
+                  "to",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "function_tokens": [
+                  "message",
+                  "send"
+                ]
+              }
+            },
+            {
+              "turn_id": 4,
+              "call_id": 0,
+              "function": "view_messages_sent",
+              "canonical_call": "view_messages_sent()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9,
+                  16
+                ],
+                "function_object_tokens": [
+                  "historical",
+                  "message",
+                  "sent"
+                ],
+                "query_object_tokens": [
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "found",
+                  "him",
+                  "i",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "under",
+                  "you"
+                ],
+                "matching_object_tokens": [
+                  "message",
+                  "sent"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "and",
+                  "check",
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "for",
+                  "found",
+                  "him",
+                  "i",
+                  "id",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "the",
+                  "to",
+                  "under",
+                  "you"
+                ],
+                "function_tokens": [
+                  "message",
+                  "sent",
+                  "view"
+                ]
+              }
+            }
+          ],
+          "failures": [],
+          "allowed_classifications": [
+            "DIRECT_INTENT",
+            "REQUIRED_PREREQUISITE",
+            "DEPENDENCY_PRODUCER"
+          ],
+          "embedding_or_similarity_threshold_used": false,
+          "judge_override_allowed": false
+        }
+      },
+      {
+        "name": "fresh_vm_gate",
+        "passed": true,
+        "detail": "all final GT calls executed on a fresh instance",
+        "metadata": {
+          "environment_id": "bfcl-fresh_final_reverify-f9644eaf2ea94783abae0f2687e6f910",
+          "synthesis_environment_id": "bfcl-synthesis_attempt_1-d13a670bb92045e4814782ab834eb4c5",
+          "executed_call_count": 7
+        }
+      },
+      {
+        "name": "tool_availability_gate",
+        "passed": true,
+        "detail": "every final GT call is available in its turn",
+        "metadata": {
+          "trace": [
+            {
+              "turn_id": 0,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "ls",
+                "wc",
+                "grep"
+              ]
+            },
+            {
+              "turn_id": 1,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "list_users"
+              ]
+            },
+            {
+              "turn_id": 2,
+              "restored": [],
+              "available_count": 28,
+              "calls": []
+            },
+            {
+              "turn_id": 3,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "get_user_id",
+                "send_message"
+              ]
+            },
+            {
+              "turn_id": 4,
+              "restored": [],
+              "available_count": 28,
+              "calls": [
+                "view_messages_sent"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "parameter_complexity_gate",
+        "passed": true,
+        "detail": "recursive list/tuple and string limits satisfied",
+        "metadata": {
+          "checked_call_count": 7,
+          "interpretation": "recursive conservative engineering interpretation"
+        }
+      }
+    ],
+    "judge_result": {
+      "reason": "Accept. The queries and GT align: turn 1 lists nonhidden entries, counts the sole Python script's lines using the default line-count mode, and searches for the exact literal pattern \"def \", including its trailing space. Turn 2 lists workspace users without choosing a recipient.\n\nTurn 3 genuinely lacks the recipient choice: the earlier user list supplies several names but does not establish whom the user wants. Its empty GT correctly withholds execution. Turn 4 explicitly selects Daniel, resolves his ID to USR004, and sends exactly one message using the active account. The planner alignment correctly accounts for the inserted missing-parameter turn while preserving operation order.\n\nThe message extraction is precise and supported by visible observations: filename is deploy.py, function is deploy, and line count is 1. The resulting text, \"File: deploy.py; Function: deploy; Lines: 1\", exactly preserves the requested labels, punctuation, and spaces and is within 200 characters. Turn 5 returns that exact message under USR004, supporting the requested confirmation without another tool call.\n\nAll executable calls use available tools and valid arguments. The supplied successful execution records and state changes support coherent progression and the requested send effect. The queries contain no forbidden procedural phrases or explicit tool-interface leakage; source syntax, filenames, and message-format labels are task data. The precise formatting instructions have a practical purpose.\n\nFor audit, send_message returns result.message_id as {\"new_id\":67410}, although its declared type is integer. This frozen-return discrepancy remains visible but does not justify rejection: sending succeeds, and no downstream operation assumes the declared integer shape. The sample is not an LC case.",
+      "decision": "accept",
+      "fail_reason": ""
+    },
+    "refinement_used": false,
+    "refinement_metadata": {},
+    "reconstruction_components_used": [
+      "argument_complexity_contract",
+      "category_validity_guard",
+      "codex_cli_backend",
+      "codex_quota_deferral",
+      "deep_merge",
+      "exact_content_novelty_guard",
+      "exact_history_text_prompt",
+      "execution_result_semantics",
+      "filesystem_queue_and_recovery",
+      "final_query_semantic_guard",
+      "function_sampling",
+      "gemma4_backend",
+      "grounded_response_presentation",
+      "high_level_decomposition_interface",
+      "long_context_query_history",
+      "missing_function_transform",
+      "missing_parameter_transform",
+      "parameter_generation",
+      "per_class_query_prompt_bodies",
+      "per_turn_execution_evidence",
+      "planner_category_contract",
+      "planner_input_contract",
+      "planner_parser_and_orchestration",
+      "planner_prompt",
+      "planner_scaffold_execution_mapping",
+      "quality_evidence_contract",
+      "quality_review_interpretation",
+      "query_contract_guard",
+      "query_generation",
+      "query_verification",
+      "recovery_execution_trace",
+      "semantic_grounding_guard",
+      "structural_alignment_diagnostics",
+      "supported_observation_transformations",
+      "terminal_result_commit_protocol",
+      "vm_response_contract_diagnostics"
+    ],
+    "structural_profile": {
+      "num_user_turns": 5,
+      "gt_call_count_per_turn": [
+        3,
+        1,
+        2,
+        2,
+        1
+      ],
+      "tool_classes_per_turn": [
+        [
+          "GorillaFileSystem"
+        ],
+        [
+          "MessageAPI"
+        ],
+        [
+          "MessageAPI"
+        ],
+        [
+          "MessageAPI"
+        ],
+        [
+          "MessageAPI"
+        ]
+      ],
+      "class_sequence": [
+        "GorillaFileSystem",
+        "MessageAPI",
+        "MessageAPI",
+        "MessageAPI",
+        "MessageAPI"
+      ],
+      "state_changes": [
+        {
+          "turn_id": 0,
+          "call_id": 0,
+          "changed": false
+        },
+        {
+          "turn_id": 0,
+          "call_id": 1,
+          "changed": false
+        },
+        {
+          "turn_id": 0,
+          "call_id": 2,
+          "changed": false
+        },
+        {
+          "turn_id": 1,
+          "call_id": 0,
+          "changed": false
+        },
+        {
+          "turn_id": 3,
+          "call_id": 0,
+          "changed": false
+        },
+        {
+          "turn_id": 3,
+          "call_id": 1,
+          "changed": true
+        },
+        {
+          "turn_id": 4,
+          "call_id": 0,
+          "changed": false
+        }
+      ],
+      "state_chain_edges": [
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 0,
+            "call_id": 1
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 1
+          },
+          "to": {
+            "turn_id": 0,
+            "call_id": 2
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 2
+          },
+          "to": {
+            "turn_id": 1,
+            "call_id": 0
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        },
+        {
+          "from": {
+            "turn_id": 1,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 0
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        },
+        {
+          "from": {
+            "turn_id": 3,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        },
+        {
+          "from": {
+            "turn_id": 3,
+            "call_id": 1
+          },
+          "to": {
+            "turn_id": 4,
+            "call_id": 0
+          },
+          "relation": "exact_post_state_to_next_pre_state"
+        }
+      ],
+      "explicit_dependency_edges": [
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 0,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 0,
+            "call_id": 2
+          }
+        },
+        {
+          "from": {
+            "turn_id": 3,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 1
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 2
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        }
+      ],
+      "recoverable_dependency_depth": 3,
+      "cross_turn_dependencies": [
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 0
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 1
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        },
+        {
+          "from": {
+            "turn_id": 0,
+            "call_id": 2
+          },
+          "to": {
+            "turn_id": 3,
+            "call_id": 1
+          }
+        }
+      ],
+      "used_for_acceptance": false,
+      "seed_profile": {
+        "num_user_turns": 6,
+        "gt_call_count_per_turn": [
+          1,
+          1,
+          1,
+          0,
+          1,
+          1
+        ],
+        "tool_classes_per_turn": [
+          [
+            "GorillaFileSystem"
+          ],
+          [
+            "GorillaFileSystem"
+          ],
+          [
+            "GorillaFileSystem"
+          ],
+          [],
+          [
+            "MessageAPI"
+          ],
+          [
+            "MessageAPI"
+          ]
+        ],
+        "class_sequence": [
+          [
+            "GorillaFileSystem"
+          ],
+          [
+            "GorillaFileSystem"
+          ],
+          [
+            "GorillaFileSystem"
+          ],
+          [],
+          [
+            "MessageAPI"
+          ],
+          [
+            "MessageAPI"
+          ]
+        ],
+        "explicit_nested_dependency_edges": [],
+        "recoverable_nested_dependency_depth": 1,
+        "unparseable_gt_call_count": 0,
+        "cross_turn_dependencies": {
+          "status": "NOT_RECOVERABLE",
+          "reason": "Seed contract has calls and questions but no deterministic execution dependency trace; shared literals are not treated as causal evidence."
+        },
+        "state_changes": {
+          "status": "NOT_RECOVERABLE",
+          "reason": "Seed contract contains initial state but no per-call pre/post snapshots."
+        },
+        "used_for_acceptance": false
+      },
+      "alignment_diagnostics": {
+        "turn_count_equal": false,
+        "per_turn_call_count_delta_draft_minus_seed": [
+          2,
+          0,
+          1,
+          2,
+          0,
+          null
+        ],
+        "class_sequence_relation": "DIFFERENT_OR_REORDERED",
+        "recoverable_dependency_depth_delta": 2,
+        "used_for_acceptance": false,
+        "acceptance_threshold": "NOT_DEFINED_BY_PUBLIC_RODS_SOURCES"
+      },
+      "alignment_mechanism": "Project task-only Planner v2; deterministic profile is diagnostics only",
+      "adversarial": {
+        "kind": "missing_parameter",
+        "affected_turn": 2,
+        "recovery_turn": 3,
+        "missing_parameter": "user",
+        "source_status": "RECONSTRUCTED_FROM_RODS_SPEC",
+        "missing_parameter_validity": {
+          "source_status": "PROJECT_MISSING_PARAMETER_VALIDITY_GUARD",
+          "parameter": "user",
+          "target_value": "Daniel",
+          "affected_turn": 2,
+          "visible_context_definition": {
+            "user_queries_through_affected_turn": true,
+            "prior_assistant_calls": true,
+            "prior_successful_tool_observations": true,
+            "raw_environment_state": false
+          },
+          "compatible_visible_candidates": [],
+          "candidate_sources": [],
+          "uniquely_recoverable": false,
+          "ambiguity_count": 0,
+          "target_was_still_exposed": false,
+          "decision": "GENUINE_MISSING_PARAMETER"
+        }
+      },
+      "project_semantic_guards": {
+        "observation_entailment": {
+          "source_status": "PROJECT_OBSERVATION_ENTAILMENT_GUARD",
+          "checks": [],
+          "failures": [],
+          "deferred_to_final_semantic_verifier": [],
+          "policy_visible_prior_observations_only": true,
+          "hidden_environment_state_used": false,
+          "embedding_or_similarity_threshold_used": false
+        },
+        "action_minimality": {
+          "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+          "calls": [
+            {
+              "turn_id": 0,
+              "call_id": 0,
+              "function": "ls",
+              "canonical_call": "ls(a=False)",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 1,
+                    "consumer_function": "wc"
+                  },
+                  {
+                    "consumer_turn": 0,
+                    "consumer_call": 2,
+                    "consumer_function": "grep"
+                  },
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 1,
+              "function": "wc",
+              "canonical_call": "wc(file_name='deploy.py')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 0,
+              "call_id": 2,
+              "function": "grep",
+              "canonical_call": "grep(file_name='deploy.py', pattern='def ')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 1,
+              "call_id": 0,
+              "function": "list_users",
+              "canonical_call": "list_users()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9
+                ],
+                "function_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "query_object_tokens": [
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "so",
+                  "users",
+                  "workspace"
+                ],
+                "matching_object_tokens": [
+                  "users",
+                  "workspace"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "a",
+                  "can",
+                  "choose",
+                  "colleague",
+                  "i",
+                  "inventory",
+                  "me",
+                  "script",
+                  "send",
+                  "show",
+                  "so",
+                  "the",
+                  "to",
+                  "users",
+                  "workspace"
+                ],
+                "function_tokens": [
+                  "list",
+                  "users"
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 0,
+              "function": "get_user_id",
+              "canonical_call": "get_user_id(user='Daniel')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DEPENDENCY_PRODUCER",
+              "evidence": {
+                "consumers": [
+                  {
+                    "consumer_turn": 3,
+                    "consumer_call": 1,
+                    "consumer_function": "send_message"
+                  }
+                ]
+              }
+            },
+            {
+              "turn_id": 3,
+              "call_id": 1,
+              "function": "send_message",
+              "canonical_call": "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  16
+                ],
+                "function_object_tokens": [
+                  "1",
+                  "deploy",
+                  "file",
+                  "lines",
+                  "message",
+                  "py",
+                  "receiver",
+                  "sent",
+                  "status",
+                  "usr004"
+                ],
+                "query_object_tokens": [
+                  "10",
+                  "200",
+                  "account",
+                  "active",
+                  "after",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "format",
+                  "i",
+                  "immediately",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "them",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "matching_object_tokens": [
+                  "file",
+                  "lines",
+                  "message",
+                  "py"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "10",
+                  "200",
+                  "a",
+                  "account",
+                  "active",
+                  "after",
+                  "and",
+                  "as",
+                  "base",
+                  "before",
+                  "characters",
+                  "choose",
+                  "colleague",
+                  "containing",
+                  "count",
+                  "daniel",
+                  "def",
+                  "directory",
+                  "earlier",
+                  "ending",
+                  "exact",
+                  "exactly",
+                  "file",
+                  "filename",
+                  "first",
+                  "following",
+                  "for",
+                  "format",
+                  "from",
+                  "function",
+                  "i",
+                  "immediately",
+                  "in",
+                  "inventory",
+                  "keep",
+                  "labels",
+                  "line",
+                  "lines",
+                  "listing",
+                  "literal",
+                  "look",
+                  "matching",
+                  "message",
+                  "messaging",
+                  "my",
+                  "name",
+                  "nonhidden",
+                  "number",
+                  "occurrence",
+                  "of",
+                  "one",
+                  "opening",
+                  "padding",
+                  "parenthesis",
+                  "preserve",
+                  "punctuation",
+                  "py",
+                  "returned",
+                  "script",
+                  "send",
+                  "set",
+                  "sole",
+                  "spaces",
+                  "substring",
+                  "that",
+                  "the",
+                  "them",
+                  "to",
+                  "trimmed",
+                  "up",
+                  "use",
+                  "want",
+                  "within",
+                  "without"
+                ],
+                "function_tokens": [
+                  "message",
+                  "send"
+                ]
+              }
+            },
+            {
+              "turn_id": 4,
+              "call_id": 0,
+              "function": "view_messages_sent",
+              "canonical_call": "view_messages_sent()",
+              "source_status": "PROJECT_ACTION_MINIMALITY_GUARD",
+              "classification": "DIRECT_INTENT",
+              "evidence": {
+                "rule": "deterministic operation-group and object-concept intersection",
+                "matching_operation_groups": [
+                  9,
+                  16
+                ],
+                "function_object_tokens": [
+                  "historical",
+                  "message",
+                  "sent"
+                ],
+                "query_object_tokens": [
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "found",
+                  "him",
+                  "i",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "under",
+                  "you"
+                ],
+                "matching_object_tokens": [
+                  "message",
+                  "sent"
+                ],
+                "object_match_optional": false,
+                "query_tokens": [
+                  "and",
+                  "check",
+                  "choose",
+                  "confirm",
+                  "daniel",
+                  "exact",
+                  "for",
+                  "found",
+                  "him",
+                  "i",
+                  "id",
+                  "inventory",
+                  "is",
+                  "just",
+                  "listed",
+                  "message",
+                  "my",
+                  "recipient",
+                  "sent",
+                  "that",
+                  "the",
+                  "to",
+                  "under",
+                  "you"
+                ],
+                "function_tokens": [
+                  "message",
+                  "sent",
+                  "view"
+                ]
+              }
+            }
+          ],
+          "failures": [],
+          "allowed_classifications": [
+            "DIRECT_INTENT",
+            "REQUIRED_PREREQUISITE",
+            "DEPENDENCY_PRODUCER"
+          ],
+          "embedding_or_similarity_threshold_used": false,
+          "judge_override_allowed": false
+        }
+      }
+    },
+    "execution_trace": [
+      {
+        "turn_id": 0,
+        "intentional_missing": false,
+        "missing_kind": null,
+        "records": [
+          {
+            "turn_id": 0,
+            "call_id": 0,
+            "call": {
+              "name": "ls",
+              "arguments": {
+                "a": false
+              },
+              "class_name": "GorillaFileSystem"
+            },
+            "canonical_call": "ls(a=False)",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "current_directory_content": [
+                "deploy.py"
+              ]
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": null,
+              "synthesis_turn_id": 0,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": [
+                {
+                  "turn_id": 0,
+                  "call_id": 0,
+                  "function": "ls",
+                  "parameter": "a",
+                  "required": false,
+                  "provided": true,
+                  "value": false,
+                  "source_type": "SCHEMA_DEFAULT",
+                  "source_path": "catalog.ls.parameters.properties.a.default",
+                  "default_value": false
+                }
+              ]
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          },
+          {
+            "turn_id": 0,
+            "call_id": 1,
+            "call": {
+              "name": "wc",
+              "arguments": {
+                "file_name": "deploy.py"
+              },
+              "class_name": "GorillaFileSystem"
+            },
+            "canonical_call": "wc(file_name='deploy.py')",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "count": 1,
+              "type": "lines"
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [
+                {
+                  "turn_id": 0,
+                  "call_id": 0
+                }
+              ],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 0,
+                "call_id": 0,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 0,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": [
+                {
+                  "turn_id": 0,
+                  "call_id": 1,
+                  "function": "wc",
+                  "parameter": "file_name",
+                  "required": true,
+                  "provided": true,
+                  "value": "deploy.py",
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "leaf_sources": [
+                    {
+                      "source_type": "PRIOR_TOOL_OUTPUT",
+                      "source_turn": 0,
+                      "source_call": 0,
+                      "source_path": "result.current_directory_content[0]"
+                    }
+                  ]
+                }
+              ]
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          },
+          {
+            "turn_id": 0,
+            "call_id": 2,
+            "call": {
+              "name": "grep",
+              "arguments": {
+                "file_name": "deploy.py",
+                "pattern": "def "
+              },
+              "class_name": "GorillaFileSystem"
+            },
+            "canonical_call": "grep(file_name='deploy.py', pattern='def ')",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "matching_lines": [
+                "def deploy():    # update the system    pass# update the database# update the server# final checks"
+              ]
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)",
+                "wc(file_name='deploy.py')"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [
+                {
+                  "turn_id": 0,
+                  "call_id": 0
+                }
+              ],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 0,
+                "call_id": 1,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 0,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": [
+                {
+                  "turn_id": 0,
+                  "call_id": 2,
+                  "function": "grep",
+                  "parameter": "file_name",
+                  "required": true,
+                  "provided": true,
+                  "value": "deploy.py",
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "leaf_sources": [
+                    {
+                      "source_type": "PRIOR_TOOL_OUTPUT",
+                      "source_turn": 0,
+                      "source_call": 0,
+                      "source_path": "result.current_directory_content[0]"
+                    }
+                  ]
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 2,
+                  "function": "grep",
+                  "parameter": "pattern",
+                  "required": true,
+                  "provided": true,
+                  "value": "def ",
+                  "source_type": "USER_CONTEXT",
+                  "source_turns": [
+                    0
+                  ],
+                  "source_path": [
+                    "turn[0].final_query"
+                  ],
+                  "match": "all scalar leaves explicitly mentioned"
+                }
+              ]
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          }
+        ]
+      },
+      {
+        "turn_id": 1,
+        "intentional_missing": false,
+        "missing_kind": null,
+        "records": [
+          {
+            "turn_id": 1,
+            "call_id": 0,
+            "call": {
+              "name": "list_users",
+              "arguments": {},
+              "class_name": "MessageAPI"
+            },
+            "canonical_call": "list_users()",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "user_list": [
+                "Alice",
+                "Bob",
+                "Catherine",
+                "Daniel"
+              ]
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)",
+                "wc(file_name='deploy.py')",
+                "grep(file_name='deploy.py', pattern='def ')"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 0,
+                "call_id": 2,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 1,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": []
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          }
+        ]
+      },
+      {
+        "turn_id": 2,
+        "intentional_missing": true,
+        "missing_kind": "parameter",
+        "records": []
+      },
+      {
+        "turn_id": 3,
+        "intentional_missing": false,
+        "missing_kind": null,
+        "records": [
+          {
+            "turn_id": 3,
+            "call_id": 0,
+            "call": {
+              "name": "get_user_id",
+              "arguments": {
+                "user": "Daniel"
+              },
+              "class_name": "MessageAPI"
+            },
+            "canonical_call": "get_user_id(user='Daniel')",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "user_id": "USR004"
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)",
+                "wc(file_name='deploy.py')",
+                "grep(file_name='deploy.py', pattern='def ')",
+                "list_users()"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 1,
+                "call_id": 0,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 2,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": [
+                {
+                  "turn_id": 3,
+                  "call_id": 0,
+                  "function": "get_user_id",
+                  "parameter": "user",
+                  "required": true,
+                  "provided": true,
+                  "value": "Daniel",
+                  "source_type": "USER_CONTEXT",
+                  "source_turns": [
+                    3
+                  ],
+                  "source_path": [
+                    "turn[3].final_query"
+                  ],
+                  "match": "all scalar leaves explicitly mentioned"
+                }
+              ]
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          },
+          {
+            "turn_id": 3,
+            "call_id": 1,
+            "call": {
+              "name": "send_message",
+              "arguments": {
+                "receiver_id": "USR004",
+                "message": "File: deploy.py; Function: deploy; Lines: 1"
+              },
+              "class_name": "MessageAPI"
+            },
+            "canonical_call": "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  }
+                ],
+                "message_count": 3,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "sent_status": true,
+              "message_id": {
+                "new_id": 67410
+              },
+              "message": "Message sent to 'USR004' successfully."
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [
+                  67410
+                ],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  },
+                  {
+                    "USR004": "File: deploy.py; Function: deploy; Lines: 1"
+                  }
+                ],
+                "message_count": 4,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)",
+                "wc(file_name='deploy.py')",
+                "grep(file_name='deploy.py', pattern='def ')",
+                "list_users()",
+                "get_user_id(user='Daniel')"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [
+                {
+                  "turn_id": 3,
+                  "call_id": 0
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 0
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 1
+                },
+                {
+                  "turn_id": 0,
+                  "call_id": 2
+                }
+              ],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 3,
+                "call_id": 0,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 2,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": [
+                {
+                  "turn_id": 3,
+                  "call_id": 1,
+                  "function": "send_message",
+                  "parameter": "receiver_id",
+                  "required": true,
+                  "provided": true,
+                  "value": "USR004",
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "leaf_sources": [
+                    {
+                      "source_type": "PRIOR_TOOL_OUTPUT",
+                      "source_turn": 3,
+                      "source_call": 0,
+                      "source_path": "result.user_id"
+                    }
+                  ]
+                },
+                {
+                  "turn_id": 3,
+                  "call_id": 1,
+                  "function": "send_message",
+                  "parameter": "message",
+                  "required": true,
+                  "provided": true,
+                  "value": "File: deploy.py; Function: deploy; Lines: 1",
+                  "source_type": "PRIOR_TOOL_OUTPUT",
+                  "source_path": "explicit_exact_template+successful_visible_results",
+                  "source_calls": [
+                    {
+                      "turn_id": 0,
+                      "call_id": 0
+                    },
+                    {
+                      "turn_id": 0,
+                      "call_id": 1
+                    },
+                    {
+                      "turn_id": 0,
+                      "call_id": 2
+                    }
+                  ],
+                  "match": "exact template with supported observable transformations",
+                  "exact_text_binding": {
+                    "template": "File: {filename}; Function: {function}; Lines: {lines}",
+                    "bindings": [
+                      {
+                        "slot": "filename",
+                        "value": "deploy.py",
+                        "sources": [
+                          {
+                            "turn_id": 0,
+                            "call_id": 0,
+                            "path": "result.current_directory_content[0]",
+                            "start": 0,
+                            "end": 9,
+                            "observation_characters": 9,
+                            "value_transform": "EXACT_VISIBLE_TEXT",
+                            "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                          }
+                        ]
+                      },
+                      {
+                        "slot": "function",
+                        "value": "deploy",
+                        "sources": [
+                          {
+                            "turn_id": 0,
+                            "call_id": 2,
+                            "path": "result.matching_lines[0]",
+                            "start": 4,
+                            "end": 10,
+                            "observation_characters": 98,
+                            "value_transform": "EXACT_VISIBLE_TEXT",
+                            "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                          }
+                        ]
+                      },
+                      {
+                        "slot": "lines",
+                        "value": "1",
+                        "sources": [
+                          {
+                            "turn_id": 0,
+                            "call_id": 1,
+                            "path": "result.count",
+                            "start": 0,
+                            "end": 1,
+                            "observation_characters": 1,
+                            "value_transform": "EXACT_VISIBLE_TEXT",
+                            "span_measurement": "ACTOR_VISIBLE_SCALAR_TEXT"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          }
+        ]
+      },
+      {
+        "turn_id": 4,
+        "intentional_missing": false,
+        "missing_kind": null,
+        "records": [
+          {
+            "turn_id": 4,
+            "call_id": 0,
+            "call": {
+              "name": "view_messages_sent",
+              "arguments": {},
+              "class_name": "MessageAPI"
+            },
+            "canonical_call": "view_messages_sent()",
+            "pre_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [
+                  67410
+                ],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  },
+                  {
+                    "USR004": "File: deploy.py; Function: deploy; Lines: 1"
+                  }
+                ],
+                "message_count": 4,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "execution_result": {
+              "messages": {
+                "USR003": [
+                  [
+                    "Thanks for the update!"
+                  ]
+                ],
+                "USR004": [
+                  "File: deploy.py; Function: deploy; Lines: 1"
+                ]
+              }
+            },
+            "post_state": {
+              "GorillaFileSystem": {
+                "long_context": false,
+                "root": {
+                  "contents": {
+                    "deploy.py": {
+                      "content": "def deploy():    # update the system    pass# update the database# update the server# final checks",
+                      "name": "deploy.py"
+                    }
+                  },
+                  "name": "project",
+                  "parent": null
+                }
+              },
+              "MessageAPI": {
+                "current_user": "USR002",
+                "generated_ids": [
+                  67410
+                ],
+                "inbox": [
+                  {
+                    "USR003": [
+                      "Thanks for the update!"
+                    ]
+                  },
+                  {
+                    "USR004": "File: deploy.py; Function: deploy; Lines: 1"
+                  }
+                ],
+                "message_count": 4,
+                "user_count": 5,
+                "user_map": {
+                  "Alice": "USR001",
+                  "Bob": "USR002",
+                  "Catherine": "USR003",
+                  "Daniel": "USR004"
+                }
+              }
+            },
+            "dependency_provenance": {
+              "available_previous_calls": [
+                "ls(a=False)",
+                "wc(file_name='deploy.py')",
+                "grep(file_name='deploy.py', pattern='def ')",
+                "list_users()",
+                "get_user_id(user='Daniel')",
+                "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')"
+              ],
+              "parameter_source": "LLM proposed; schema checked; VM executed",
+              "resolved_dependency_call_ids": [],
+              "parameter_dependency_status": "GROUNDED",
+              "unclassified_suspicious_results": [],
+              "state_predecessor": {
+                "turn_id": 3,
+                "call_id": 1,
+                "exact_state_continuity": true
+              },
+              "synthesis_turn_id": 3,
+              "unit_semantics": [],
+              "source_status": "PROJECT_SEMANTIC_GUARD",
+              "semantic_outcome": "SUCCESS",
+              "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+              "parameter_provenance": []
+            },
+            "success": true,
+            "semantic_outcome": "SUCCESS",
+            "semantic_detail": "no explicit VM error, audited negative sentinel, or audited false failure flag",
+            "error_detail": null
+          }
+        ]
+      }
+    ],
+    "synthesis_environment_id": "bfcl-synthesis_attempt_1-d13a670bb92045e4814782ab834eb4c5",
+    "created_at": "2026-10-07T14:17:47.598006+00:00",
+    "content_fingerprint": "candidate_content_v2_174faf59b62a038f4dd9ccbb",
+    "novelty_guard": {
+      "source_status": "PROJECT_NOVELTY_GUARD",
+      "mode": "exact_canonical_training_content",
+      "used_embedding_similarity": false
+    }
+  },
+  "sample": {
+    "data_source": "multi_turn_miss_param",
+    "prompt": [
+      {
+        "role": "system",
+        "content": "You are an expert in composing functions. You are given a question and a set of possible functions. Based on the question, make the function/tool calls needed to complete the user's request.\n\nEvery assistant action must contain exactly one reasoning block followed by exactly one action block. Do not emit any text outside these XML blocks.\n\nUse exactly one of these two forms:\n\n<think>your step-by-step reasoning</think><tool_call>{\"name\": \"function_name\", \"arguments\": {\"argument_name\": \"value\"}}</tool_call>\n\n<think>your step-by-step reasoning</think><answer>a concise user-facing answer</answer>\n\nThe content of <tool_call> must be valid JSON. To invoke multiple APIs in one interaction stage, put a JSON array of call objects inside one and only one <tool_call> block. Never emit multiple <tool_call> blocks in the same assistant action. Use <answer> only when no further tool call is needed or possible.\n\nAt each turn, try to complete the current user request. After a tool call, use the environment result to decide whether another tool call is required or whether to finish with <answer>.\n\nHere is a list of functions in JSON format that you can invoke.\n[{\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Add a contact to the workspace.\", \"name\": \"add_contact\", \"parameters\": {\"properties\": {\"user_name\": {\"description\": \"User name of contact to be added.\", \"type\": \"string\"}}, \"required\": [\"user_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"added_status\": {\"description\": \"True if the contact was added successfully, False otherwise.\", \"type\": \"boolean\"}, \"message\": {\"description\": \"A message describing the result of the addition attempt.\", \"type\": \"string\"}, \"user_id\": {\"description\": \"User ID of the added contact.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Display the contents of a file of any extension from currrent directory.\", \"name\": \"cat\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the file from current directory to display. No path is allowed. \", \"type\": \"string\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"file_content\": {\"description\": \"The content of the file.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Change the current working directory to the specified folder.\", \"name\": \"cd\", \"parameters\": {\"properties\": {\"folder\": {\"description\": \"The folder of the directory to change to. You can only change one folder level at a time. \", \"type\": \"string\"}}, \"required\": [\"folder\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"current_working_directory\": {\"description\": \"The new current working directory path.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Copy a file or directory from one location to another.  If the destination is a directory, the source file or directory will be copied into the destination directory.  Both source and destination must be local to the current directory.\", \"name\": \"cp\", \"parameters\": {\"properties\": {\"destination\": {\"description\": \"The destination name to copy the file or directory to. If the destination is a directory, the source will be copied into this directory. No file paths allowed. \", \"type\": \"string\"}, \"source\": {\"description\": \"The name of the file or directory to copy.\", \"type\": \"string\"}}, \"required\": [\"source\", \"destination\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"result\": {\"description\": \"The result of the copy operation or an error message if the operation fails.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Delete the latest message sent to a receiver.\", \"name\": \"delete_message\", \"parameters\": {\"properties\": {\"receiver_id\": {\"description\": \"User ID of the user to send the message to.\", \"type\": \"string\"}}, \"required\": [\"receiver_id\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"deleted_status\": {\"description\": \"True if the message was deleted successfully, False otherwise.\", \"type\": \"boolean\"}, \"message\": {\"description\": \"A message describing the result of the deletion attempt.\", \"type\": \"string\"}, \"receiver_id\": {\"description\": \"ID of the receiver of the deleted message.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Compare two files of any extension line by line at the current directory.\", \"name\": \"diff\", \"parameters\": {\"properties\": {\"file_name1\": {\"description\": \"The name of the first file in current directory.\", \"type\": \"string\"}, \"file_name2\": {\"description\": \"The name of the second file in current directory. \", \"type\": \"string\"}}, \"required\": [\"file_name1\", \"file_name2\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"diff_lines\": {\"description\": \"The differences between the two files.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Estimate the disk usage of a directory and its contents.\", \"name\": \"du\", \"parameters\": {\"properties\": {\"human_readable\": {\"default\": false, \"description\": \"If True, returns the size in human-readable format (e.g., KB, MB). \", \"type\": \"boolean\"}}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"disk_usage\": {\"description\": \"The estimated disk usage.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Write content to a file at current directory or display it in the terminal.\", \"name\": \"echo\", \"parameters\": {\"properties\": {\"content\": {\"description\": \"The content to write or display.\", \"type\": \"string\"}, \"file_name\": {\"default\": \"None\", \"description\": \"The name of the file at current directory to write the content to. Defaults to None. \", \"type\": \"string\"}}, \"required\": [\"content\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"terminal_output\": {\"description\": \"The content if no file name is provided, or None if written to file.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Find any file or directories under specific path that contain name in its file name.  This method searches for files of any extension and directories within a specified path that match the given name. If no name is provided, it returns all files and directories in the specified path and its subdirectories. Note: This method performs a recursive search through all subdirectories of the given path.\", \"name\": \"find\", \"parameters\": {\"properties\": {\"name\": {\"default\": \"None\", \"description\": \"The name of the file or directory to search for. If None, all items are returned. \", \"type\": \"string\"}, \"path\": {\"default\": \".\", \"description\": \"The directory path to start the search. Defaults to the current directory (\\\".\\\").\", \"type\": \"string\"}}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"matches\": {\"description\": \"A list of matching file and directory paths relative to the given path.\", \"items\": {\"type\": \"string\"}, \"type\": \"array\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Get statistics about messages for the current user.\", \"name\": \"get_message_stats\", \"parameters\": {\"properties\": {}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"stats\": {\"description\": \"Dictionary containing message statistics.\", \"properties\": {\"received_count\": {\"description\": \"Number of messages received by the current user.\", \"type\": \"integer\"}, \"total_contacts\": {\"description\": \"Total number of contacts the user has interacted with.\", \"type\": \"integer\"}}, \"type\": \"dict\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Get user ID from user name.\", \"name\": \"get_user_id\", \"parameters\": {\"properties\": {\"user\": {\"description\": \"User name of the user. \", \"type\": \"string\"}}, \"required\": [\"user\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"user_id\": {\"description\": \"User ID of the user\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Search for lines in a file of any extension at current directory that contain the specified pattern.\", \"name\": \"grep\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the file to search. No path is allowed and you can only perform on file at local directory.\", \"type\": \"string\"}, \"pattern\": {\"description\": \"The pattern to search for. \", \"type\": \"string\"}}, \"required\": [\"file_name\", \"pattern\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"matching_lines\": {\"description\": \"Lines that match the pattern.\", \"items\": {\"type\": \"string\"}, \"type\": \"array\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: List all users in the workspace.\", \"name\": \"list_users\", \"parameters\": {\"properties\": {}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"user_list\": {\"description\": \"List of all users in the workspace.\", \"items\": {\"type\": \"string\"}, \"type\": \"array\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: List the contents of the current directory.\", \"name\": \"ls\", \"parameters\": {\"properties\": {\"a\": {\"default\": false, \"description\": \"Show hidden files and directories. Defaults to False. \", \"type\": \"boolean\"}}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"current_directory_content\": {\"description\": \"A list of the contents of the specified directory.\", \"items\": {\"type\": \"string\"}, \"type\": \"array\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Get the login status of the current user.\", \"name\": \"message_get_login_status\", \"parameters\": {\"properties\": {}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"login_status\": {\"description\": \"True if the current user is logged in, False otherwise.\", \"type\": \"boolean\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Log in a user with the given user ID to messeage application.\", \"name\": \"message_login\", \"parameters\": {\"properties\": {\"user_id\": {\"description\": \"User ID of the user to log in. \", \"type\": \"string\"}}, \"required\": [\"user_id\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"login_status\": {\"description\": \"True if login was successful, False otherwise.\", \"type\": \"boolean\"}, \"message\": {\"description\": \"A message describing the result of the login attempt.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Create a new directory in the current directory.\", \"name\": \"mkdir\", \"parameters\": {\"properties\": {\"dir_name\": {\"description\": \"The name of the new directory at current directory. You can only create directory at current directory.\", \"type\": \"string\"}}, \"required\": [\"dir_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Move a file or directory from one location to another.\", \"name\": \"mv\", \"parameters\": {\"properties\": {\"destination\": {\"description\": \"The destination name to move the file or directory to. Destination must be local to the current directory and cannot be a path. If destination is not an existing directory like when renaming something, destination is the new file name. \", \"type\": \"string\"}, \"source\": {\"description\": \"Source name of the file or directory to move. Source must be local to the current directory.\", \"type\": \"string\"}}, \"required\": [\"source\", \"destination\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"result\": {\"description\": \"The result of the move operation.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Return the current working directory path.\", \"name\": \"pwd\", \"parameters\": {\"properties\": {}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"current_working_directory\": {\"description\": \"The current working directory path.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Remove a file or directory.\", \"name\": \"rm\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the file or directory to remove. \", \"type\": \"string\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"result\": {\"description\": \"The result of the remove operation.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Remove a directory at current directory.\", \"name\": \"rmdir\", \"parameters\": {\"properties\": {\"dir_name\": {\"description\": \"The name of the directory to remove. Directory must be local to the current directory. \", \"type\": \"string\"}}, \"required\": [\"dir_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"result\": {\"description\": \"The result of the remove operation.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Search for messages containing a specific keyword.\", \"name\": \"search_messages\", \"parameters\": {\"properties\": {\"keyword\": {\"description\": \"The keyword to search for in messages.\", \"type\": \"string\"}}, \"required\": [\"keyword\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"results\": {\"description\": \"List of dictionaries containing matching messages.\", \"items\": {\"properties\": {\"message\": {\"description\": \"The message containing the keyword.\", \"type\": \"string\"}, \"receiver_id\": {\"description\": \"User ID of the receiver of the message.\", \"type\": \"string\"}}, \"type\": \"dict\"}, \"type\": \"array\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: Send a message to a user.\", \"name\": \"send_message\", \"parameters\": {\"properties\": {\"message\": {\"description\": \"Message to be sent.\", \"type\": \"string\"}, \"receiver_id\": {\"description\": \"User ID of the user to send the message to.\", \"type\": \"string\"}}, \"required\": [\"receiver_id\", \"message\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"message\": {\"description\": \"A message describing the result of the send attempt.\", \"type\": \"string\"}, \"message_id\": {\"description\": \"ID of the sent message.\", \"type\": \"integer\"}, \"sent_status\": {\"description\": \"True if the message was sent successfully, False otherwise.\", \"type\": \"boolean\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Sort the contents of a file line by line.\", \"name\": \"sort\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the file appeared at current directory to sort. \", \"type\": \"string\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"sorted_content\": {\"description\": \"The sorted content of the file.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Display the last part of a file of any extension.\", \"name\": \"tail\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the file to display. No path is allowed and you can only perform on file at local directory.\", \"type\": \"string\"}, \"lines\": {\"default\": 10, \"description\": \"The number of lines to display from the end of the file. Defaults to 10. \", \"type\": \"integer\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"last_lines\": {\"description\": \"The last part of the file.\", \"type\": \"string\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Create a new file of any extension in the current directory.\", \"name\": \"touch\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"The name of the new file in the current directory. file_name is local to the current directory and does not allow path.\", \"type\": \"string\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Message API, which is used to manage user interactions in a workspace. Tool description: View all historical messages sent by the current user.\", \"name\": \"view_messages_sent\", \"parameters\": {\"properties\": {}, \"required\": [], \"type\": \"dict\"}, \"response\": {\"properties\": {\"messages\": {\"description\": \"Dictionary of messages grouped by receiver An example of the messages dictionary is {\\\"USR001\\\":[\\\"Hello\\\"],\\\"USR002\\\":[\\\"World\\\"]}.\", \"type\": \"dict\"}}, \"type\": \"dict\"}}, {\"description\": \"This tool belongs to the Gorilla file system. It is a simple file system that allows users to perform basic file operations such as navigating directories, creating files and directories, reading and writing to files, etc. Tool description: Count the number of lines, words, and characters in a file of any extension from current directory.\", \"name\": \"wc\", \"parameters\": {\"properties\": {\"file_name\": {\"description\": \"Name of the file of current directory to perform wc operation on.\", \"type\": \"string\"}, \"mode\": {\"default\": \"l\", \"description\": \"Mode of operation ('l' for lines, 'w' for words, 'c' for characters). \", \"type\": \"string\"}}, \"required\": [\"file_name\"], \"type\": \"dict\"}, \"response\": {\"properties\": {\"count\": {\"description\": \"The count of the number of lines, words, or characters in the file.\", \"type\": \"integer\"}, \"type\": {\"description\": \"The type of unit we are counting. [Enum]: [\\\"lines\\\", \\\"words\\\", \\\"characters\\\"]\", \"type\": \"string\"}}, \"type\": \"dict\"}}]"
+      },
+      {
+        "role": "user",
+        "content": "Show me the visible files and folders in the current directory, count the lines in the sole Python script listed, and show its lines containing `def ` so I can prepare a compact inventory for a workspace colleague."
+      }
+    ],
+    "ability": "tool",
+    "reward_model": {
+      "style": "interaction"
+    },
+    "extra_info": {
+      "original_id": "generated_miss_param_174faf59b62a038f4dd9ccbb",
+      "synthetic": true,
+      "interaction_kwargs": {
+        "name": "multi_turn_fc",
+        "id": "generated_miss_param_174faf59b62a038f4dd9ccbb",
+        "initial_config": "{\"GorillaFileSystem\": {\"root\": {\"project\": {\"type\": \"directory\", \"contents\": {\"deploy.py\": {\"type\": \"file\", \"content\": \"def deploy():    # update the system    pass# update the database# update the server# final checks\"}}}, \"backup_scripts\": {\"type\": \"directory\", \"contents\": {}}}}, \"MessageAPI\": {\"user_count\": 5, \"current_user\": \"USR002\", \"inbox\": [{\"USR003\": [\"Thanks for the update!\"]}]}}",
+        "involved_classes": [
+          "GorillaFileSystem",
+          "MessageAPI"
+        ],
+        "ground_truth": [
+          [
+            "ls(a=False)",
+            "wc(file_name='deploy.py')",
+            "grep(file_name='deploy.py', pattern='def ')"
+          ],
+          [
+            "list_users()"
+          ],
+          [],
+          [
+            "get_user_id(user='Daniel')",
+            "send_message(message='File: deploy.py; Function: deploy; Lines: 1', receiver_id='USR004')"
+          ],
+          [
+            "view_messages_sent()"
+          ]
+        ],
+        "processed_question": [
+          "Show me the workspace users so I can choose a colleague to send the script inventory to.",
+          "Look up the colleague I want to send the script inventory to and use my active messaging account to send them one message in exact format `File: {filename}; Function: {function}; Lines: {lines}`. Set {filename} to the exact sole nonhidden name ending in .py from the earlier directory listing. Set {function} to the trimmed substring immediately after the first occurrence of `def ` and before the following opening parenthesis in the first earlier returned matching line containing `def `. Set {lines} to the earlier line count for that script as a base-10 number without padding. Preserve the literal labels, punctuation, and spaces exactly, and keep the message within 200 characters.",
+          "I choose Daniel.",
+          "Check my sent messages and confirm that the exact inventory message I just sent to Daniel is listed under the recipient ID you found for him."
+        ],
+        "question": [
+          [
+            {
+              "role": "user",
+              "content": "Show me the visible files and folders in the current directory, count the lines in the sole Python script listed, and show its lines containing `def ` so I can prepare a compact inventory for a workspace colleague."
+            }
+          ],
+          [
+            {
+              "role": "user",
+              "content": "Show me the workspace users so I can choose a colleague to send the script inventory to."
+            }
+          ],
+          [
+            {
+              "role": "user",
+              "content": "Look up the colleague I want to send the script inventory to and use my active messaging account to send them one message in exact format `File: {filename}; Function: {function}; Lines: {lines}`. Set {filename} to the exact sole nonhidden name ending in .py from the earlier directory listing. Set {function} to the trimmed substring immediately after the first occurrence of `def ` and before the following opening parenthesis in the first earlier returned matching line containing `def `. Set {lines} to the earlier line count for that script as a base-10 number without padding. Preserve the literal labels, punctuation, and spaces exactly, and keep the message within 200 characters."
+            }
+          ],
+          [
+            {
+              "role": "user",
+              "content": "I choose Daniel."
+            }
+          ],
+          [
+            {
+              "role": "user",
+              "content": "Check my sent messages and confirm that the exact inventory message I just sent to Daniel is listed under the recipient ID you found for him."
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave precise text and history-dependent query contract
+---PROMPT---
+New tasks must agree with the existing exact-value training rewards. A freely
+worded summary with one arbitrary fixed GT message is not an admissible task.
+For send_message.message or echo.content, either the user supplies a genuinely
+new literal, or requests an exact format with observation-derived placeholders.
+In a file-inspection -> message workflow, use the placeholder format: do not
+paste the already resolved file facts into a later user request.
+
+Write the literal format in backticks, immediately introduced as "exact format":
+for example, exact format `File: {{filename}}; Function: {{function}}; Lines: {{lines}}`.
+Use unique named slots separated by nonempty literal text. Specify unambiguous
+selection rules and exact spelling/punctuation for each slot, using observable
+earlier results. Preserve the instantiated GT string exactly; never invent a
+format that would produce another string. Format labels/punctuation are literal;
+slot values are still recovered by the actor from history, not supplied as answers.
+This is a task-data format, not a tool API/schema or parameter-interface disclosure.
+
+For each grep call, explicitly quote its precise search text in backticks in
+the same turn's Query, preserving any trailing space. Do not describe only a
+general intention while fixing an arbitrary exact pattern in GT.
+
+Keep the user's practical goal clear. Prefer ordinary requests such as removing
+the note just sent over referring to a "latest message deletion action". Avoid
+gratuitous login, ID jargon and repeated procedural constraints. Exact formats
+are warranted where a downstream message must have specified wording.
+
+For long_context, the exact later text must combine TWO different short facts
+from widely separated positions in the SAME earlier large observation: at least
+half the observation apart, with one fact near the final fifth. For a file,
+one possible useful purpose is an inspection receipt identifying its declared
+function and quoting the ending of unexpected appended prose. Define the exact
+ending excerpt by a fixed number of whitespace-separated words, preserving
+punctuation. Do not reread/search the same file to bypass history. A long output
+whose required facts all occur at its beginning is insufficient for this project
+quality policy. These positional thresholds are project policy, not BFCL rules.
+
+Earlier successful actor-visible outputs of THIS NEW task:
+{prior_actor_observations}

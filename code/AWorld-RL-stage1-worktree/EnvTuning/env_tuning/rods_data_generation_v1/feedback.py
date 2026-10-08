@@ -8,7 +8,7 @@ from typing import Any
 
 from .config_patch import ConfigPatchAgent, UnsafePatchError, apply_patch_operations
 from .error_taxonomy import ERROR_GUIDANCE, PATCHABLE_ERRORS
-from .llm_backend import BackendError
+from .llm_backend import BackendError, BackendQuotaExceeded
 from .models import ErrorRecord, to_builtin
 from .parsing import StructuredParseError
 
@@ -81,6 +81,8 @@ class FeedbackState:
                 error, current_config=self.current_config
             )
             merged, patch = apply_patch_operations(self.current_config, operations)
+        except BackendQuotaExceeded:
+            raise
         except (StructuredParseError, UnsafePatchError, BackendError, ValueError) as exc:
             self.patch_history.append(
                 {

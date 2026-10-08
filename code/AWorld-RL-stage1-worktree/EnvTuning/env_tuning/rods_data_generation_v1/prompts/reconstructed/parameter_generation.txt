@@ -20,6 +20,17 @@ successful outputs, or the stated turn intent. Reuse exact IDs/paths/symbols,
 enum spelling, and case from those sources. Do not invent a resource merely to
 make the call look executable.
 
+Project argument complexity limits (also checked before VM execution):
+{argument_limits}
+Apply these recursively to every string and list/tuple value, including a
+message assembled from observations. Use compact labels while preserving all
+facts and exact excerpts promised by the narrative. Do not silently truncate
+a value when the task requires it verbatim.
+For observation-derived text, instantiate the narrative's exact template with
+its fixed labels, spaces and punctuation. Derive each slot using its stated
+selection rule from successful prior outputs. Do not freely paraphrase. Ending
+word excerpts preserve source punctuation and use whitespace-separated words.
+
 Return only this structure. Do not change the function name and do not add schema-external fields:
 <reason>brief grounding analysis</reason>
 <arguments>{arguments_example}</arguments>

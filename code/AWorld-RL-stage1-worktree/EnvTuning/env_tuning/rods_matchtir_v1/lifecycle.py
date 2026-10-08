@@ -297,7 +297,8 @@ class JsonlQueue:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as handle:
             for record in records:
-                handle.write(json.dumps(to_builtin(record), ensure_ascii=False, sort_keys=True) + "\n")
+                # BFCL file-system root loading is insertion-order sensitive.
+                handle.write(json.dumps(to_builtin(record), ensure_ascii=False) + "\n")
             handle.flush()
             os.fsync(handle.fileno())
 
@@ -775,6 +776,9 @@ class RODSStage3Lifecycle:
                     "max_seeds_per_selection": self.config.max_seeds_per_selection,
                     "seed_type_quota": self.config.seed_type_quotas[data_type],
                     "seed_cooldown_steps": self.config.seed_cooldown_steps,
+                    "planner_source": {
+                        "tool_updates": to_builtin(context.get("original_tool_updates", [])),
+                    },
                 },
             }
             emitted.append(seed)

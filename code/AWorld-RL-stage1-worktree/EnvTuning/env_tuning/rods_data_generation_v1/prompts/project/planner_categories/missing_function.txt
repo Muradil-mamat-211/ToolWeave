@@ -1,0 +1,10 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave Planner v2 missing-function category
+---PROMPT---
+multi_turn_miss_func: plan 2-4 complete executable scaffold turns and reserve
+one restoration turn. Include an action with a genuinely necessary function
+whose first use can be the affected turn. Later code removes its actor-visible
+initial schema, gives the affected turn GT=[], then restores the schema before
+the recovery GT. Avoid an omission readily solved by another available tool.
+The transformer chooses the omission. Emit ordinary executable function turns,
+not a call to an unavailable tool in the final affected turn.

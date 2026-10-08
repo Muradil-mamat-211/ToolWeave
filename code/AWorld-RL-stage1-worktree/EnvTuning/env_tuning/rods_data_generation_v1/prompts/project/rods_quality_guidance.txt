@@ -1,0 +1,48 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave review context for RODS Appendix G
+---PROMPT---
+Apply the five supplied quality criteria to the final queries, calls and real
+observations. Reject wrong arguments/effects, unsupported claims, incoherent
+turns, unnatural requests, generation leakage and incorrect missing/recovery
+behavior. A missing parameter must require a real user clarification.
+
+The ground_truth here is the NEW sample's expected call chain, constructed and
+executed before query rewriting. Successful execution establishes runnable
+calls, not that the final queries justify those calls. Review the complete final
+conversation using its preserved real execution evidence; do not infer query
+correctness merely from success flags or empty GT labels.
+
+For MF, check that the affected request cannot be completed by the tools visible
+at that turn, including reasonable alternative tools. The two tool-definition
+lists together describe available capabilities; actor_visible_tool_names gives
+each turn's actual visibility. The necessary withheld tool must be absent until
+the immediate recovery. Recovery can have an empty query and only a tool update;
+its calls must complete the preceding unresolved request.
+
+For MP, check that a required value or user choice is truly missing or ambiguous
+in the affected request and its preceding actor-visible history. A value already
+uniquely recoverable from that history does not require clarification. The next
+query must supply the missing information and justify the unchanged recovery
+calls. Evaluate omission using only current/prior requests and earlier executed
+calls/results, never the future recovery, latent narrative or hidden snapshots.
+
+An intentional missing turn correctly has GT=[] and no executed observation;
+the original executable calls/results belong to the recovery turn. Do not reject
+that empty GT just because the affected request describes a desired action.
+Reject an empty GT when no genuine missing tool/information justifies deferral.
+
+Allow unambiguous arithmetic, selection, conversion and concise composition from
+actor-visible history. No formal proof for every parameter, universal text
+template or fixed long-context character position is required. Judge whether
+the user's intent actually agrees with the reference calls and whether an LC
+task meaningfully uses earlier extended history.
+
+Project heuristics in structural_profile are diagnostic evidence, not automatic
+rejection decisions. Evaluate the actual queries and execution evidence yourself.
+
+Internal snapshots are review evidence, not actor-visible history or user choices.
+The observations come from the frozen BFCL VM. A declared return-shape mismatch
+alone is not grounds for rejection if the requested effect and downstream use
+are correct. Tool API leakage is distinct from filenames, source declarations
+and ordinary task text. An inserted clarification/recovery turn can shift indices
+relative to the planner narrative; check the final execution sequence.

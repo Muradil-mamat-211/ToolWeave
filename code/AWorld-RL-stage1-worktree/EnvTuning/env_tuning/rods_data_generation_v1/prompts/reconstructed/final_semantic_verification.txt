@@ -17,6 +17,14 @@ supported by the query. An intentional Missing turn may have GT=[] only when
 its recovery turn supplies/restores what was missing.
 
 PROJECT_SEMANTIC_GUARD / GLOBAL_COHERENCE:
+Planner narrative numbers refer to the COMPLETE executable scaffold before
+missing/clarification turns are inserted. Use planner_scaffold_alignment,
+derived from actual synthesis_turn_id evidence, to locate those promised steps
+in the final conversation. A lawful omission/recovery insertion shifts final
+turn numbers; that shift alone is not narrative incoherence. Verify the promised
+effects and their ordering at the mapped executable turns. Still reject absent
+effects, actual order changes, unrelated filler or premature disclosure of a
+future user choice. Narrative knowledge does not supply an actor's missing value.
 After the turn-by-turn check, independently assess the whole trajectory as one
 conversation. Accept only when all turns serve one coherent underlying user
 goal. Every topic transition must have a real semantic bridge; later turns
@@ -30,6 +38,29 @@ stitched together. Do not use embeddings or a similarity threshold.
 
 This verifier cannot override a failed deterministic semantic-grounding or
 relational-resolution gate.
+
+PROJECT_QUERY_CONTRACT_GUARD:
+Check reward-compatible wording, not merely whether the given GT is one possible
+answer. Reject free paraphrasing of messages with a fixed-string GT unless the
+actor-visible Query specifies an exact format and unique selection rules. Check
+every placeholder's value and exact punctuation against real prior observations.
+Do not accept arbitrary source substrings without the requested semantic role.
+Later file-derived messages must recover facts from history rather than receive
+already filled-in answers. Exact literal search conditions include whitespace.
+The LC profile needs two semantically relevant distinct facts from widely
+separated positions of one large earlier observation, including the ending.
+Output coverage evidence does not prove this semantic condition by itself.
+
+CATEGORY SEMANTICS:
+For multi_turn_miss_func, reject an alleged missing-tool request that can
+already be completed with the other actor-visible tools; recovery must restore
+what was necessary. For multi_turn_miss_param, evaluate actor-visible history,
+not the generator's hidden state: clarification must supply genuinely missing
+or ambiguous information. A deterministic missing-parameter rejection cannot
+be overridden. For multi_turn_long_context, a later turn must actually locate
+or use information from a large prior observation amid its context; independent
+short tasks or a large unrelated output do not qualify. Describe this check in
+the reason. A size gate alone does not prove a long-context dependency.
 
 PROJECT_OBSERVATION_ENTAILMENT_GUARD:
 When a later user turn explicitly attributes a factual claim to a prior tool

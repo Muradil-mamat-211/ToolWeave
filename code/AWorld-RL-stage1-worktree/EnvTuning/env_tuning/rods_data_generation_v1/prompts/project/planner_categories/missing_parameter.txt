@@ -1,0 +1,20 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave Planner v2 missing-parameter category
+---PROMPT---
+First plan a COMPLETE executable baseline. Fix the future user's concrete choice
+in the narrative (for example, which named recipient they will select when
+requesting delivery), so parameter generation never has to guess a preference.
+Schedule disclosure of that choice at the affected request, not in earlier
+requests or earlier outputs. Listing alternatives does not disclose the choice.
+The transformer later removes the complete selection from that request and
+restores it in clarification; it must also remove any phrase that uniquely
+identifies the same choice. Do not plan an already-incomplete baseline such as
+"the user selects one later" without specifying which selection will be made.
+
+multi_turn_miss_param: plan 2-4 complete executable scaffold turns and reserve
+one clarification turn. Include a required value that can genuinely be absent
+or ambiguous in actor-visible history. The generator may know the value; it
+must not already be given by earlier actor requests/calls/observations. Prefer
+a user choice among alternatives over an ID already returned by a lookup.
+Later code omits the value in one Query with GT=[], then adds clarification
+supplying it and executes the unchanged recovery GT. Emit the full scaffold.

@@ -39,6 +39,7 @@ ToolWeave trains a multi-turn tool-use policy through a three-stage curriculum, 
   - [3.4 Boundary-Guided Online Data Evolution](#34-boundary-guided-online-data-evolution)
   - [3.5 Real Rollout Evidence](#35-real-rollout-evidence)
 - [Verified Online Data Synthesis](#verified-online-data-synthesis)
+- [Second Synthesis Method: Codex CLI](#second-synthesis-method-codex-cli)
 - [Detailed Documentation](#detailed-documentation)
 - [Models](#models)
 - [Data](#data)
@@ -636,14 +637,14 @@ This deterministic formal-training group demonstrates finer credit resolution th
 
 ## Verified Online Data Synthesis
 
-The Data-Generation Branch is a separate queue consumer: it does not redo boundary selection or block the current optimizer step.
+The Data-Generation Branch is a separate queue consumer: it does not redo boundary selection or block the current optimizer step. The first deployment uses a shared Gemma-4-31B vLLM service; its [environment contract](environment/gemma-synthesis/README.md) remains available. The second method below uses Codex CLI with the same BFCL execution and candidate interface.
 
 1. **Boundary seed selection.** The Training Branch emits validated `rods_boundary_seed.v1` records selected from grouped $R_P$ statistics.
-2. **Planning and function construction.** A RODS-derived planner proposes an executable structure using the audited active function catalog and schema-grounded parameters.
+2. **Planning and function construction.** The category-aware Planner v2 reads original queries, reference GT, source tool schemas/restoration events, and initial VM state once to plan the full multi-turn task. Parameter generation then checks source schemas and recursive argument budgets before execution.
 3. **Real BFCL VM execution.** Ground truth is generated and executed before query writing; eligible failures drive deterministic repair, blocklisting, and bounded replanning.
 4. **Query and conversation construction.** Executed turns become class-conditioned user queries, followed by a whole-conversation rewrite that preserves executable intent and Missing Function/Parameter protocols.
-5. **Semantic hardening.** ToolWeave-specific deterministic guards enforce argument provenance, units, unambiguous relations, genuine missing information, observation entailment, action minimality, recursive result semantics, and exact-content novelty.
-6. **Fresh-VM validation, judge, and admission.** Candidates must pass fresh-state replay, tool-visibility and complexity gates, the Quality Judge, the frozen schema, and the Training Branch validator before durable publication.
+5. **Project diagnostics.** The default `validation_policy: rods` records ToolWeave-specific provenance, unit, relation, missing-information, entailment, text-contract, category, and action-minimality checks as nonblocking diagnostics. The previous blocking behavior remains available with `validation_policy: strict`.
+6. **Final query review and admission.** The Quality Judge reviews the final conversation against preserved synthesis execution evidence, including genuine missing information/tools and correct recovery. Tool visibility, argument budgets, candidate schema and the Training Branch contract remain program checks. Fresh-VM GT replay is optional (`replay_final_gt: true`); strict mode retains it.
 
 > [!IMPORTANT]
 > A candidate generated in epoch `n` is **not** consumed in the same epoch and becomes eligible no earlier than epoch `n+1`.
@@ -653,6 +654,25 @@ Boundary-driven planning, executable interaction, query construction, critique/r
 **Full online data-evolution and verified-synthesis audit →**
 [docs/online-data-evolution.md](docs/online-data-evolution.md)
 
+## Second Synthesis Method: Codex CLI
+
+ToolWeave now also constructs data through the official `codex exec` CLI with an existing ChatGPT login. Python dispatches each logical role and executes the real BFCL VM; this backend uses no direct LLM API/SDK. It is a second project construction method alongside the Gemma vLLM deployment.
+
+**Planner plans the whole task → build each turn by generating one function’s arguments and immediately executing it in the VM, then reverse-write that turn’s Query → rewrite the complete conversation → apply MP/MF transformations → review the final conversation → package the data.**
+
+All four categories share this main workflow. MF hides a necessary tool definition, keeps the affected request and inserts a tool-restoration turn. MP removes a necessary value from the affected request and inserts a clarification Query. Each adds one turn, with empty GT at the affected turn and the original calls at recovery. LC uses the same construction process with VM `long_context=True`, so later requests select useful information from extended tool output.
+
+| Real source seed | Category | Final turns / calls | Published candidate |
+| --- | --- | ---: | --- |
+| `multi_turn_base_33` | Base | 4 / 6 | [Base JSON](data/codex-synthesis/base.json) |
+| `multi_turn_miss_func_33` | Missing Function | 5 / 5 | [MF JSON](data/codex-synthesis/missing_function.json) |
+| `multi_turn_miss_param_33` | Missing Parameter | 5 / 7 | [MP JSON](data/codex-synthesis/missing_parameter.json) |
+| `multi_turn_long_context_33` | Long Context | 3 / 5 | [LC JSON](data/codex-synthesis/long_context.json) |
+
+These are genuine accepted examples from the 2026-10-07 strict-policy smoke run, with original Queries, GT, real Observations and validation records preserved. They are historical evidence, not newly generated results under the latest defaults. The current final review reuses successful construction evidence and normally calls Quality Judge once; extra final GT replay is optional. Four related examples establish feasibility, not a batch success rate or training gain.
+
+**[Role cooperation and construction guide](docs/codex-data-synthesis.md) · [Example bundle and provenance](data/codex-synthesis/README.md) · [Training samples JSONL](data/codex-synthesis/training_samples.jsonl) · [CLI configuration](stage1_format_rl/configs/rods_data_generation_codex_cli.yaml) · [Current review policy](stage1_format_rl/docs/RODS_VALIDATION_POLICY.md)**
+
 ## Detailed Documentation
 
 | Document | Scope |
@@ -660,6 +680,9 @@ Boundary-driven planning, executable interaction, query construction, critique/r
 | [Credit-Assignment Audit](docs/credit-assignment-audit.md) | Full deterministic K=16 formal-training evidence |
 | [Experiments](docs/experiments.md) | Complete Stage 1/2/3 evaluation and training audit |
 | [Online Data Evolution](docs/online-data-evolution.md) | Full verified-synthesis and lifecycle details |
+| [Codex Data Synthesis](docs/codex-data-synthesis.md) | Second construction method, exact role cooperation, four real examples and local verification |
+| [Planner v2 Design](stage1_format_rl/docs/PLANNER_V2_DESIGN.md) | Category-specific planning, exact input/output contracts, role cooperation, and Codex CLI configuration |
+| [Historical Strict Validation](stage1_format_rl/docs/QUERY_CONTRACT_HARDENING.md) | Archived strict-policy checks and the four-category CLI/VM run used by the published examples |
 | [Implementation Notes](docs/implementation-notes.md) | Runtime/provenance compatibility, local-credit fail-closed invariants, and the clipped policy-update implementation contract |
 | [Data & Trajectory Anatomy](docs/data-and-trajectories.md) | BFCL runtime hierarchy and trajectory examples |
 | [Infrastructure Decoupling](docs/infrastructure-decoupling.md) | Portable configuration and runtime separation |
@@ -688,6 +711,7 @@ ToolWeave does not rehost the upstream BFCL/EnvTuning datasets; canonical upstre
 | Stage 3 original pool | 400 rows: 100 per BFCL multi-turn category | [AWorld-RL `bfcl_train.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train.parquet) |
 | Held-in evaluation | 400 rows: 100-row validation + 300-row test | [`bfcl_val.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_val.parquet) + [`bfcl_test.parquet`](https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_test.parquet) |
 | Original benchmark source | BFCL V3 Multi-Turn | [BFCL dataset](https://huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard) and [repository data](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard/bfcl_eval/data) |
+| Codex construction examples | Four real smoke candidates with Queries, GT, Observations and recorded reviews | [Example bundle](data/codex-synthesis/README.md) and [training JSONL](data/codex-synthesis/training_samples.jsonl) |
 | Generated Stage 3 candidates | Execution- and semantics-validated online replay rows | Formal-training project artifact; separate data release not included here |
 
 These parquet rows provide prompts, tools, environment metadata, and reward-side GT for executable RL interaction; ToolWeave does not describe them as supervised trajectory-imitation data.
@@ -708,11 +732,13 @@ ToolWeave/
 │   └── AWorld-RL-stage1-worktree/
 │       └── EnvTuning/              # Public interaction, credit, trainer, and generator source
 ├── configs/                        # Historical standalone configuration examples
+├── data/codex-synthesis/            # Four real candidates, training JSONL and provenance
 ├── docs/
 │   ├── README.md                   # Documentation index
 │   ├── credit-assignment-audit.md  # Complete deterministic K=16 audit
 │   ├── experiments.md              # Full evaluation and training audit
 │   ├── online-data-evolution.md    # Verified synthesis and lifecycle audit
+│   ├── codex-data-synthesis.md      # Second construction method and role cooperation
 │   ├── implementation-notes.md     # Runtime and optimizer implementation contract
 │   ├── data-and-trajectories.md    # BFCL runtime and trajectory anatomy
 │   └── infrastructure-decoupling.md # Portable runtime/configuration audit

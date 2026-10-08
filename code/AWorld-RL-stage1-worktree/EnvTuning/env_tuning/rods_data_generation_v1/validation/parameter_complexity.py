@@ -6,20 +6,27 @@ from typing import Any
 
 from ..models import ConversationDraft, GateResult
 
+MAX_ARGUMENT_STRING_CHARACTERS = 200
+MAX_ARGUMENT_COLLECTION_ITEMS = 5
+ARGUMENT_LIMITS = {
+    "max_string_characters": MAX_ARGUMENT_STRING_CHARACTERS,
+    "max_collection_items": MAX_ARGUMENT_COLLECTION_ITEMS,
+}
 
-def _violation(value: Any, path: str) -> str | None:
-    if isinstance(value, str) and len(value) > 200:
-        return f"string exceeds 200 characters at {path}"
+
+def argument_complexity_violation(value: Any, path: str = "arguments") -> str | None:
+    if isinstance(value, str) and len(value) > MAX_ARGUMENT_STRING_CHARACTERS:
+        return f"string exceeds {MAX_ARGUMENT_STRING_CHARACTERS} characters at {path}"
     if isinstance(value, (list, tuple)):
-        if len(value) > 5:
-            return f"list/tuple exceeds 5 elements at {path}"
+        if len(value) > MAX_ARGUMENT_COLLECTION_ITEMS:
+            return f"list/tuple exceeds {MAX_ARGUMENT_COLLECTION_ITEMS} elements at {path}"
         for index, item in enumerate(value):
-            issue = _violation(item, f"{path}[{index}]")
+            issue = argument_complexity_violation(item, f"{path}[{index}]")
             if issue:
                 return issue
     if isinstance(value, dict):
         for key, item in value.items():
-            issue = _violation(item, f"{path}.{key}")
+            issue = argument_complexity_violation(item, f"{path}.{key}")
             if issue:
                 return issue
     return None
@@ -32,7 +39,7 @@ def parameter_complexity_gate(draft: ConversationDraft) -> GateResult:
             continue
         for call in turn.calls:
             checked += 1
-            issue = _violation(call.arguments, f"turn[{turn.turn_id}].{call.name}.arguments")
+            issue = argument_complexity_violation(call.arguments, f"turn[{turn.turn_id}].{call.name}.arguments")
             if issue:
                 return GateResult("parameter_complexity_gate", False, issue)
     return GateResult(

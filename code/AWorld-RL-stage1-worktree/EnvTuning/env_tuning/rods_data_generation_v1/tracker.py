@@ -270,6 +270,20 @@ class PromptTracker:
         self._mutate(mutate)
         self._event(seed_id, "DROPPED", reason=reason)
 
+    def defer_for_backend(self, seed_id: str, reason: str) -> None:
+        """Release this worker's claim; provider quota is not a terminal drop."""
+        def mutate(state: dict[str, Any]) -> None:
+            item = state["seeds"][seed_id]
+            if item.get("status") != SeedStatus.RUNNING.value or not _worker_is_alive(item) or item.get("worker_pid") != os.getpid():
+                raise RuntimeError("only the owning RUNNING worker can defer a seed")
+            item["status"] = SeedStatus.PENDING.value
+            item["backend_deferred_reason"] = reason
+            item["updated_at"] = utc_now()
+            item.pop("worker_pid", None)
+            item.pop("worker_process_start", None)
+        self._mutate(mutate)
+        self._event(seed_id, "BACKEND_DEFERRED_TO_PENDING", reason=reason)
+
     def reconcile_terminal_result(self, record: Mapping[str, Any]) -> None:
         """Atomically project one durable terminal journal record into tracker state."""
 

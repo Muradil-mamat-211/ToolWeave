@@ -101,7 +101,7 @@ class LockedJsonlQueue:
                 if accepted:
                     with self.path.open("a", encoding="utf-8") as handle:
                         for record in accepted:
-                            handle.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+                            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
                         handle.flush()
                         os.fsync(handle.fileno())
                     _fsync_parent(self.path)
@@ -115,7 +115,7 @@ def atomic_write_json(path: str | Path, value: Mapping[str, Any]) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
     with temporary.open("w", encoding="utf-8") as handle:
-        handle.write(json.dumps(to_builtin(value), ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+        handle.write(json.dumps(to_builtin(value), ensure_ascii=False, indent=2) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temporary, target)

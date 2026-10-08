@@ -11,6 +11,7 @@ from .metrics import GeneratorMetrics
 from .models import ExecutionRecord, FunctionCall, FunctionSpec
 from .parsing import StructuredParseError, parse_arguments_response
 from .prompts import load_prompt
+from .validation.parameter_complexity import ARGUMENT_LIMITS, argument_complexity_violation
 
 
 class ParameterGenerator:
@@ -58,6 +59,7 @@ class ParameterGenerator:
                 ),
                 "turn_intent": f"Narrative: {narrative}\nTurn index: {turn_id}",
                 "arguments_example": example,
+                "argument_limits": json.dumps(ARGUMENT_LIMITS),
             },
         )
         last_error: Exception | None = None
@@ -72,6 +74,9 @@ class ParameterGenerator:
             try:
                 _, arguments = parse_arguments_response(response.text)
                 self.catalog.validate_arguments(spec, arguments)
+                complexity_issue = argument_complexity_violation(arguments)
+                if complexity_issue:
+                    raise StructuredParseError(complexity_issue)
                 return FunctionCall(spec.name, arguments, spec.class_name)
             except (StructuredParseError, CatalogError) as exc:
                 last_error = exc

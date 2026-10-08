@@ -104,6 +104,8 @@ class CandidateBuilder:
         config_patch_history: Sequence[Mapping[str, Any]],
         refinement_used: bool,
         refinement_metadata: Mapping[str, Any] | None = None,
+        validation_policy: str = "strict",
+        project_diagnostics: Sequence[Mapping[str, Any]] = (),
     ) -> dict[str, Any]:
         if not gates or not all(gate.passed for gate in gates):
             raise ValueError("candidate cannot be built before all deterministic gates pass")
@@ -126,6 +128,11 @@ class CandidateBuilder:
             "processed_question": processed_question,
             "ground_truth": ground_truth,
         }
+        root_options = draft.initial_config.get("GorillaFileSystem", {}).get("root", {})
+        if len(root_options) > 1:
+            # stable_id sorts dictionary keys; explicitly retain the first
+            # root selected by BFCL without making all object order significant.
+            canonical_training_content["bfcl_loaded_root"] = next(iter(root_options))
         content_fingerprint = stable_id(
             "candidate_content_v2", canonical_training_content
         )
@@ -153,7 +160,7 @@ class CandidateBuilder:
                     "name": "multi_turn_fc",
                     "id": sample_id,
                     "initial_config": json.dumps(
-                        draft.initial_config, ensure_ascii=False, sort_keys=True
+                        draft.initial_config, ensure_ascii=False
                     ),
                     "involved_classes": list(draft.involved_classes),
                     "ground_truth": ground_truth,
@@ -164,6 +171,7 @@ class CandidateBuilder:
         }
 
         gate_records = [to_builtin(asdict(gate)) for gate in gates]
+        final_gt_replay_performed = any(gate.name == "fresh_vm_gate" for gate in gates)
         execution_trace = [
             {
                 "turn_id": turn.turn_id,
@@ -191,6 +199,12 @@ class CandidateBuilder:
             "blocklist_history": [list(values) for values in blocklist_history],
             "config_patch_history": to_builtin(config_patch_history),
             "deterministic_gate_results": gate_records,
+            "validation_policy": validation_policy,
+            "final_gt_replay_performed": final_gt_replay_performed,
+            "execution_validation_source": (
+                "fresh_vm_replay" if final_gt_replay_performed else "synthesis_vm_trace"
+            ),
+            "project_diagnostics": to_builtin(project_diagnostics),
             "judge_result": to_builtin(asdict(final_judge)),
             "refinement_used": bool(refinement_used),
             "refinement_metadata": to_builtin(refinement_metadata or {}),

@@ -3,6 +3,12 @@ SOURCE = RODS arXiv:2606.19047v1 Appendix P example; transform prompt/code not p
 ---PROMPT---
 Turn one executable request into a genuine missing-parameter clarification pattern. The affected query must omit one required value and the recovery query must naturally supply it. Do not change the GT call.
 
+Preserve any exact text format, placeholder names, extraction rules and quoted
+search conditions. Prefer omitting a genuinely unchosen user preference such
+as recipient, rather than deleting facts recoverable from prior observations.
+Do not replace an observation-derived format with a filled-in answer or free
+summary. Recovery supplies only what was genuinely missing.
+
 Conversation:
 {conversation}
 

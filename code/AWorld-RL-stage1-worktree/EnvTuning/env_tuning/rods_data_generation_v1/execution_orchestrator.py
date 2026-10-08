@@ -272,6 +272,8 @@ class ExecutionOrchestrator:
                         narrative=plan.narrative,
                         turn_records=turn_records,
                         prior_queries=prior_queries,
+                        prior_records=all_records[:-len(turn_records)],
+                        data_type=seed.data_type,
                     )
                 except FileNotFoundError as exc:
                     raise self._failure(
@@ -296,6 +298,7 @@ class ExecutionOrchestrator:
                         query=query,
                         turn_records=turn_records,
                         execution_context=session.snapshot(),
+                        prior_records=all_records[:-len(turn_records)],
                     )
                 except StructuredParseError as exc:
                     self.metrics.increment("queries/query_verify_failures")
@@ -332,9 +335,20 @@ class ExecutionOrchestrator:
         finally:
             session.close()
 
-        initial_tools = [
-            spec.schema for spec in self.catalog.functions_for_classes(involved_classes)
-        ]
+        # Reuse the source schemas once, including original restoration tools.
+        # Do not silently expose every other function from the global catalog.
+        from .planner_contract import original_tool_updates
+        source_schemas = list(seed.available_functions)
+        for update in original_tool_updates(seed, self.catalog):
+            source_schemas.extend(update["tools"])
+        tool_names = {
+            schema["name"] for schema in source_schemas
+            if self.catalog.get(schema["name"]).class_name in involved_classes
+        }
+        # Deterministically decomposed high-level plans need their actual VM
+        # primitives in the actor schema contract.
+        tool_names.update(record.call.name for record in all_records)
+        initial_tools = self.catalog.tool_schemas(sorted(tool_names))
         return ConversationDraft(
             narrative=plan.narrative,
             data_type=seed.data_type,

@@ -1,0 +1,63 @@
+{
+  "schema_version": "toolweave.codex_examples.v1",
+  "historical_run_id": "run_20261007T140417_209480Z",
+  "historical_validation_policy": "strict",
+  "historical_policy_evidence": "12 recorded gates, including fresh VM and final semantic verifier",
+  "transport": "official codex exec with existing ChatGPT login",
+  "generator_model_override": "",
+  "server_confirmed_model_id": null,
+  "source_dataset_url": "https://github.com/inclusionAI/AWorld-RL/blob/main/EnvTuning/data/bfcl_train.parquet",
+  "source_dataset_sha256": "f6c9311b3b7977b307fcb8d175603e828dbca0542bb3abca4f4bdf922bc8f293",
+  "progress_is_measured": false,
+  "publication_changes_to_candidates": false,
+  "new_real_cli_requests_in_historical_run": 12,
+  "reused_completed_real_responses_in_historical_run": 63,
+  "examples": [
+    {
+      "source_seed_id": "multi_turn_base_33",
+      "data_type": "multi_turn_base",
+      "candidate_id": "candidate_de76da84e46a570004b12703",
+      "candidate_path": "base.json",
+      "sha256": "736052032dd0ee80bb819444112b4bf77bf4589dc685265183e81f7511e9870c",
+      "turn_count": 4,
+      "call_count": 6,
+      "recorded_judge": "accept",
+      "original_created_at": "2026-10-07T14:12:59.675337+00:00"
+    },
+    {
+      "source_seed_id": "multi_turn_miss_func_33",
+      "data_type": "multi_turn_miss_func",
+      "candidate_id": "candidate_f69a9e1bc05930ab19da72e7",
+      "candidate_path": "missing_function.json",
+      "sha256": "29eaf7d4fc05a57e3bd106eb5871164c361f0a795634c5420cbc1bd44aae3f0b",
+      "turn_count": 5,
+      "call_count": 5,
+      "recorded_judge": "accept",
+      "original_created_at": "2026-10-07T14:08:29.969424+00:00"
+    },
+    {
+      "source_seed_id": "multi_turn_miss_param_33",
+      "data_type": "multi_turn_miss_param",
+      "candidate_id": "candidate_174faf59b62a038f4dd9ccbb",
+      "candidate_path": "missing_parameter.json",
+      "sha256": "a5575115bb1ae49d788c4589d4a8232580b212214fbe3d63239449e5cbed0467",
+      "turn_count": 5,
+      "call_count": 7,
+      "recorded_judge": "accept",
+      "original_created_at": "2026-10-07T14:17:47.598006+00:00"
+    },
+    {
+      "source_seed_id": "multi_turn_long_context_33",
+      "data_type": "multi_turn_long_context",
+      "candidate_id": "candidate_3428b8555bc2b8c5e376ab11",
+      "candidate_path": "long_context.json",
+      "sha256": "0dd45b20c41087b7867e3f624682505b2fad8fcfbdbc3f5f5f6ad5394805ff7e",
+      "turn_count": 3,
+      "call_count": 5,
+      "recorded_judge": "accept",
+      "original_created_at": "2026-10-07T14:09:37.288837+00:00"
+    }
+  ],
+  "training_samples_path": "training_samples.jsonl",
+  "training_samples_sha256": "ab08429ee69cd4003b019535661d579d299c1c48d83e8735948a91da37447141"
+}

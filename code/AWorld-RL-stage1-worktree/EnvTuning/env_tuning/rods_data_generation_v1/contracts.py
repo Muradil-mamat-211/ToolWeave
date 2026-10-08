@@ -14,6 +14,12 @@ from .models import SeedRecord
 
 
 SEED_SCHEMA_PATH = WORKSPACE / "stage1_format_rl/schemas/rods_boundary_seed_v1.schema.json"
+PLANNER_SCHEMA_PATH = WORKSPACE / "stage1_format_rl/schemas/planner_input_v2.schema.json"
+
+
+@lru_cache(maxsize=1)
+def planner_input_validator() -> Draft202012Validator:
+    return Draft202012Validator(json.loads(PLANNER_SCHEMA_PATH.read_text(encoding="utf-8")))
 
 
 @lru_cache(maxsize=1)

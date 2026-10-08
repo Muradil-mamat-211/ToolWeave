@@ -24,6 +24,10 @@ class BackendError(RuntimeError):
     pass
 
 
+class BackendQuotaExceeded(BackendError):
+    """External account quota exhaustion; defer work without consuming attempts."""
+
+
 _REQUEST_METADATA: ContextVar[dict[str, Any]] = ContextVar(
     "rods_generator_request_metadata", default={}
 )
@@ -258,6 +262,9 @@ class ReplayLLMBackend(FakeLLMBackend):
 
 
 def build_backend(config: LLMConfig, *, replay_path: str | Path | None = None) -> LLMBackend:
+    if config.backend == "codex_cli":
+        from .codex_backend import CodexCLIBackend
+        return CodexCLIBackend(config)
     if config.backend == "vllm_openai":
         return VLLMOpenAIBackend(config)
     if config.backend == "replay":

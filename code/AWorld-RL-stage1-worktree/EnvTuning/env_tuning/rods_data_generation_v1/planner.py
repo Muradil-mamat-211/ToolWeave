@@ -1,4 +1,4 @@
-"""RODS Appendix C.1 Planner prompt transport and strict parser."""
+"""Project task-only, category-aware Planner transport and strict parser."""
 
 from __future__ import annotations
 
@@ -13,7 +13,10 @@ from .metrics import GeneratorMetrics
 from .models import ErrorRecord, PlannerResult, SeedRecord
 from .parsing import StructuredParseError, parse_planner_response
 from .prompts import load_prompt
-from .structural_profile import seed_structural_profile
+from .contracts import planner_input_validator
+from .planner_contract import (
+    CATEGORY_PROMPTS, allowed_source_functions, build_planner_input, planner_max_turns,
+)
 
 
 class NoValidFunctionsError(ValueError):
@@ -21,12 +24,10 @@ class NoValidFunctionsError(ValueError):
 
 
 def _mapping_delta(base: Any, current: Any) -> Any:
-    """Return the deterministic merged-patch delta without copying base state.
+    """Return accumulated patch changes for the compact retry-feedback block.
 
-    Retry Planner context must contain every accumulated patch, but copying an
-    unchanged Long Context VM snapshot into every retry can exceed the serving
-    model's context window. Deep merge never deletes keys, so a recursive
-    current-vs-seed delta preserves every effective patch exactly.
+    The current config itself is supplied in initial_environment; forensic
+    per-call pre/post state is intentionally excluded from retry feedback.
     """
 
     if isinstance(base, Mapping) and isinstance(current, Mapping):
@@ -68,12 +69,17 @@ class PlannerAgent:
         metrics: GeneratorMetrics,
         *,
         max_parse_retries: int = 3,
+        environment_factory: Any = None,
+        validation_policy: str = "strict",
     ) -> None:
         self.backend = backend
         self.catalog = catalog
         self.metrics = metrics
         self.max_parse_retries = max_parse_retries
+        self.environment_factory = environment_factory
+        self.validation_policy = validation_policy
         self.rendered_prompts: list[str] = []
+        self.rendered_inputs: list[dict[str, Any]] = []
 
     def _render(
         self,
@@ -83,78 +89,54 @@ class PlannerAgent:
         blocked_functions: set[str],
         current_config: dict[str, Any],
     ) -> tuple[str, list[str]]:
-        classes = self.catalog.infer_seed_classes(seed)
-        available = [
-            spec
-            for spec in self.catalog.functions_for_classes(classes)
-            if spec.name not in blocked_functions
-        ]
-        names = [spec.name for spec in available]
+        snapshot = None
+        if self.environment_factory is not None:
+            session = self.environment_factory.create(
+                initial_config=current_config,
+                involved_classes=self.catalog.infer_seed_classes(seed),
+                seed_id=seed.sample_id,
+                long_context=seed.data_type == "multi_turn_long_context",
+                purpose="planner_initial_state",
+            )
+            try:
+                snapshot = session.snapshot()
+            finally:
+                session.close()
+        payload = build_planner_input(
+            seed, self.catalog, current_config=current_config,
+            initial_runtime_snapshot=snapshot,
+        )
+        names = [name for name in allowed_source_functions(payload) if name not in blocked_functions]
         if not names:
             raise NoValidFunctionsError(
                 "no unblocked functions remain for inferred seed classes"
             )
-        function_rows = [
-            {
-                "name": spec.name,
-                "class": spec.class_name,
-                "level": spec.level,
-                "description": spec.schema.get("description", ""),
-            }
-            for spec in available
-        ]
-        prompt = load_prompt(
-            "official_rods/planner_user.txt",
-            {
-                "classes_str": ", ".join(classes),
-                "queries_text": json.dumps(seed.Q_old, ensure_ascii=False),
-                "gt_summary": json.dumps(seed.GT_old, ensure_ascii=False),
-                "func_list": json.dumps(function_rows, ensure_ascii=False, indent=2),
-            },
-        )
-        # PROJECT_STRUCTURAL_GUIDANCE: Appendix C.1 already asks the Planner
-        # to preserve capability/dependency structure.  Public sources do not
-        # publish a deterministic Phi extractor or acceptance threshold.  This
-        # block only makes recoverable seed facts explicit to the Planner; the
-        # same profile remains diagnostics-only downstream.
-        prompt += (
-            "\n\n# PROJECT_STRUCTURAL_GUIDANCE (NON-GATING)\n"
-            "Recoverable seed structure:\n"
-            + json.dumps(
-                seed_structural_profile(seed, self.catalog),
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-            + "\nPreserve the recoverable topology while generating a different task. "
-            "No unpublished numeric structural threshold is applied."
-        )
         if failure_history:
-            # Appendix F requires this context on every re-plan; the exact
-            # transport appendix is not published, so this additive block is
-            # explicitly reconstruction around the unchanged C.1 template.
-            prompt += (
-                "\n\n# Feedback From Previous Failed Attempts\n"
-                + "Complete failure history (compact Planner view; full VM forensics remain durable):\n"
-                + json.dumps(
-                    [_planner_failure_view(error) for error in failure_history],
-                    ensure_ascii=False,
-                    indent=2,
-                )
-                + "\nBlocked functions:\n"
-                + json.dumps(sorted(blocked_functions), ensure_ascii=False)
-                + "\nError-specific guidance:\n"
-                + json.dumps(
-                    [ERROR_GUIDANCE[error.error_type] for error in failure_history],
-                    ensure_ascii=False,
-                )
-                + "\nAccumulated effective config-patch delta from the seed config:\n"
-                + json.dumps(
-                    _mapping_delta(seed.initial_config, current_config) or {},
-                    ensure_ascii=False,
-                    sort_keys=True,
-                )
-                + "\nGenerate a COMPLETELY DIFFERENT plan using different functions."
-            )
+            # Compact new-attempt feedback follows the existing retry policy;
+            # the v2 prompt and its transport are project substitutions.
+            payload["retry_feedback"] = {
+                "failures": [_planner_failure_view(error) for error in failure_history],
+                "blocked_functions": sorted(blocked_functions),
+                "guidance": [ERROR_GUIDANCE[error.error_type] for error in failure_history],
+                "config_patch_delta": _mapping_delta(seed.initial_config, current_config) or {},
+                "instruction": "Generate a COMPLETELY DIFFERENT plan using different functions.",
+            }
+        elif blocked_functions:
+            payload["retry_feedback"] = {"blocked_functions": sorted(blocked_functions)}
+        planner_input_validator().validate(payload)
+        common_prompt = "project/planner_common.txt"
+        category_prompt = CATEGORY_PROMPTS[seed.data_type]
+        if self.validation_policy == "rods":
+            common_prompt = "project/planner_common_rods.txt"
+            if seed.data_type == "multi_turn_long_context":
+                category_prompt = "project/planner_categories/long_context_rods.txt"
+        prompt = load_prompt(common_prompt, {
+            "category_rules": load_prompt(category_prompt),
+            "min_turns": 2,
+            "max_turns": planner_max_turns(seed.data_type),
+            "planner_input": json.dumps(payload, ensure_ascii=False, indent=2),
+        })
+        self.rendered_inputs.append(payload)
         self.rendered_prompts.append(prompt)
         return prompt, names
 
@@ -191,6 +173,7 @@ class PlannerAgent:
                     allowed_functions=names,
                     class_for_function=self.catalog.class_for_function(),
                     blocked_functions=blocked_functions,
+                    max_turns=planner_max_turns(seed.data_type),
                 )
             except StructuredParseError as exc:
                 self.metrics.increment("planner/planner_parse_failures")

@@ -1,0 +1,16 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave long-context actor-history conditioning
+---PROMPT---
+This is multi_turn_long_context. The following observations are from actual
+earlier turns of this newly generated task, not original student rollouts:
+{prior_actor_observations}
+
+If this turn uses information from the earlier large observation, express the
+request as a natural reference/selection/composition from that observation.
+Do not paste the entire resolved message or selected answer into the Query;
+that would eliminate the need to use history. The GT value is the verified
+answer to the selection. Request an exact placeholder format and unambiguous
+extraction rules rather than free paraphrasing or repeating filled-in answers.
+Keep user choices such as recipient and requested selection explicit enough
+to resolve uniquely. Never invent a claim absent from these observations.
+For the first exposure turn, request the actual listing/read operation.

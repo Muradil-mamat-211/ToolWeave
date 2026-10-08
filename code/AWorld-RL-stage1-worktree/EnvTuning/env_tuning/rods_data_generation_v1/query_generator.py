@@ -12,6 +12,7 @@ from .metrics import GeneratorMetrics
 from .models import ExecutionRecord
 from .parsing import StructuredParseError, parse_query_response
 from .query_prompt_registry import QueryPromptRegistry
+from .prompts import load_prompt
 
 
 GENERATION_LEAKAGE = re.compile(
@@ -58,12 +59,14 @@ class QueryGenerator:
         *,
         max_parse_attempts: int = 1,
         prompt_registry: QueryPromptRegistry | None = None,
+        validation_policy: str = "strict",
     ) -> None:
         self.backend = backend
         self.catalog = catalog
         self.metrics = metrics
         self.max_parse_attempts = max_parse_attempts
         self.prompt_registry = prompt_registry or QueryPromptRegistry()
+        self.validation_policy = validation_policy
 
     @staticmethod
     def validate_no_leakage(query: str, records: Sequence[ExecutionRecord]) -> None:
@@ -80,6 +83,8 @@ class QueryGenerator:
         narrative: str,
         turn_records: Sequence[ExecutionRecord],
         prior_queries: Sequence[str],
+        prior_records: Sequence[ExecutionRecord] = (),
+        data_type: str = "",
     ) -> tuple[str, str]:
         if not turn_records:
             raise StructuredParseError("query generation requires executed GT calls")
@@ -103,6 +108,21 @@ class QueryGenerator:
                 "prior_context": json.dumps(list(prior_queries), ensure_ascii=False),
             },
         )
+        guidance = ("project/rods_query_guidance.txt" if self.validation_policy == "rods"
+                    else "project/query_contract.txt")
+        prompt += "\n\n" + load_prompt(guidance, {
+            "prior_actor_observations": json.dumps([
+                {"turn_id": record.turn_id, "call": record.canonical_call,
+                 "result": record.execution_result} for record in prior_records if record.success
+            ], ensure_ascii=False, default=repr),
+        })
+        if data_type == "multi_turn_long_context" and self.validation_policy == "strict":
+            prompt += "\n\n" + load_prompt("project/long_context_query.txt", {
+                "prior_actor_observations": json.dumps([
+                    {"turn_id": record.turn_id, "call": record.canonical_call,
+                     "result": record.execution_result} for record in prior_records
+                ], ensure_ascii=False, default=repr),
+            })
         last_error: Exception | None = None
         for parse_attempt in range(self.max_parse_attempts):
             response = await self.backend.complete(

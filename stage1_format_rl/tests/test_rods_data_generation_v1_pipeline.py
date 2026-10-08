@@ -16,7 +16,7 @@ from env_tuning.rods_data_generation_v1.daemon import (
 )
 from env_tuning.rods_data_generation_v1.environment_adapter import SynthesisEnvironmentAdapter
 from env_tuning.rods_data_generation_v1.error_taxonomy import ErrorType
-from env_tuning.rods_data_generation_v1.llm_backend import FakeLLMBackend, ReplayLLMBackend
+from env_tuning.rods_data_generation_v1.llm_backend import BackendError, FakeLLMBackend, ReplayLLMBackend
 from env_tuning.rods_data_generation_v1.models import FunctionCall
 from env_tuning.rods_data_generation_v1.pipeline import RODSDataGenerationPipeline
 from env_tuning.rods_data_generation_v1.queue import LockedJsonlQueue
@@ -74,15 +74,17 @@ def test_real_cpu_bfcl_e2e_for_all_four_types(data_type):
     assert candidate["validation"]["passed"] is True
     assert candidate["generation_metadata"]["generated_epoch"] == 7
     assert candidate["generation_metadata"]["source_seed_id"] == f"seed-{data_type}"
-    assert len(factory.created_environment_ids) == 2
-    assert len(set(factory.created_environment_ids)) == 2
+    assert len(factory.created_environment_ids) == 3
+    assert len(set(factory.created_environment_ids)) == 3
     gates = candidate["generation_metadata"]["deterministic_gate_results"]
     assert [gate["name"] for gate in gates] == [
+        "category_validity_gate",
         "unit_semantic_gate",
         "semantic_grounding_gate",
         "missing_parameter_validity_gate",
         "observation_entailment_gate",
         "relational_resolution_gate",
+        "query_contract_gate",
         "final_query_semantic_gate",
         "action_minimality_gate",
         "fresh_vm_gate",
@@ -91,8 +93,13 @@ def test_real_cpu_bfcl_e2e_for_all_four_types(data_type):
     ]
     assert all(gate["passed"] for gate in gates)
     trace = candidate["generation_metadata"]["execution_trace"]
-    assert trace and trace[0]["records"]
-    first_record = trace[0]["records"][0]
+    assert trace and any(turn["records"] for turn in trace)
+    first_record = next(record for turn in trace for record in turn["records"])
+    for turn in trace:
+        if turn["intentional_missing"]:
+            assert turn["records"] == []
+        for record in turn["records"]:
+            assert record["turn_id"] == turn["turn_id"]
     assert {"call", "pre_state", "execution_result", "post_state", "dependency_provenance"}.issubset(first_record)
     assert candidate["generation_metadata"]["structural_profile"]["seed_profile"]["used_for_acceptance"] is False
 
@@ -138,8 +145,22 @@ def test_replay_backend_runs_complete_real_vm_pipeline(tmp_path):
     replay = ReplayLLMBackend.from_jsonl(replay_path)
     result, _, factory, _ = _run_pipeline("multi_turn_base", backend=replay)
     assert result.status == "SUCCEEDED"
-    assert len(factory.created_environment_ids) == 2
+    assert len(factory.created_environment_ids) == 3
     assert replay.remaining() == 0
+
+
+def test_model_transport_failure_does_not_blacklist_successful_tool_plan():
+    script = success_script()
+    script["planner"] *= 2
+    script["parameter_generator"].insert(0, BackendError("Codex request timed out"))
+    result, _, _, _ = _run_pipeline("multi_turn_base", backend=FakeLLMBackend(script))
+    assert result.status == "SUCCEEDED", result.reason
+    assert result.attempts == 2
+    assert len(result.errors) == 1
+    assert result.errors[0].error_type == ErrorType.PIPELINE_EXCEPTION
+    assert result.errors[0].function_names == ()
+    assert result.blocklist_history == [[]]
+    assert result.errors[0].context["failure_stage"] == "MODEL_BACKEND"
 
 
 def _official_jsonl_record(path: Path, record_id: str) -> dict:
@@ -247,7 +268,7 @@ def test_real_stateful_gorilla_filesystem_chain_and_fresh_vm_replay(tmp_path):
     assert fresh["passed"] is True
     assert fresh["metadata"]["environment_id"] != fresh["metadata"]["synthesis_environment_id"]
     assert fresh["metadata"]["executed_call_count"] == 4
-    assert len(factory.created_environment_ids) == 2
+    assert len(factory.created_environment_ids) == 3
 
     # Counterfactual on a third real BFCL instance: writing the file without
     # the preceding touch mutation fails, proving the second turn depends on C1.
@@ -329,7 +350,7 @@ def test_vm_failure_patches_blocks_and_replans_with_feedback():
     assert '"divide"' in second_prompt
     assert "fixture_enabled" in second_prompt
     assert "COMPLETELY DIFFERENT" in second_prompt
-    assert len(factory.created_environment_ids) == 3
+    assert len(factory.created_environment_ids) == 5
 
 
 def test_three_malformed_planner_attempts_each_use_three_parser_retries():
@@ -516,7 +537,7 @@ def test_judge_gt_unfixable_drops_without_rewrite():
     assert not [call for call in backend.calls if call["role"] == "refine_rewrite"]
 
 
-def test_deterministic_parameter_gate_cannot_be_overridden_by_judge():
+def test_parameter_budget_rejects_before_query_generation_or_judge():
     plan = (
         "<reason>x</reason><narrative>n</narrative>"
         "<turn>MathAPI: mean</turn><turn>MathAPI: add</turn>"
@@ -543,7 +564,8 @@ def test_deterministic_parameter_gate_cannot_be_overridden_by_judge():
     )
     result, backend, _, _ = _run_pipeline("multi_turn_base", backend=backend)
     assert result.status == "DROPPED"
-    assert "parameter_complexity_gate" in result.reason
+    assert any("list/tuple exceeds 5 elements" in error.detail for error in result.errors)
+    assert not [call for call in backend.calls if call["role"] == "query_generator"]
     assert not [call for call in backend.calls if call["role"] == "quality_judge"]
 
 

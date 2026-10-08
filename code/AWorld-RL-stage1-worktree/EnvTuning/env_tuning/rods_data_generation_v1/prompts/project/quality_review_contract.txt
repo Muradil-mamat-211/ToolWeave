@@ -1,0 +1,47 @@
+SOURCE_STATUS = PROJECT_SUBSTITUTION
+SOURCE = ToolWeave execution-grounded quality review clarification
+---PROMPT---
+Apply the quality criteria with these project definitions:
+
+Function/parameter-name leakage means disclosure of callable tool API identifiers
+or their interface, using the supplied initial/recovery tool names and definitions.
+Names of functions in a user's source file (for example a Python declaration),
+filenames, and literal message content are task data. They are not tool names
+unless they actually identify a supplied tool. Ordinary words such as message
+or file name are not interface leakage merely because a schema uses them.
+Explicit tool API invocation/schema leakage remains forbidden.
+
+The frozen BFCL VM produced the supplied observations; the generator did not
+invent them. response_contract_diagnostics reports discrepancies between those
+real returns and declared return schemas. Keep those discrepancies visible for
+audit. Do not reject solely for a frozen VM return-shape mismatch when the actual
+requested effect succeeds and no query or downstream call assumes the incorrect
+declared shape. Reject unsupported claims, absent/wrong downstream values,
+invalid call arguments, failed execution, or inconsistent actual effects.
+Input argument schemas and all deterministic gates remain mandatory.
+
+Internal snapshots are review evidence, not extra actor-visible history.
+Do not supply missing user choices from hidden state.
+
+Planner narrative numbers describe the executable scaffold before omission and
+recovery insertions. Use planner_scaffold_alignment from actual synthesis_turn_id
+records to compare each promised step with its final executable turn. A lawful
+inserted missing/clarification turn can shift indices without changing the task.
+Do not reject solely for this shift; still reject missing effects, changed
+operation order, unrelated transitions or a future choice leaked to prior history.
+
+Reward-compatible text: reject an open-ended message/summary request whose GT
+fixes an arbitrary wording. An observation-derived message must have an explicit
+exact placeholder format and precise extraction rules in actor-visible requests.
+Validate literal labels/punctuation, each slot's selection, and equality to GT.
+Do not mistake a task-data format for a tool API. Do not replace placeholders
+with filled-in historical answers during Query refinement. Search conditions
+must explicitly quote the same exact text, including significant whitespace.
+Reject gratuitous procedural jargon, unrelated filler and source-code dumps
+presented as useful summaries without a practical reason.
+
+The LC project profile requires actual use of two distinct facts from widely
+separated positions of the same earlier large observation, including its ending
+region. Positional evidence measures coverage; independently verify that the
+requested selection/extraction is unambiguous and meaningful. Neither length
+nor substring occurrence alone proves the user's requested relation.

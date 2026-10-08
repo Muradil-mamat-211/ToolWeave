@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from copy import deepcopy
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -20,9 +21,9 @@ from .error_taxonomy import ErrorType, PATCHABLE_ERRORS
 from .execution_orchestrator import ExecutionOrchestrator, StageFailure
 from .feedback import FeedbackState
 from .function_catalog import CatalogError, FunctionCatalog
-from .llm_backend import LLMBackend, pop_request_metadata, push_request_metadata
+from .llm_backend import BackendError, BackendQuotaExceeded, LLMBackend, pop_request_metadata, push_request_metadata
 from .metrics import GeneratorMetrics
-from .models import ErrorRecord, GateResult, PipelineResult, SeedRecord, stable_id, utc_now
+from .models import ConversationDraft, ErrorRecord, GateResult, PipelineResult, SeedRecord, stable_id, utc_now
 from .parameter_generator import ParameterGenerator
 from .parsing import StructuredParseError
 from .planner import NoValidFunctionsError, PlannerAgent
@@ -44,6 +45,8 @@ from .validation.relational_resolution import relational_resolution_gate
 from .validation.tool_availability import tool_availability_gate
 from .validation.unit_semantics import unit_semantic_gate
 from .validation.vm_reverify import fresh_vm_reverify_gate
+from .validation.category_validity import category_validity_gate
+from .validation.query_contract import query_contract_gate
 
 
 CheckpointCallback = Callable[[dict[str, Any]], Any | Awaitable[Any]]
@@ -106,6 +109,8 @@ class RODSDataGenerationPipeline:
             self.catalog,
             self.metrics,
             max_parse_retries=config.planner_retries,
+            environment_factory=self.environment_factory,
+            validation_policy=config.validation_policy,
         )
         self.parameter_generator = ParameterGenerator(
             backend,
@@ -118,8 +123,9 @@ class RODSDataGenerationPipeline:
             self.catalog,
             self.metrics,
             max_parse_attempts=config.agent_parse_retries,
+            validation_policy=config.validation_policy,
         )
-        self.query_verifier = QueryVerifier(backend, self.metrics)
+        self.query_verifier = QueryVerifier(backend, self.metrics, catalog=self.catalog)
         suspicious_queue = (
             None
             if config.dry_run
@@ -151,16 +157,56 @@ class RODSDataGenerationPipeline:
             metrics=self.metrics,
             suspicious_result_sink=record_suspicious_result,
         )
-        self.rewrite = CoherenceRewriteAgent(backend, self.metrics)
+        self.rewrite = CoherenceRewriteAgent(backend, self.metrics, validation_policy=config.validation_policy)
         self.missing_function = MissingFunctionTransformer(
             backend, self.catalog, self.metrics
         )
         self.missing_parameter = MissingParameterTransformer(
-            backend, self.catalog, self.metrics
+            backend, self.catalog, self.metrics, validation_policy=config.validation_policy
         )
         self.patch_agent = ConfigPatchAgent(backend, self.metrics)
-        self.judge = QualityJudgeAgent(backend, self.metrics)
-        self.refine = RefineAgent(backend, self.metrics)
+        self.judge = QualityJudgeAgent(backend, self.metrics, validation_policy=config.validation_policy)
+        self.refine = RefineAgent(backend, self.metrics, validation_policy=config.validation_policy)
+
+    def _project_diagnostics(
+        self, draft: ConversationDraft, *, phase: str
+    ) -> list[dict[str, Any]]:
+        """Record project heuristics without mutating the sample or admission.
+
+        Appendix G does not require these heuristics to accept a variant. Keep
+        their original verdicts, including false negatives, outside hard gates.
+        """
+        audit_draft = deepcopy(draft)
+        checks = (
+            ("category_validity_gate", lambda: category_validity_gate(
+                audit_draft,
+                min_long_observation_chars=self.config.long_context_min_observation_chars,
+            )),
+            ("unit_semantic_gate", lambda: unit_semantic_gate(audit_draft, catalog=self.catalog)),
+            ("semantic_grounding_gate", lambda: semantic_grounding_gate(audit_draft, catalog=self.catalog)),
+            ("missing_parameter_validity_gate", lambda: missing_parameter_validity_gate(audit_draft, catalog=self.catalog)),
+            ("observation_entailment_gate", lambda: observation_entailment_gate(audit_draft)),
+            ("relational_resolution_gate", lambda: relational_resolution_gate(audit_draft)),
+            ("query_contract_gate", lambda: query_contract_gate(
+                audit_draft,
+                min_long_observation_chars=self.config.long_context_min_observation_chars,
+            )),
+            ("action_minimality_gate", lambda: action_minimality_gate(audit_draft, catalog=self.catalog)),
+        )
+        records = []
+        for name, check in checks:
+            try:
+                result = check()
+                record = asdict(result)
+                self.metrics.increment(f"diagnostics/{name}", float(result.passed))
+            except Exception as exc:
+                # An optional diagnostic must not become an accidental gate.
+                record = {"name": name, "passed": None,
+                          "detail": f"diagnostic unavailable: {type(exc).__name__}: {exc}",
+                          "metadata": {}}
+                self.metrics.increment(f"diagnostics/{name}_error")
+            records.append({**record, "blocking": False, "phase": phase})
+        return records
 
     @staticmethod
     def _error(
@@ -304,11 +350,21 @@ class RODSDataGenerationPipeline:
         checkpoint_callback: CheckpointCallback | None,
     ) -> None:
         self.metrics.record_error(error.error_type)
-        await feedback.register_failure(error, patch_agent=self.patch_agent)
+        try:
+            await feedback.register_failure(error, patch_agent=self.patch_agent)
+        finally:
+            await self._checkpoint(
+                checkpoint_callback,
+                feedback,
+                completed_failed_attempts=completed_failed_attempts,
+                planner_calls=planner_calls,
+            )
+
+    async def _defer_quota(self, feedback, planner_calls, checkpoint_callback) -> None:
+        self.metrics.increment("transport/quota_deferred")
         await self._checkpoint(
-            checkpoint_callback,
-            feedback,
-            completed_failed_attempts=completed_failed_attempts,
+            checkpoint_callback, feedback,
+            completed_failed_attempts=max((error.attempt_id for error in feedback.failures), default=0),
             planner_calls=planner_calls,
         )
 
@@ -409,7 +465,7 @@ class RODSDataGenerationPipeline:
                     structural_alignment_diagnostics(seed_profile, draft.structural_profile)
                 )
                 draft.structural_profile["alignment_mechanism"] = (
-                    "Appendix C.1 Planner prompt; deterministic profile is diagnostics only"
+                    "Project task-only Planner v2; deterministic profile is diagnostics only"
                 )
                 draft = await self.rewrite.rewrite(draft)
                 if seed.data_type == "multi_turn_miss_func":
@@ -417,6 +473,20 @@ class RODSDataGenerationPipeline:
                 elif seed.data_type == "multi_turn_miss_param":
                     draft = await self.missing_parameter.transform(draft)
                 break
+            except BackendQuotaExceeded:
+                await self._defer_quota(feedback, planner_calls, checkpoint_callback)
+                raise
+            except BackendError as exc:
+                # A model transport/response failure gives no evidence that
+                # any planned VM function is invalid. Preserve bounded retries
+                # without pruning successful or not-yet-executed functions.
+                error = self._error(
+                    ErrorType.PIPELINE_EXCEPTION,
+                    seed=seed,
+                    attempt_id=attempt_id,
+                    detail=f"{type(exc).__name__}: {exc}",
+                    context={"failure_stage": "MODEL_BACKEND"},
+                )
             except StageFailure as exc:
                 error = exc.error
             except FileNotFoundError as exc:
@@ -479,203 +549,236 @@ class RODSDataGenerationPipeline:
             )
 
         gates: list[GateResult] = []
-        unit_semantics = unit_semantic_gate(draft, catalog=self.catalog)
-        gates.append(unit_semantics)
-        self.metrics.increment(
-            f"validation/{unit_semantics.name}",
-            1.0 if unit_semantics.passed else 0.0,
-        )
-        if not unit_semantics.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    f"deterministic gate rejected: {unit_semantics.name}: "
-                    f"{unit_semantics.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
+        if self.config.validation_policy == "strict":
+            category_gate = category_validity_gate(
+                draft, min_long_observation_chars=self.config.long_context_min_observation_chars
             )
-
-        grounding = semantic_grounding_gate(draft, catalog=self.catalog)
-        gates.append(grounding)
-        self.metrics.increment(
-            f"validation/{grounding.name}", 1.0 if grounding.passed else 0.0
-        )
-        semantic_counts = grounding.metadata.get("semantic_outcome_counts", {})
-        if isinstance(semantic_counts, Mapping):
+            gates.append(category_gate)
+            self.metrics.increment(f"validation/{category_gate.name}", float(category_gate.passed))
+            if not category_gate.passed:
+                return self._result(
+                    seed=seed, status="DROPPED", candidate=None, feedback=feedback,
+                    attempts=attempts, reason=f"category gate rejected: {category_gate.detail}",
+                    started=started, planner_calls=planner_calls,
+                )
+            unit_semantics = unit_semantic_gate(draft, catalog=self.catalog)
+            gates.append(unit_semantics)
             self.metrics.increment(
-                "execution/final_domain_negative",
-                float(semantic_counts.get("DOMAIN_NEGATIVE", 0)),
+                f"validation/{unit_semantics.name}",
+                1.0 if unit_semantics.passed else 0.0,
             )
+            if not unit_semantics.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        f"deterministic gate rejected: {unit_semantics.name}: "
+                        f"{unit_semantics.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
+
+            grounding = semantic_grounding_gate(draft, catalog=self.catalog)
+            gates.append(grounding)
             self.metrics.increment(
-                "execution/final_hard_error",
-                float(semantic_counts.get("HARD_ERROR", 0)),
+                f"validation/{grounding.name}", 1.0 if grounding.passed else 0.0
             )
-        if not grounding.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    f"deterministic gate rejected: {grounding.name}: "
-                    f"{grounding.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
-            )
+            semantic_counts = grounding.metadata.get("semantic_outcome_counts", {})
+            if isinstance(semantic_counts, Mapping):
+                self.metrics.increment(
+                    "execution/final_domain_negative",
+                    float(semantic_counts.get("DOMAIN_NEGATIVE", 0)),
+                )
+                self.metrics.increment(
+                    "execution/final_hard_error",
+                    float(semantic_counts.get("HARD_ERROR", 0)),
+                )
+            if not grounding.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        f"deterministic gate rejected: {grounding.name}: "
+                        f"{grounding.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
 
-        missing_parameter_validity = missing_parameter_validity_gate(
-            draft, catalog=self.catalog
-        )
-        gates.append(missing_parameter_validity)
-        self.metrics.increment(
-            f"validation/{missing_parameter_validity.name}",
-            1.0 if missing_parameter_validity.passed else 0.0,
-        )
-        if not missing_parameter_validity.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    "deterministic gate rejected: "
-                    f"{missing_parameter_validity.name}: "
-                    f"{missing_parameter_validity.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
+            missing_parameter_validity = missing_parameter_validity_gate(
+                draft, catalog=self.catalog
             )
+            gates.append(missing_parameter_validity)
+            self.metrics.increment(
+                f"validation/{missing_parameter_validity.name}",
+                1.0 if missing_parameter_validity.passed else 0.0,
+            )
+            if not missing_parameter_validity.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        "deterministic gate rejected: "
+                        f"{missing_parameter_validity.name}: "
+                        f"{missing_parameter_validity.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
 
-        observation_entailment = observation_entailment_gate(draft)
-        gates.append(observation_entailment)
-        self.metrics.increment(
-            f"validation/{observation_entailment.name}",
-            1.0 if observation_entailment.passed else 0.0,
-        )
-        if not observation_entailment.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    "deterministic gate rejected: "
-                    f"{observation_entailment.name}: "
-                    f"{observation_entailment.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
+            observation_entailment = observation_entailment_gate(draft)
+            gates.append(observation_entailment)
+            self.metrics.increment(
+                f"validation/{observation_entailment.name}",
+                1.0 if observation_entailment.passed else 0.0,
             )
+            if not observation_entailment.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        "deterministic gate rejected: "
+                        f"{observation_entailment.name}: "
+                        f"{observation_entailment.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
 
-        relational = relational_resolution_gate(draft)
-        gates.append(relational)
-        self.metrics.increment(
-            f"validation/{relational.name}", 1.0 if relational.passed else 0.0
-        )
-        if not relational.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    f"deterministic gate rejected: {relational.name}: "
-                    f"{relational.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
+            relational = relational_resolution_gate(draft)
+            gates.append(relational)
+            self.metrics.increment(
+                f"validation/{relational.name}", 1.0 if relational.passed else 0.0
             )
+            if not relational.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        f"deterministic gate rejected: {relational.name}: "
+                        f"{relational.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
 
-        try:
-            final_semantic = await self.query_verifier.verify_final_conversation(draft)
-        except Exception as exc:
-            error = self._error(
-                ErrorType.PIPELINE_EXCEPTION,
-                seed=seed,
-                attempt_id=attempts,
-                detail=f"final semantic verifier transport failure: {type(exc).__name__}: {exc}",
+            query_contract = query_contract_gate(
+                draft, min_long_observation_chars=self.config.long_context_min_observation_chars
             )
-            feedback.failures.append(error)
-            self.metrics.record_error(error.error_type)
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=error.detail,
-                started=started,
-                planner_calls=planner_calls,
-            )
-        gates.append(final_semantic)
-        self.metrics.increment(
-            f"validation/{final_semantic.name}",
-            1.0 if final_semantic.passed else 0.0,
-        )
-        if not final_semantic.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    f"final semantic verifier rejected: {final_semantic.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
-            )
+            gates.append(query_contract)
+            if not query_contract.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed, status="DROPPED", candidate=None, feedback=feedback,
+                    attempts=attempts, reason=f"query contract rejected: {query_contract.detail}",
+                    started=started, planner_calls=planner_calls,
+                )
 
-        # This deterministic gate runs after the semantic verifier so an
-        # already-invalid rewritten Query/GT pair retains its precise original
-        # failure category.  It still runs before Fresh VM, Judge, and candidate
-        # construction, so neither Judge nor refinement can override it.
-        action_minimality = action_minimality_gate(draft, catalog=self.catalog)
-        gates.append(action_minimality)
-        self.metrics.increment(
-            f"validation/{action_minimality.name}",
-            1.0 if action_minimality.passed else 0.0,
-        )
-        if not action_minimality.passed:
-            self.metrics.increment("lifecycle/candidates_dropped")
-            return self._result(
-                seed=seed,
-                status="DROPPED",
-                candidate=None,
-                feedback=feedback,
-                attempts=attempts,
-                reason=(
-                    "deterministic gate rejected: "
-                    f"{action_minimality.name}: {action_minimality.detail}"
-                ),
-                started=started,
-                planner_calls=planner_calls,
+            try:
+                final_semantic = await self.query_verifier.verify_final_conversation(draft)
+            except BackendQuotaExceeded:
+                await self._defer_quota(feedback, planner_calls, checkpoint_callback)
+                raise
+            except Exception as exc:
+                error = self._error(
+                    ErrorType.PIPELINE_EXCEPTION,
+                    seed=seed,
+                    attempt_id=attempts,
+                    detail=f"final semantic verifier transport failure: {type(exc).__name__}: {exc}",
+                )
+                feedback.failures.append(error)
+                self.metrics.record_error(error.error_type)
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=error.detail,
+                    started=started,
+                    planner_calls=planner_calls,
+                )
+            gates.append(final_semantic)
+            self.metrics.increment(
+                f"validation/{final_semantic.name}",
+                1.0 if final_semantic.passed else 0.0,
             )
+            if not final_semantic.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        f"final semantic verifier rejected: {final_semantic.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
 
-        gate_functions = (
-            lambda: fresh_vm_reverify_gate(
+            # This deterministic gate runs after the semantic verifier so an
+            # already-invalid rewritten Query/GT pair retains its precise original
+            # failure category.  It still runs before Fresh VM, Judge, and candidate
+            # construction, so neither Judge nor refinement can override it.
+            action_minimality = action_minimality_gate(draft, catalog=self.catalog)
+            gates.append(action_minimality)
+            self.metrics.increment(
+                f"validation/{action_minimality.name}",
+                1.0 if action_minimality.passed else 0.0,
+            )
+            if not action_minimality.passed:
+                self.metrics.increment("lifecycle/candidates_dropped")
+                return self._result(
+                    seed=seed,
+                    status="DROPPED",
+                    candidate=None,
+                    feedback=feedback,
+                    attempts=attempts,
+                    reason=(
+                        "deterministic gate rejected: "
+                        f"{action_minimality.name}: {action_minimality.detail}"
+                    ),
+                    started=started,
+                    planner_calls=planner_calls,
+                )
+
+        # Final text/omission transforms preserve the executable calls. Their
+        # successful synthesis records already supply the Judge's VM evidence.
+        # Replaying those calls cannot establish that the rewritten queries or
+        # intentional missing turns are semantically valid.
+        gate_functions: list[Callable[[], GateResult]] = []
+        if self.config.replay_final_gt or self.config.validation_policy == "strict":
+            gate_functions.append(lambda: fresh_vm_reverify_gate(
                 draft, environment_factory=self.environment_factory, seed_id=seed.sample_id
-            ),
+            ))
+        gate_functions.extend((
             lambda: tool_availability_gate(draft),
             lambda: parameter_complexity_gate(draft),
-        )
+        ))
         for gate_function in gate_functions:
             gate = gate_function()
             gates.append(gate)
@@ -693,6 +796,10 @@ class RODSDataGenerationPipeline:
                     planner_calls=planner_calls,
                 )
 
+        project_diagnostics = (
+            self._project_diagnostics(draft, phase="before_judge")
+            if self.config.validation_policy == "rods" else []
+        )
         refinement_used = False
         refinement_metadata: dict[str, Any] = {}
         try:
@@ -721,159 +828,177 @@ class RODSDataGenerationPipeline:
                 refinement_metadata.update(
                     {"turn_index": turn_index, "old_query": old_query, "new_query": draft.turns[turn_index].query}
                 )
-                # Refine Rewrite changes final actor-visible text.  It must not
-                # bypass the same semantic gates applied after whole-conversation
-                # rewrite and adversarial transformation.
-                refined_unit = unit_semantic_gate(draft, catalog=self.catalog)
-                if not refined_unit.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed unit semantics: "
-                            f"{refined_unit.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
+                if self.config.validation_policy == "strict":
+                    # Refine Rewrite changes final actor-visible text.  It must not
+                    # bypass the same semantic gates applied after whole-conversation
+                    # rewrite and adversarial transformation.
+                    refined_unit = unit_semantic_gate(draft, catalog=self.catalog)
+                    if not refined_unit.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed unit semantics: "
+                                f"{refined_unit.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_grounding = semantic_grounding_gate(draft, catalog=self.catalog)
+                    if not refined_grounding.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed semantic grounding: "
+                                f"{refined_grounding.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_missing_parameter = missing_parameter_validity_gate(
+                        draft, catalog=self.catalog
                     )
-                refined_grounding = semantic_grounding_gate(draft, catalog=self.catalog)
-                if not refined_grounding.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed semantic grounding: "
-                            f"{refined_grounding.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
+                    if not refined_missing_parameter.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed Missing Parameter validity: "
+                                f"{refined_missing_parameter.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_observation_entailment = observation_entailment_gate(draft)
+                    if not refined_observation_entailment.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed observation entailment: "
+                                f"{refined_observation_entailment.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_relational = relational_resolution_gate(draft)
+                    if not refined_relational.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed relational resolution: "
+                                f"{refined_relational.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_contract = query_contract_gate(
+                        draft, min_long_observation_chars=self.config.long_context_min_observation_chars
                     )
-                refined_missing_parameter = missing_parameter_validity_gate(
-                    draft, catalog=self.catalog
-                )
-                if not refined_missing_parameter.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed Missing Parameter validity: "
-                            f"{refined_missing_parameter.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
+                    if not refined_contract.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed, status="DROPPED", candidate=None, feedback=feedback,
+                            attempts=attempts, reason=f"refined query contract rejected: {refined_contract.detail}",
+                            started=started, planner_calls=planner_calls,
+                        )
+                    gates = [refined_contract if gate.name == refined_contract.name else gate for gate in gates]
+                    try:
+                        refined_semantic = await self.query_verifier.verify_final_conversation(draft)
+                    except BackendQuotaExceeded:
+                        raise
+                    except Exception as exc:
+                        error = self._error(
+                            ErrorType.PIPELINE_EXCEPTION,
+                            seed=seed,
+                            attempt_id=attempts,
+                            detail=(
+                                "refined final semantic verifier transport failure: "
+                                f"{type(exc).__name__}: {exc}"
+                            ),
+                        )
+                        feedback.failures.append(error)
+                        self.metrics.record_error(error.error_type)
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=error.detail,
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    if not refined_semantic.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed final semantic verification: "
+                                f"{refined_semantic.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    refined_action_minimality = action_minimality_gate(
+                        draft, catalog=self.catalog
                     )
-                refined_observation_entailment = observation_entailment_gate(draft)
-                if not refined_observation_entailment.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed observation entailment: "
-                            f"{refined_observation_entailment.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
+                    if not refined_action_minimality.passed:
+                        self.metrics.increment("lifecycle/candidates_dropped")
+                        return self._result(
+                            seed=seed,
+                            status="DROPPED",
+                            candidate=None,
+                            feedback=feedback,
+                            attempts=attempts,
+                            reason=(
+                                "refined query failed action minimality: "
+                                f"{refined_action_minimality.detail}"
+                            ),
+                            started=started,
+                            planner_calls=planner_calls,
+                        )
+                    gates = [
+                        refined_unit if gate.name == "unit_semantic_gate" else
+                        refined_grounding if gate.name == "semantic_grounding_gate" else
+                        refined_missing_parameter if gate.name == "missing_parameter_validity_gate" else
+                        refined_observation_entailment if gate.name == "observation_entailment_gate" else
+                        refined_action_minimality if gate.name == "action_minimality_gate" else
+                        refined_relational if gate.name == "relational_resolution_gate" else
+                        refined_semantic if gate.name == "final_query_semantic_gate" else gate
+                        for gate in gates
+                    ]
+                else:
+                    project_diagnostics.extend(
+                        self._project_diagnostics(draft, phase="after_refinement")
                     )
-                refined_relational = relational_resolution_gate(draft)
-                if not refined_relational.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed relational resolution: "
-                            f"{refined_relational.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
-                    )
-                try:
-                    refined_semantic = await self.query_verifier.verify_final_conversation(draft)
-                except Exception as exc:
-                    error = self._error(
-                        ErrorType.PIPELINE_EXCEPTION,
-                        seed=seed,
-                        attempt_id=attempts,
-                        detail=(
-                            "refined final semantic verifier transport failure: "
-                            f"{type(exc).__name__}: {exc}"
-                        ),
-                    )
-                    feedback.failures.append(error)
-                    self.metrics.record_error(error.error_type)
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=error.detail,
-                        started=started,
-                        planner_calls=planner_calls,
-                    )
-                if not refined_semantic.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed final semantic verification: "
-                            f"{refined_semantic.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
-                    )
-                refined_action_minimality = action_minimality_gate(
-                    draft, catalog=self.catalog
-                )
-                if not refined_action_minimality.passed:
-                    self.metrics.increment("lifecycle/candidates_dropped")
-                    return self._result(
-                        seed=seed,
-                        status="DROPPED",
-                        candidate=None,
-                        feedback=feedback,
-                        attempts=attempts,
-                        reason=(
-                            "refined query failed action minimality: "
-                            f"{refined_action_minimality.detail}"
-                        ),
-                        started=started,
-                        planner_calls=planner_calls,
-                    )
-                gates = [
-                    refined_unit if gate.name == "unit_semantic_gate" else
-                    refined_grounding if gate.name == "semantic_grounding_gate" else
-                    refined_missing_parameter if gate.name == "missing_parameter_validity_gate" else
-                    refined_observation_entailment if gate.name == "observation_entailment_gate" else
-                    refined_action_minimality if gate.name == "action_minimality_gate" else
-                    refined_relational if gate.name == "relational_resolution_gate" else
-                    refined_semantic if gate.name == "final_query_semantic_gate" else gate
-                    for gate in gates
-                ]
                 judge = await self.judge.evaluate(draft, pass_index=2)
                 refinement_metadata["second_judge"] = asdict(judge)
                 if not judge.accepted:
@@ -903,7 +1028,12 @@ class RODSDataGenerationPipeline:
                 config_patch_history=feedback.patch_history,
                 refinement_used=refinement_used,
                 refinement_metadata=refinement_metadata,
+                validation_policy=self.config.validation_policy,
+                project_diagnostics=project_diagnostics,
             )
+        except BackendQuotaExceeded:
+            await self._defer_quota(feedback, planner_calls, checkpoint_callback)
+            raise
         except Exception as exc:
             error = self._error(
                 ErrorType.PIPELINE_EXCEPTION,

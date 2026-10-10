@@ -78,7 +78,7 @@ Stage 3 deliberately has two non-blocking branches over the same rollout group. 
 |---|---|---|
 | Stage 1 | Parser-compatible, executable tool interaction | Update 25 reaches Stage 1 score `1.7007` and parser rate `0.9161` for action positions 2+ on eval-400 |
 | Stage 2 | Fixed-denominator task progress | Update 25 reaches $R_P=0.4567$ on the canonical balanced 400-row held-in evaluation set |
-| Stage 3 | Dual-level credit with boundary-guided online data evolution | Final checkpoint reaches `48.50` complete-entry BFCL Multi-Turn accuracy (`194 / 400`) on the balanced held-in set |
+| Stage 3 | Dual-level credit with boundary-guided online data evolution | Final checkpoint reaches `55.00%` complete-entry BFCL Multi-Turn accuracy (`220 / 400`) on the balanced held-in set |
 
 On the exact Stage 2 fixed-denominator wrapper, Stage 1 update 25 has $R_P=0.3728$ and Stage 2 update 25 has $R_P=0.4567$. The paired difference is `+0.0839`, with a 95% bootstrap interval of `[+0.0536, +0.1146]` over the same 400 sample IDs.
 

@@ -157,15 +157,15 @@ The paired overall improvement is `+0.0839`, with a paired 95% bootstrap interva
 
 The final ToolWeave Stage 3 checkpoint was evaluated on the canonical balanced 400-row held-in set: 100 entries each from Base, Missing Function, Missing Parameter, and Long Context. These values are complete-entry BFCL Multi-Turn accuracies, not the training-time Progress Reward $R_P$.
 
-| Model | Overall | Base | Missing Function | Missing Parameter | Long Context | Correct entries |
+| Model | Overall (%) | Base (%) | Missing Function (%) | Missing Parameter (%) | Long Context (%) | Correct entries |
 |---|---:|---:|---:|---:|---:|---:|
-| **ToolWeave Stage 3** | **48.50** | **56.00** | **50.00** | **42.00** | **46.00** | **194 / 400** |
+| **ToolWeave Stage 3** | **55.00** | **62.00** | **59.00** | **46.00** | **53.00** | **220 / 400** |
 
 Because the four categories are balanced, the overall score is both their unweighted mean and the complete-entry accuracy over all 400 entries:
 
 $$
-\frac{56.00+50.00+42.00+46.00}{4}
-=48.50.
+\frac{62.00+59.00+46.00+53.00}{4}
+=55.00.
 $$
 
 ### Stage 3 Implementation Validation
